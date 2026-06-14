@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, query, where } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 
 let db = null;
 let initialized = false;
@@ -47,6 +47,15 @@ export async function updateTenantDoc(collectionName, id, changes) {
   ensureInit();
   if (!db) throw new Error('ServiceGateway: Firestore not initialized');
   throw new Error('updateTenantDoc is a stub — implement server-side update via secure API or Admin SDK');
+}
+
+// Convenience helper: list tenant-scoped documents for a collection.
+export async function listTenantCollection(collectionName, ...constraints) {
+  ensureInit();
+  if (!db) throw new Error('ServiceGateway: Firestore not initialized');
+  const q = tenantQuery(collectionName, ...constraints);
+  const snap = await getDocs(q);
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
 // Lightweight stubs for UI pages during early migration. Replace these with

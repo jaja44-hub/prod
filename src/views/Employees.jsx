@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import * as GW from '../../src/services/ServiceGateway';
+import * as GW from '../services/ServiceGateway';
 
 export default function Employees() {
   const [list, setList] = useState([]);

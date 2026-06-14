@@ -1,12 +1,7 @@
-import * as GW from './ServiceGateway';
-import { getDocs } from 'firebase/firestore';
-
 export const WorkOrderService = {
   async listWorkOrders() {
     try {
-      const q = GW.tenantQuery('work_orders');
-      const snap = await getDocs(q);
-      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      return await GW.listTenantCollection('work_orders');
     } catch (err) {
       return [];
     }

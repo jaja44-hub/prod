@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getDocs, orderBy } from 'firebase/firestore';
-import * as GW from '../../src/services/ServiceGateway';
+import { InventoryService } from '../services/InventoryService';
+import { WorkOrderService } from '../services/WorkOrderService';
 
 const staticInventory = [
   { id: '1', sku: 'SKU-1001', name: 'Widget A', quantity: 100 },
@@ -22,23 +22,18 @@ export default function DemoManufacturing() {
     let cancelled = false;
     (async () => {
       try {
-        // Try reading seeded Firestore collections (tenant aware)
-        const invQ = GW.tenantQuery('inventory_items', orderBy('updatedAt', 'desc'));
-        const woQ = GW.tenantQuery('work_orders', orderBy('createdAt', 'desc'));
-        const [invSnap, woSnap] = await Promise.all([getDocs(invQ), getDocs(woQ)]);
+        // Use production-submodule services (they internally handle tenant scoping)
+        const [inv, wo] = await Promise.all([
+          InventoryService.listItems(),
+          WorkOrderService.listWorkOrders(),
+        ]);
         if (cancelled) return;
-        const inv = invSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        const wo = woSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        if (inv.length === 0 && wo.length === 0) {
-          // no seeded data — fall back to static demo
-          setItems(staticInventory);
-          setOrders(staticWorkOrders);
-        } else {
-          setItems(inv.length ? inv : staticInventory);
-          setOrders(wo.length ? wo : staticWorkOrders);
-        }
+        const invList = (inv && inv.length) ? inv : staticInventory;
+        const woList = (wo && wo.length) ? wo : staticWorkOrders;
+        setItems(invList);
+        setOrders(woList);
       } catch (err) {
-        // Firestore not available or error — fall back to static demo
+        // Services unavailable — fall back to static demo
         setItems(staticInventory);
         setOrders(staticWorkOrders);
       } finally {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { InventoryService } from '../../src/services/InventoryService';
+import { InventoryService } from '../services/InventoryService';
 import { useTenant } from '../context/TenantContext';
 
 export default function Inventory() {

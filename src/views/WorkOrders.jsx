@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { WorkOrderService } from '../../src/services/WorkOrderService';
+import { WorkOrderService } from '../services/WorkOrderService';
 import { useTenant } from '../context/TenantContext';
 
 export default function WorkOrders() {
