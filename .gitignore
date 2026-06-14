@@ -1,0 +1,4 @@
+# Ignore service account and local secrets
+service-account.json
+.env
+resources.md
