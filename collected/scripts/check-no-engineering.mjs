@@ -11,9 +11,6 @@ function walk(dir) {
       if (['node_modules', '.git', 'dist', 'collected'].includes(e.name)) continue;
       walk(p);
     } else {
-      // skip the checker file itself and package.json to avoid flagging the script reference
-      if (p.endsWith('check-no-engineering.mjs')) continue;
-      if (p.endsWith('package.json')) continue;
       try {
         const txt = fs.readFileSync(p, 'utf8');
         if (/\bengineering\b/i.test(txt)) {

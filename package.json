@@ -7,7 +7,8 @@
     "vercel-build": "node ./scripts/write-service-account.mjs || true",
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "ci-check": "node ./scripts/check-no-engineering.mjs"
   },
   "dependencies": {
     "react": "^19.2.6",

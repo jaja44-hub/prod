@@ -1,0 +1,89 @@
+[
+  {
+    "path": "scripts/write-service-account.mjs",
+    "matched": [
+      "filename:service-account"
+    ],
+    "snippets": []
+  },
+  {
+    "path": "seed.js",
+    "matched": [
+      "/inventory_items|work_orders|purchase_orders|suppliers|orders|sales/i",
+      "/firebase-admin|serviceAccount|firebaseConfig|projectId/i",
+      "/SKU-|WO-|PO-|ORD-|SALE-/i",
+      "filename:seed"
+    ],
+    "snippets": [
+      {
+        "line": 7,
+        "text": " */\n\nimport { initializeApp, cert } from \"firebase-admin/app\";\nimport { getFirestore } from \"firebase-admin/firestore\";\nimport { readFileSync, existsSync } from \"fs\";"
+      },
+      {
+        "line": 8,
+        "text": "\nimport { initializeApp, cert } from \"firebase-admin/app\";\nimport { getFirestore } from \"firebase-admin/firestore\";\nimport { readFileSync, existsSync } from \"fs\";\nimport { resolve, dirname } from \"path\";"
+      },
+      {
+        "line": 23,
+        "text": "}\n\nconst serviceAccount = JSON.parse(readFileSync(SA_PATH, \"utf8\"));\n\ninitializeApp({ credential: cert(serviceAccount) });"
+      },
+      {
+        "line": 25,
+        "text": "const serviceAccount = JSON.parse(readFileSync(SA_PATH, \"utf8\"));\n\ninitializeApp({ credential: cert(serviceAccount) });\n\nconst db = getFirestore();"
+      },
+      {
+        "line": 29,
+        "text": "const db = getFirestore();\n\nconst inventory_items = [\n  { id: 'SKU-1001', sku: 'SKU-1001', name: 'Aluminum Sheet 2mm', quantity: 120, unit: 'pcs' },\n  { id: 'SKU-1002', sku: 'SKU-1002', name: 'Tempered Glass 6mm', quantity: 60, unit: 'pcs' },"
+      },
+      {
+        "line": 30,
+        "text": "\nconst inventory_items = [\n  { id: 'SKU-1001', sku: 'SKU-1001', name: 'Aluminum Sheet 2mm', quantity: 120, unit: 'pcs' },\n  { id: 'SKU-1002', sku: 'SKU-1002', name: 'Tempered Glass 6mm', quantity: 60, unit: 'pcs' },\n];"
+      },
+      {
+        "line": 31,
+        "text": "const inventory_items = [\n  { id: 'SKU-1001', sku: 'SKU-1001', name: 'Aluminum Sheet 2mm', quantity: 120, unit: 'pcs' },\n  { id: 'SKU-1002', sku: 'SKU-1002', name: 'Tempered Glass 6mm', quantity: 60, unit: 'pcs' },\n];\n"
+      },
+      {
+        "line": 34,
+        "text": "];\n\nconst work_orders = [\n  { id: 'WO-001', reference: 'WO-001', title: 'Produce Window Frames', status: 'in_progress', priority: 'high' },\n  { id: 'WO-002', reference: 'WO-002', title: 'Assemble Door Panels', status: 'pending', priority: 'normal' },"
+      },
+      {
+        "line": 35,
+        "text": "\nconst work_orders = [\n  { id: 'WO-001', reference: 'WO-001', title: 'Produce Window Frames', status: 'in_progress', priority: 'high' },\n  { id: 'WO-002', reference: 'WO-002', title: 'Assemble Door Panels', status: 'pending', priority: 'normal' },\n];"
+      },
+      {
+        "line": 36,
+        "text": "const work_orders = [\n  { id: 'WO-001', reference: 'WO-001', title: 'Produce Window Frames', status: 'in_progress', priority: 'high' },\n  { id: 'WO-002', reference: 'WO-002', title: 'Assemble Door Panels', status: 'pending', priority: 'normal' },\n];\n"
+      },
+      {
+        "line": 55,
+        "text": "  console.log(\"\");\n  console.log(\"🌱  Production submodule — Firestore Seed (Admin SDK)\");\n  console.log(`    Project: ${serviceAccount.project_id}`);\n  console.log(\"\");\n"
+      },
+      {
+        "line": 58,
+        "text": "  console.log(\"\");\n\n  await seedCollection(\"inventory_items\", inventory_items, 'production');\n  await seedCollection(\"work_orders\", work_orders, 'production');\n"
+      },
+      {
+        "line": 59,
+        "text": "\n  await seedCollection(\"inventory_items\", inventory_items, 'production');\n  await seedCollection(\"work_orders\", work_orders, 'production');\n\n  console.log(\"\");"
+      }
+    ]
+  },
+  {
+    "path": "service-account.json",
+    "matched": [
+      "/firebase-admin|serviceAccount|firebaseConfig|projectId/i",
+      "filename:service-account"
+    ],
+    "snippets": [
+      {
+        "line": 6,
+        "text": "  \"private_key_id\": \"1ebdf771b8d11161bebabf40adfba58e5751eb51\",\n  \"private_key\": \"-----BEGIN PRIVATE KEY-----\\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCye9X7gJHJvUu1\\nhZESw637w08ietebS4P1X5PDSZm0nKKw5bwh9mIev4fBjpezfHuUjCKP4h77AKj4\\nbtTf65dwC8CyMDvK5IbrGySpSijRLZKThZa0ABMpRKubwiEyTw2/NZoyd9sMYe2b\\nhFH/Ge1oXR4W3h6w+GXxelj+UUh02Hb4ClQEoPK/K0V7/DF9mG5cK9ZeiLwMV9eM\\nd4FDSE3y0UsZLYgv3SXIjMRVjK8kQOj4IJiAIM2FDlGUF5POz9SOSX4Cc95x7jsi\\nKfjNiuvxYjzrX4dlT/j7Qme70oQ76arwNrDGpMlz44t25a39Cs5CdUG4fWcNk46m\\nx8H0LXEpAgMBAAECggEAGgiveP8971E/M9EHDNeiDxu5SpbkesW/D7wgj4Gy0SzF\\nG6HG7qVDlqc/+V7/3bGwokWhMko8qUa6tCdmbEBZrIGVBT4ShVEOz52mm/2HNUu9\\nGkDdbzqmO4TFYJ4maBzZLSTNGG4cc2ftV/ErDKy5e67pbqh44ui4kJ/UpJ6H6mhS\\nK/xdfqWARKD96vPCaD5nrRm8JxZt8VWC88bd6yrMIOb6r10GW25dKzQAu5bTrdiu\\nL93r8e51y+Ez2grLU0ZBdDirkKt5fPI/ttnYjQ/CNPXP0NQ4xQ81Q1tRJu8O9ycD\\nH5cwLtaxPl5IRR2GCltbuQwX2HfKYVXwt7Iv294FqQKBgQDiYnygfmN2+qFz9ogs\\nY8AsgY09qDRGXWYWPMOp2dtGdY/IcXGCeopdIPwcFrWssx7reaUOjBchCLGJDUhc\\nwmIWBj+aOJHu4CxJ4OYmp0J2XL/TvSBpUPNSMfY8p/G5erowjnej5YdJGfn7CPOw\\noAm0kX4S228SrHn2ak8po5nFLwKBgQDJ1SsupmvJ33aX8hBqQh4+p1MYvB3fQcR9\\nM6jeqM3d/Pek3vsNZBIxJO+fBrPkxPZ2dD/p3Z70EaA5CohM5jc8dODsBNMT2qRp\\nvGlh88kKkN3p0K0EFhy1tuks5FjAcpPXr3i/6aAvpK1hkAPdn4Y7J9IT3znZ8jjD\\n6lbK5FpJJwKBgEqLO5Zth7sJ1Fgm+bgEMKd3EVcYJ/5zisYPxC4NupJ865eJI2Nf\\njmgUEG//Wls/sBLBv4QGxSbvgeYrJYTFzR6LeC4EKqmJz4uULrTTpqLq7499W0rS\\niQyrvvVCJ+p3aw/KGcMyNVXw48uxquyiBhAbSHRVJUH04UQuxVpksKGpAoGBAKR2\\nwrBJxg2CvSWFh2C+rdyKBkliiMjy04TeQp3lWZOpXbaISHSZ9cT7/xJLqO0inl7Z\\nzXbpM2xYrIGulnBrK9lkuB86szE7ebv7XrgFqe2lLF8pvsJUrmJYQNtm2vc+pkAb\\n6T4gxnnsK6gTbUL7iarMgP/WZ1K0cRMb8kt0FioDAoGBAIPrsEL53lNIaKLIcD8H\\n473AhFceyDuT/s2HEsqVuJzmY5+4DeI/SHLecVWAljvOFe0nQY4kHM9Qz2IT3Wnq\\nBBMOgnwyTluePeuzz42UOn0dI4gFzZbQGvTVU9COVq7uTHQxCuAJ/EqujbRKhZ2b\\nsKpm3qrQNdgvHs82Q7m0Hq6h\\n-----END PRIVATE KEY-----\\n\",\n  \"client_email\": \"firebase-adminsdk-fbsvc@sample-firebase-ai-app-27a8e.iam.gserviceaccount.com\",\n  \"client_id\": \"118440539123874970443\",\n  \"auth_uri\": \"https://accounts.google.com/o/oauth2/auth\","
+      },
+      {
+        "line": 11,
+        "text": "  \"token_uri\": \"https://oauth2.googleapis.com/token\",\n  \"auth_provider_x509_cert_url\": \"https://www.googleapis.com/oauth2/v1/certs\",\n  \"client_x509_cert_url\": \"https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40sample-firebase-ai-app-27a8e.iam.gserviceaccount.com\",\n  \"universe_domain\": \"googleapis.com\"\n}"
+      }
+    ]
+  }
+]

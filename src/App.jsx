@@ -5,7 +5,7 @@ export default function App() {
     <div style={{fontFamily:'sans-serif',padding:24}}>
       <h1>Addis Crown — Production (minimal)</h1>
       <p>This is the production-only scaffold. It is intentionally minimal and ready for
-      incremental additions from engineering repos as needed.</p>
+      incremental additions from partner repositories as needed.</p>
       <section>
         <h2>Resources</h2>
         <ul>
