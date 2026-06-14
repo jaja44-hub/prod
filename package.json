@@ -1,0 +1,9 @@
+{
+  "name": "addis-crown-production",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "vercel-build": "node ./scripts/write-service-account.mjs || true"
+  }
+}

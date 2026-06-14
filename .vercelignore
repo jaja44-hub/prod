@@ -1,0 +1,4 @@
+# Prevent mono resources secrets from being uploaded
+/../mono resources/
+/service-account.json
+/resources.md
