@@ -49,4 +49,15 @@ export async function updateTenantDoc(collectionName, id, changes) {
   throw new Error('updateTenantDoc is a stub — implement server-side update via secure API or Admin SDK');
 }
 
+// Lightweight stubs for UI pages during early migration. Replace these with
+// production implementations (server APIs or Admin SDK) when ready.
+export async function getEmployees() {
+  // return empty list to keep UI functional during migration
+  return [];
+}
+
+export async function getOrders() {
+  return [];
+}
+
 export default { tenantQuery, getTenantDoc, saveTenantDoc, updateTenantDoc };
