@@ -7,7 +7,7 @@
 
 import { initializeApp, cert } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
-import { getFirestore, doc, setDoc } from "firebase-admin/firestore";
+import { getFirestore } from "firebase-admin/firestore";
 import { readFileSync, existsSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
@@ -40,7 +40,7 @@ async function ensureUser(u) {
       // ensure custom claims
       await auth.setCustomUserClaims(existing.uid, { tenant: "production", role: u.role });
       // ensure Firestore profile exists
-      await setDoc(doc(db, "users_extended", existing.uid), {
+      await db.collection("users_extended").doc(existing.uid).set({
         uid: existing.uid,
         email: u.email,
         name: u.displayName,
@@ -61,7 +61,7 @@ async function ensureUser(u) {
 
     await auth.setCustomUserClaims(created.uid, { tenant: "production", role: u.role });
     // create matching Firestore profile in `users_extended`
-    await setDoc(doc(db, "users_extended", created.uid), {
+    await db.collection("users_extended").doc(created.uid).set({
       uid: created.uid,
       email: u.email,
       name: u.displayName,
