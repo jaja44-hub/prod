@@ -16,14 +16,15 @@ jobs:
         with:
           node-version: '18'
       - name: Install dependencies
+        run: npm ci
+      - name: Build (with Firebase config from repo file for CI)
+        env:
+          VITE_FIREBASE_CONFIG: ${{ secrets.VITE_FIREBASE_CONFIG }}
+          VITE_TENANT_ID: production
         run: |
-          npm ci
-      - name: Run vercel-build (writes service-account if env present)
-        run: |
-          npm run vercel-build
-      - name: Run build
-        run: |
+          if [ -z "$VITE_FIREBASE_CONFIG" ] && [ -f VITE_FIREBASE_CONFIG ]; then
+            export VITE_FIREBASE_CONFIG="$(cat VITE_FIREBASE_CONFIG)"
+          fi
           npm run build
       - name: Run CI checks
-        run: |
-          npm run ci-check
+        run: npm run ci-check

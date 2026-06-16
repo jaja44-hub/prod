@@ -1,0 +1,235 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper functions ──────────────────────────────────────────
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users_extended/$(request.auth.uid)).data;
+    }
+
+    function getTier() {
+      return getUserData().tier;
+    }
+
+    function isCEO() {
+      return isAuthenticated() && getTier() == 1;
+    }
+
+    function isManagerOrAbove() {
+      return isAuthenticated() && getTier() <= 2;
+    }
+
+    function isStaffOrAbove() {
+      return isAuthenticated() && getTier() <= 3;
+    }
+
+    // ── MULTI-TENANCY helpers ─────────────────────────────────────
+    // Get the tenant ID from the requesting user's profile
+    function getUserTenantId() {
+      let data = getUserData();
+      return data.get('tenantId', 'default');
+    }
+
+    // Check that a document belongs to the user's tenant
+    // 'default' tenant users can see all documents (backward compat)
+    function sameTenant(docData) {
+      let userTenant = getUserTenantId();
+      return userTenant == 'default'
+          || !('tenantId' in docData)
+          || docData.tenantId == userTenant;
+    }
+
+    // Check that new document being written has correct tenantId
+    function validTenantWrite() {
+      let userTenant = getUserTenantId();
+      // 'default' tenant can write tenantId:'default' or omit it
+      return userTenant == 'default'
+          || (request.resource.data.get('tenantId', userTenant) == userTenant);
+    }
+
+    // ── TENANTS COLLECTION (super-admin only) ─────────────────────
+    match /tenants/{tenantId} {
+      allow read:  if isCEO() && getUserTenantId() == 'default';
+      allow write: if isCEO() && getUserTenantId() == 'default';
+    }
+
+    match /tenants/{tenantId}/system_config/{doc} {
+      allow read:  if isAuthenticated() && getUserTenantId() == tenantId;
+      allow write: if isCEO() && (getUserTenantId() == tenantId || getUserTenantId() == 'default');
+    }
+
+    // ── USERS EXTENDED ──────────────────────────────────────────
+    match /users_extended/{uid} {
+      allow read:  if isAuthenticated() && (request.auth.uid == uid || isCEO());
+      allow write: if isCEO();
+    }
+
+    // ── PUBLIC INTAKE — tenant-scoped ────────────────────────────
+    match /appointments/{id} {
+      allow read:   if isStaffOrAbove() && sameTenant(resource.data);
+      allow create: if isAuthenticated() && validTenantWrite();
+      allow update, delete: if isManagerOrAbove() && sameTenant(resource.data);
+    }
+
+    match /clients/{id} {
+      allow read:   if isStaffOrAbove() && sameTenant(resource.data);
+      allow create: if isAuthenticated() && validTenantWrite();
+      allow update, delete: if isManagerOrAbove() && sameTenant(resource.data);
+    }
+
+    match /field_reports/{id} {
+      allow read:   if isStaffOrAbove() && sameTenant(resource.data);
+      allow create: if isAuthenticated() && validTenantWrite();
+      allow update, delete: if isManagerOrAbove() && sameTenant(resource.data);
+    }
+
+    // ── INTERNAL — Manager+ — tenant-scoped ──────────────────────
+    match /projects/{id} {
+      allow read:  if isStaffOrAbove() && sameTenant(resource.data);
+      allow write: if isManagerOrAbove() && validTenantWrite();
+    }
+
+    match /directives/{id} {
+      allow read:  if isStaffOrAbove() && sameTenant(resource.data);
+      allow write: if isStaffOrAbove() && validTenantWrite();
+    }
+
+    // ── CONTRACTS — tenant-scoped ─────────────────────────────────
+    match /contracts/{id} {
+      allow read:   if isStaffOrAbove() && sameTenant(resource.data);
+      allow create: if isManagerOrAbove() && validTenantWrite();
+      allow update: if isAuthenticated() && sameTenant(resource.data);
+      allow delete: if isCEO() && sameTenant(resource.data);
+    }
+
+    // ── FINANCE — tenant-scoped ───────────────────────────────────
+    match /invoices/{id} {
+      allow read:  if isManagerOrAbove() && sameTenant(resource.data);
+      allow write: if isCEO() && validTenantWrite();
+    }
+
+    match /finance_ledger/{id} {
+      allow read:  if isManagerOrAbove() && sameTenant(resource.data);
+      allow write: if isManagerOrAbove() && validTenantWrite();
+    }
+
+    match /financial_archives/{id} {
+      allow read:  if isCEO() && sameTenant(resource.data);
+      allow write: if isCEO() && validTenantWrite();
+    }
+
+    // ── HR — tenant-scoped ────────────────────────────────────────
+    match /employees/{id} {
+      allow read:  if isManagerOrAbove() && sameTenant(resource.data);
+      allow write: if isCEO() && validTenantWrite();
+    }
+
+    // ── AUDIT LOGS — tenant-scoped ────────────────────────────────
+    match /system_logs/{id} {
+      allow read:   if isManagerOrAbove() && sameTenant(resource.data);
+      allow create: if isAuthenticated() && validTenantWrite();
+      allow update, delete: if false;  // audit logs are immutable
+    }
+
+    // ── SYSTEM CONFIG (module locks, branding) — tenant-scoped ───
+    match /system_config/{doc} {
+      allow read:  if isAuthenticated();
+      allow write: if isCEO();
+    }
+
+    // ── COLLABORATION BUS — tenant-scoped ─────────────────────────
+    match /collaboration_bus/{id} {
+      allow read:  if isStaffOrAbove() && sameTenant(resource.data);
+      allow create: if isAuthenticated() && validTenantWrite();
+      allow update, delete: if false;
+    }
+
+    // ── STARTER — consultation kanban ─────────────────────────────
+    match /consultation_tickets/{id} {
+      allow read:   if isStaffOrAbove() && sameTenant(resource.data);
+      allow create: if isAuthenticated() && validTenantWrite();
+      allow update: if isStaffOrAbove() && sameTenant(resource.data) && validTenantWrite();
+      allow delete: if isManagerOrAbove() && sameTenant(resource.data);
+    }
+
+    // ── PROFESSIONAL — approvals & payroll ────────────────────────
+    match /approval_workflows/{id} {
+      allow read:   if isManagerOrAbove() && sameTenant(resource.data);
+      allow create, update: if isManagerOrAbove() && validTenantWrite();
+      allow delete: if isCEO() && sameTenant(resource.data);
+    }
+
+    match /payroll_runs/{id} {
+      allow read:  if isManagerOrAbove() && sameTenant(resource.data);
+      allow create: if isManagerOrAbove() && validTenantWrite();
+      allow update, delete: if false;
+    }
+
+    match /payments/{id} {
+      allow read:  if isManagerOrAbove() && sameTenant(resource.data);
+      allow create: if isManagerOrAbove() && validTenantWrite();
+      allow update, delete: if isCEO() && sameTenant(resource.data);
+    }
+
+    // ── ENTERPRISE — BoQ & field supervision ──────────────────────
+    match /boq_documents/{id} {
+      allow read:  if isStaffOrAbove() && sameTenant(resource.data);
+      allow create: if isManagerOrAbove() && validTenantWrite();
+      allow update, delete: if isCEO() && sameTenant(resource.data);
+    }
+
+    match /supervision_tasks/{id} {
+      allow read:  if isStaffOrAbove() && sameTenant(resource.data);
+      allow create: if isManagerOrAbove() && validTenantWrite();
+      allow update: if isManagerOrAbove() && sameTenant(resource.data);
+      allow delete: if isCEO() && sameTenant(resource.data);
+    }
+
+    // ── PRODUCTION SECTOR — tenant-scoped ─────────────────────────
+    match /inventory_items/{id} {
+      allow read:   if isStaffOrAbove() && sameTenant(resource.data);
+      allow create: if isAuthenticated() && validTenantWrite();
+      allow update: if isStaffOrAbove() && sameTenant(resource.data) && validTenantWrite();
+      allow delete: if isManagerOrAbove() && sameTenant(resource.data);
+    }
+
+    match /work_orders/{id} {
+      allow read:   if isStaffOrAbove() && sameTenant(resource.data);
+      allow create: if isAuthenticated() && validTenantWrite();
+      allow update: if isStaffOrAbove() && sameTenant(resource.data) && validTenantWrite();
+      allow delete: if isManagerOrAbove() && sameTenant(resource.data);
+    }
+
+    match /purchase_orders/{id} {
+      allow read:   if isStaffOrAbove() && sameTenant(resource.data);
+      allow create: if isManagerOrAbove() && validTenantWrite();
+      allow update: if isManagerOrAbove() && sameTenant(resource.data) && validTenantWrite();
+      allow delete: if isCEO() && sameTenant(resource.data);
+    }
+
+    match /suppliers/{id} {
+      allow read:   if isStaffOrAbove() && sameTenant(resource.data);
+      allow create: if isManagerOrAbove() && validTenantWrite();
+      allow update: if isManagerOrAbove() && sameTenant(resource.data) && validTenantWrite();
+      allow delete: if isCEO() && sameTenant(resource.data);
+    }
+
+    match /orders/{id} {
+      allow read:   if isStaffOrAbove() && sameTenant(resource.data);
+      allow create: if isAuthenticated() && validTenantWrite();
+      allow update: if isStaffOrAbove() && sameTenant(resource.data) && validTenantWrite();
+      allow delete: if isManagerOrAbove() && sameTenant(resource.data);
+    }
+
+    match /sales/{id} {
+      allow read:   if isStaffOrAbove() && sameTenant(resource.data);
+      allow create: if isManagerOrAbove() && validTenantWrite();
+      allow update: if isManagerOrAbove() && sameTenant(resource.data) && validTenantWrite();
+      allow delete: if isCEO() && sameTenant(resource.data);
+    }
+  }
+}

@@ -1,3 +1,5 @@
+import * as GW from './ServiceGateway';
+
 export const WorkOrderService = {
   async listWorkOrders() {
     try {

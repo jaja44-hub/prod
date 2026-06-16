@@ -38,7 +38,7 @@ async function ensureUser(u) {
     if (existing) {
       console.log(`✅  exists: ${u.email} (uid=${existing.uid})`);
       // ensure custom claims
-      await auth.setCustomUserClaims(existing.uid, { tenant: "production", role: u.role });
+      await auth.setCustomUserClaims(existing.uid, { tenantId: "production", role: u.role });
       // ensure Firestore profile exists
       await db.collection("users_extended").doc(existing.uid).set({
         uid: existing.uid,
@@ -59,7 +59,7 @@ async function ensureUser(u) {
       displayName: u.displayName,
     });
 
-    await auth.setCustomUserClaims(created.uid, { tenant: "production", role: u.role });
+    await auth.setCustomUserClaims(created.uid, { tenantId: "production", role: u.role });
     // create matching Firestore profile in `users_extended`
     await db.collection("users_extended").doc(created.uid).set({
       uid: created.uid,

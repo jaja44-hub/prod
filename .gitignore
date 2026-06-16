@@ -2,3 +2,5 @@
 service-account.json
 .env
 resources.md
+node_modules/
+dist/

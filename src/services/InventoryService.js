@@ -1,3 +1,5 @@
+import * as GW from './ServiceGateway';
+
 export const InventoryService = {
   async listItems() {
     try {
