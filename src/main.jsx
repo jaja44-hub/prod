@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { TenantProvider } from './context/TenantContext';
 import * as GW from './services/ServiceGateway';
+import './css/style.css';
 
 function Main() {
   return (

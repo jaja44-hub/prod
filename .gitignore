@@ -4,3 +4,4 @@ service-account.json
 resources.md
 node_modules/
 dist/
+.vercel
