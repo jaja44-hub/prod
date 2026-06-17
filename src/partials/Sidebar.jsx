@@ -2,41 +2,40 @@ import React, { useState, useEffect, useRef } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 
 import SidebarLinkGroup from "./SidebarLinkGroup";
+import { useSidebar } from '../context/SidebarContext'
 
-function Sidebar({
-  sidebarOpen,
-  setSidebarOpen,
-  variant = 'default',
-}) {
+function Sidebar({ variant = 'default' }) {
+  const { sidebarOpen, setSidebarOpen } = useSidebar()
   const location = useLocation();
   const { pathname } = location;
 
   const trigger = useRef(null);
   const sidebar = useRef(null);
 
-  const storedSidebarExpanded = localStorage.getItem("sidebar-expanded");
+  const storedSidebarExpanded = typeof window !== 'undefined' ? localStorage.getItem("sidebar-expanded") : null;
   const [sidebarExpanded, setSidebarExpanded] = useState(storedSidebarExpanded === null ? false : storedSidebarExpanded === "true");
 
   // close on click outside
   useEffect(() => {
     const clickHandler = ({ target }) => {
-      if (!sidebar.current || !trigger.current) return;
-      if (!sidebarOpen || sidebar.current.contains(target) || trigger.current.contains(target)) return;
+      if (!sidebar.current) return;
+      if (!sidebarOpen || sidebar.current.contains(target) || (trigger.current && trigger.current.contains(target))) return;
       setSidebarOpen(false);
     };
     document.addEventListener("click", clickHandler);
     return () => document.removeEventListener("click", clickHandler);
-  });
+  }, [sidebarOpen, setSidebarOpen]);
 
   // close if the esc key is pressed
   useEffect(() => {
     const keyHandler = ({ keyCode }) => {
+      if (!sidebar.current) return;
       if (!sidebarOpen || keyCode !== 27) return;
       setSidebarOpen(false);
     };
     document.addEventListener("keydown", keyHandler);
     return () => document.removeEventListener("keydown", keyHandler);
-  });
+  }, [sidebarOpen, setSidebarOpen]);
 
   useEffect(() => {
     localStorage.setItem("sidebar-expanded", sidebarExpanded);

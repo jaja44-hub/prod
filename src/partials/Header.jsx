@@ -5,12 +5,10 @@ import Notifications from '../components/DropdownNotifications';
 import Help from '../components/DropdownHelp';
 import UserMenu from '../components/DropdownProfile';
 import ThemeToggle from '../components/ThemeToggle';
+import { useSidebar } from '../context/SidebarContext'
 
-function Header({
-  sidebarOpen,
-  setSidebarOpen,
-  variant = 'default',
-}) {
+function Header({ variant = 'default' }) {
+  const { sidebarOpen, toggle, setSidebarOpen } = useSidebar()
 
   const [searchModalOpen, setSearchModalOpen] = useState(false)
 
@@ -27,7 +25,7 @@ function Header({
               className="text-gray-500 hover:text-gray-600 dark:hover:text-gray-400"
               aria-controls="sidebar"
               aria-expanded={sidebarOpen}
-              onClick={(e) => { e.stopPropagation(); setSidebarOpen(!sidebarOpen); }}
+              onClick={(e) => { e.stopPropagation(); toggle(); }}
             >
               <span className="sr-only">Open sidebar</span>
               <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

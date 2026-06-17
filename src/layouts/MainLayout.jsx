@@ -1,28 +1,20 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import Sidebar from '../partials/Sidebar'
 import Header from '../partials/Header'
+import { SidebarProvider } from '../context/SidebarContext'
 
 export default function MainLayout({ children }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-
-  useEffect(() => {
-    const stored = typeof window !== 'undefined' && window.localStorage.getItem('globalSidebarOpen')
-    if (stored !== null) setSidebarOpen(stored === 'true')
-  }, [])
-
-  useEffect(() => {
-    try { window.localStorage.setItem('globalSidebarOpen', sidebarOpen ? 'true' : 'false') } catch (e) {}
-  }, [sidebarOpen])
-
   return (
-    <div className="app-root min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+    <SidebarProvider>
+      <div className="app-root min-h-screen bg-gray-50 dark:bg-gray-900">
+        <Sidebar />
 
-      <Header sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+        <Header />
 
-      <main className="max-w-[1200px] mx-auto p-4 pt-6">
-        {children}
-      </main>
-    </div>
+        <main className="max-w-[1200px] mx-auto p-4 pt-6">
+          {children}
+        </main>
+      </div>
+    </SidebarProvider>
   )
 }
