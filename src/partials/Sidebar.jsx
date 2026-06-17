@@ -9,6 +9,14 @@ function Sidebar({ variant = 'default' }) {
   const location = useLocation();
   const { pathname } = location;
 
+  // close overlay on route change only for small screens
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const small = window.innerWidth < 1024
+    if (small) setSidebarOpen(false)
+    // otherwise keep sidebar state as-is (desktop stays open/collapsed as user set)
+  }, [pathname])
+
   const trigger = useRef(null);
   const sidebar = useRef(null);
 
