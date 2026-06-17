@@ -102,19 +102,23 @@ function NavItem({ to, label, active, expanded, onClick }) {
         end
         to={to}
         className={({ isActive }) =>
-          'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition ' + (isActive || active ? 'text-violet-500' : 'text-slate-700 dark:text-slate-300 hover:text-slate-900')
+          'block px-3 py-2 rounded-md text-sm transition ' + (isActive || active ? 'text-violet-500' : 'text-slate-700 dark:text-slate-300 hover:text-slate-900')
         }
         onClick={onClick}
       >
-        <span className="w-6 h-6 flex items-center justify-center rounded bg-gray-100 dark:bg-gray-700 text-xs font-semibold text-slate-700 dark:text-slate-200">{label.slice(0,2).toUpperCase()}</span>
         <span className={`${expanded ? 'inline-block' : 'hidden'} truncate`}>{label}</span>
       </NavLink>
     </li>
   );
 }
 
-function SectionTitle({ title }) {
-  return <div className="mt-4 px-3 text-xs uppercase text-gray-400 font-semibold">{title}</div>;
+function SectionTitle({ title, symbol = '┃' }) {
+  return (
+    <div className="mt-4 px-3 text-xs uppercase text-gray-400 font-semibold flex items-center gap-2">
+      <span className="text-gray-400">{symbol}</span>
+      <span>{title}</span>
+    </div>
+  );
 }
 
 export default Sidebar;
