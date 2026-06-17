@@ -16,7 +16,7 @@ export default function MainLayout({ children }) {
 
   return (
     <div className="app-root min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
       <Header sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
