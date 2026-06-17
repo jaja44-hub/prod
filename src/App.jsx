@@ -16,6 +16,7 @@ import Inventory from './pages/Inventory';
 import WorkOrders from './pages/WorkOrders';
 import ItemDetail from './pages/ItemDetail';
 import WorkOrderDetail from './pages/WorkOrderDetail';
+import MainLayout from './layouts/MainLayout';
 
 function App() {
 
@@ -28,7 +29,7 @@ function App() {
   }, [location.pathname]); // triggered on route change
 
   return (
-    <>
+    <MainLayout>
       <Routes>
         <Route exact path="/" element={<LoginPage />} />
         <Route path='/Dashboard' element={<Dashboard />}/>
@@ -39,7 +40,7 @@ function App() {
         <Route path='/work-orders/new' element={<WorkOrderDetail />} />
         <Route path='/work-orders/:id' element={<WorkOrderDetail />} />
       </Routes>
-    </>
+    </MainLayout>
   );
 }
 
