@@ -1,24 +1,19 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { useSidebar } from "../context/SidebarContext";
 
-import SidebarLinkGroup from "./SidebarLinkGroup";
-import { useSidebar } from '../context/SidebarContext'
-
-function Sidebar({ variant = 'default' }) {
-  const { sidebarOpen, setSidebarOpen, sidebarExpanded, setSidebarExpanded, hoverExpand, hoverCollapseDelayed, collapse, expand } = useSidebar()
-  const location = useLocation();
-  const { pathname } = location;
-
-  // close overlay on route change only for small screens
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const small = window.innerWidth < 1024
-    if (small) setSidebarOpen(false)
-    // otherwise keep sidebar state as-is (desktop stays open/collapsed as user set)
-  }, [pathname])
+function Sidebar() {
+  const { sidebarOpen, setSidebarOpen, sidebarExpanded, setSidebarExpanded } = useSidebar();
+  const { pathname } = useLocation();
 
   const trigger = useRef(null);
   const sidebar = useRef(null);
+
+  // close overlay on route change only for small screens
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.innerWidth < 1024) setSidebarOpen(false);
+  }, [pathname, setSidebarOpen]);
 
   // close on click outside (mobile overlay)
   useEffect(() => {
@@ -33,147 +28,96 @@ function Sidebar({ variant = 'default' }) {
 
   // close if the esc key is pressed
   useEffect(() => {
-        {/* Links - Production sector only */}
-        <div className="space-y-8">
-          <div>
-            <h3 className="text-xs uppercase text-gray-400 dark:text-gray-500 font-semibold pl-3">
-              <span className="lg:hidden lg:sidebar-expanded:block 2xl:block">Production</span>
-            </h3>
-            <ul className="mt-3">
-              {/* Dashboard */}
-              <li className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0 ${pathname === '/Dashboard' && 'from-violet-500/[0.12] dark:from-violet-500/[0.24] to-violet-500/[0.04]'}`}>
-                <NavLink end to="/Dashboard" className={({ isActive }) => "block text-gray-800 dark:text-gray-100 truncate transition duration-150 " + (isActive ? "text-violet-500" : "hover:text-gray-900 dark:hover:text-white") }>
-                  <div className="flex items-center">
-                    <span className="w-8 h-8 flex items-center justify-center text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded">DB</span>
-                    <span className={`text-sm font-medium ml-4 duration-200 ${sidebarExpanded ? 'opacity-100' : 'hidden'}`}>Dashboard</span>
-                  </div>
-                </NavLink>
-              </li>
+    const keyHandler = (e) => {
+      if (!sidebarOpen || e.key !== "Escape") return;
+      setSidebarOpen(false);
+    };
+    document.addEventListener("keydown", keyHandler);
+    return () => document.removeEventListener("keydown", keyHandler);
+  }, [sidebarOpen, setSidebarOpen]);
 
-              {/* Inventory */}
-              <li className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0 ${pathname.includes('/inventory') && 'from-violet-500/[0.12]'}`}>
-                <NavLink end to="/inventory" className={({ isActive }) => "block text-gray-800 dark:text-gray-100 truncate transition duration-150 " + (isActive ? "text-violet-500" : "hover:text-gray-900 dark:hover:text-white") }>
-                  <div className="flex items-center">
-                    <span className="w-8 h-8 flex items-center justify-center text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded">IN</span>
-                    <span className={`text-sm font-medium ml-4 duration-200 ${sidebarExpanded ? 'opacity-100' : 'hidden'}`}>Inventory</span>
-                  </div>
-                </NavLink>
-              </li>
+  return (
+    <div>
+      {/* Mobile backdrop */}
+      <div
+        className={`fixed inset-0 bg-slate-900 bg-opacity-30 z-40 lg:hidden transition-opacity duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        aria-hidden="true"
+      />
 
-              {/* Work Orders */}
-              <li className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0 ${pathname.includes('/work-orders') && 'from-violet-500/[0.12]'}`}>
-                <NavLink end to="/work-orders" className={({ isActive }) => "block text-gray-800 dark:text-gray-100 truncate transition duration-150 " + (isActive ? "text-violet-500" : "hover:text-gray-900 dark:hover:text-white") }>
-                  <div className="flex items-center">
-                    <span className="w-8 h-8 flex items-center justify-center text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded">WO</span>
-                    <span className={`text-sm font-medium ml-4 duration-200 ${sidebarExpanded ? 'opacity-100' : 'hidden'}`}>Work Orders</span>
-                  </div>
-                </NavLink>
-              </li>
+      {/* Sidebar */}
+      <div
+        ref={sidebar}
+        className={`fixed left-0 top-0 z-40 h-full w-64 transform bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-transform duration-200 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-64 lg:translate-x-0'
+        }`}
+      >
+        <div className="h-full flex flex-col py-6 overflow-y-auto">
+          <div className="px-4">
+            <div className="text-sm font-semibold text-slate-500 dark:text-slate-400">Production</div>
+          </div>
 
-              {/* Orders & Barcode */}
-              <li className="pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0">
-                <NavLink end to="/orders" className={({ isActive }) => "block text-gray-800 dark:text-gray-100 truncate transition duration-150 " + (isActive ? "text-violet-500" : "hover:text-gray-900 dark:hover:text-white") }>
-                  <div className="flex items-center">
-                    <span className="w-8 h-8 flex items-center justify-center text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded">OR</span>
-                    <span className={`text-sm font-medium ml-4 duration-200 ${sidebarExpanded ? 'opacity-100' : 'hidden'}`}>Orders</span>
-                  </div>
-                </NavLink>
-              </li>
-              <li className="pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0">
-                <NavLink end to="/barcode" className={({ isActive }) => "block text-gray-800 dark:text-gray-100 truncate transition duration-150 " + (isActive ? "text-violet-500" : "hover:text-gray-900 dark:hover:text-white") }>
-                  <div className="flex items-center">
-                    <span className="w-8 h-8 flex items-center justify-center text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded">BC</span>
-                    <span className={`text-sm font-medium ml-4 duration-200 ${sidebarExpanded ? 'opacity-100' : 'hidden'}`}>Barcode</span>
-                  </div>
-                </NavLink>
-              </li>
+          <nav className="mt-4 px-2 space-y-1">
+            <NavItem to="/Dashboard" label="Dashboard" active={pathname === '/Dashboard'} expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
+            <NavItem to="/inventory" label="Inventory" active={pathname.includes('/inventory')} expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
+            <NavItem to="/work-orders" label="Work Orders" active={pathname.includes('/work-orders')} expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
+            <NavItem to="/orders" label="Orders" expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
+            <NavItem to="/barcode" label="Barcode" expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
 
-              {/* Procurement & Purchasing */}
-              <li className="pt-4 text-xs uppercase text-gray-400 dark:text-gray-500 font-semibold pl-3">Procurement</li>
-              <li className="pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0">
-                <NavLink end to="/procurement" className={({ isActive }) => "block text-gray-800 dark:text-gray-100 truncate transition duration-150 " + (isActive ? "text-violet-500" : "hover:text-gray-900 dark:hover:text-white") }>
-                  <div className="flex items-center">
-                    <span className="w-8 h-8 flex items-center justify-center text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded">PR</span>
-                    <span className={`text-sm font-medium ml-4 duration-200 ${sidebarExpanded ? 'opacity-100' : 'hidden'}`}>Procurement</span>
-                  </div>
-                </NavLink>
-              </li>
-              <li className="pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0">
-                <NavLink end to="/purchasing" className={({ isActive }) => "block text-gray-800 dark:text-gray-100 truncate transition duration-150 " + (isActive ? "text-violet-500" : "hover:text-gray-900 dark:hover:text-white") }>
-                  <div className="flex items-center">
-                    <span className="w-8 h-8 flex items-center justify-center text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded">PU</span>
-                    <span className={`text-sm font-medium ml-4 duration-200 ${sidebarExpanded ? 'opacity-100' : 'hidden'}`}>Purchasing</span>
-                  </div>
-                </NavLink>
-              </li>
+            <SectionTitle title="Procurement" />
+            <NavItem to="/procurement" label="Procurement" expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
+            <NavItem to="/purchasing" label="Purchasing" expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
 
-              {/* QC & Logistics */}
-              <li className="pt-4 text-xs uppercase text-gray-400 dark:text-gray-500 font-semibold pl-3">Quality & Logistics</li>
-              <li className="pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0">
-                <NavLink end to="/qc" className={({ isActive }) => "block text-gray-800 dark:text-gray-100 truncate transition duration-150 " + (isActive ? "text-violet-500" : "hover:text-gray-900 dark:hover:text-white") }>
-                  <div className="flex items-center">
-                    <span className="w-8 h-8 flex items-center justify-center text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded">QC</span>
-                    <span className={`text-sm font-medium ml-4 duration-200 ${sidebarExpanded ? 'opacity-100' : 'hidden'}`}>QC</span>
-                  </div>
-                </NavLink>
-              </li>
-              <li className="pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0">
-                <NavLink end to="/logistics" className={({ isActive }) => "block text-gray-800 dark:text-gray-100 truncate transition duration-150 " + (isActive ? "text-violet-500" : "hover:text-gray-900 dark:hover:text-white") }>
-                  <div className="flex items-center">
-                    <span className="w-8 h-8 flex items-center justify-center text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded">LG</span>
-                    <span className={`text-sm font-medium ml-4 duration-200 ${sidebarExpanded ? 'opacity-100' : 'hidden'}`}>Logistics</span>
-                  </div>
-                </NavLink>
-              </li>
+            <SectionTitle title="Quality & Logistics" />
+            <NavItem to="/qc" label="QC" expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
+            <NavItem to="/logistics" label="Logistics" expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
 
-              {/* Reports & Finance */}
-              <li className="pt-4 text-xs uppercase text-gray-400 dark:text-gray-500 font-semibold pl-3">Reports & Finance</li>
-              <li className="pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0">
-                <NavLink end to="/reports" className={({ isActive }) => "block text-gray-800 dark:text-gray-100 truncate transition duration-150 " + (isActive ? "text-violet-500" : "hover:text-gray-900 dark:hover:text-white") }>
-                  <div className="flex items-center">
-                    <span className="w-8 h-8 flex items-center justify-center text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded">RP</span>
-                    <span className={`text-sm font-medium ml-4 duration-200 ${sidebarExpanded ? 'opacity-100' : 'hidden'}`}>Reports</span>
-                  </div>
-                </NavLink>
-              </li>
-              <li className="pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0">
-                <NavLink end to="/finance-docs" className={({ isActive }) => "block text-gray-800 dark:text-gray-100 truncate transition duration-150 " + (isActive ? "text-violet-500" : "hover:text-gray-900 dark:hover:text-white") }>
-                  <div className="flex items-center">
-                    <span className="w-8 h-8 flex items-center justify-center text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded">FD</span>
-                    <span className={`text-sm font-medium ml-4 duration-200 ${sidebarExpanded ? 'opacity-100' : 'hidden'}`}>Finance Docs</span>
-                  </div>
-                </NavLink>
-              </li>
+            <SectionTitle title="Reports & Finance" />
+            <NavItem to="/reports" label="Reports" expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
+            <NavItem to="/finance-docs" label="Finance Docs" expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
 
-              {/* Sales & Payroll & People */}
-              <li className="pt-4 text-xs uppercase text-gray-400 dark:text-gray-500 font-semibold pl-3">People & Sales</li>
-              <li className="pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0">
-                <NavLink end to="/sales" className={({ isActive }) => "block text-gray-800 dark:text-gray-100 truncate transition duration-150 " + (isActive ? "text-violet-500" : "hover:text-gray-900 dark:hover:text-white") }>
-                  <div className="flex items-center">
-                    <span className="w-8 h-8 flex items-center justify-center text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded">SA</span>
-                    <span className={`text-sm font-medium ml-4 duration-200 ${sidebarExpanded ? 'opacity-100' : 'hidden'}`}>Sales</span>
-                  </div>
-                </NavLink>
-              </li>
-              <li className="pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0">
-                <NavLink end to="/payroll" className={({ isActive }) => "block text-gray-800 dark:text-gray-100 truncate transition duration-150 " + (isActive ? "text-violet-500" : "hover:text-gray-900 dark:hover:text-white") }>
-                  <div className="flex items-center">
-                    <span className="w-8 h-8 flex items-center justify-center text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded">PY</span>
-                    <span className={`text-sm font-medium ml-4 duration-200 ${sidebarExpanded ? 'opacity-100' : 'hidden'}`}>Payroll</span>
-                  </div>
-                </NavLink>
-              </li>
-              <li className="pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0">
-                <NavLink end to="/employees" className={({ isActive }) => "block text-gray-800 dark:text-gray-100 truncate transition duration-150 " + (isActive ? "text-violet-500" : "hover:text-gray-900 dark:hover:text-gray-200") }>
-                  <div className="flex items-center">
-                    <span className="w-8 h-8 flex items-center justify-center text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded">EM</span>
-                    <span className={`text-sm font-medium ml-4 duration-200 ${sidebarExpanded ? 'opacity-100' : 'hidden'}`}>Employees</span>
-                  </div>
-                </NavLink>
-              </li>
-            </ul>
+            <SectionTitle title="People & Sales" />
+            <NavItem to="/sales" label="Sales" expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
+            <NavItem to="/payroll" label="Payroll" expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
+            <NavItem to="/employees" label="Employees" expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
+          </nav>
+
+          <div className="mt-auto px-4 py-3">
+            <button
+              className="w-full text-sm text-left text-slate-600 dark:text-slate-300"
+              onClick={() => setSidebarExpanded(!sidebarExpanded)}
+            >
+              {sidebarExpanded ? 'Collapse' : 'Expand'}
+            </button>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function NavItem({ to, label, active, expanded, onClick }) {
+  return (
+    <li>
+      <NavLink
+        end
+        to={to}
+        className={({ isActive }) =>
+          'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition ' + (isActive || active ? 'text-violet-500' : 'text-slate-700 dark:text-slate-300 hover:text-slate-900')
+        }
+        onClick={onClick}
+      >
+        <span className="w-6 h-6 flex items-center justify-center rounded bg-gray-100 dark:bg-gray-700 text-xs font-semibold text-slate-700 dark:text-slate-200">{label.slice(0,2).toUpperCase()}</span>
+        <span className={`${expanded ? 'inline-block' : 'hidden'} truncate`}>{label}</span>
+      </NavLink>
+    </li>
+  );
+}
+
+function SectionTitle({ title }) {
+  return <div className="mt-4 px-3 text-xs uppercase text-gray-400 font-semibold">{title}</div>;
+}
+
+export default Sidebar;
                           <li className="mb-1 last:mb-0">
                             <NavLink end to="/employees" className={({ isActive }) => "block transition duration-150 truncate " + (isActive ? "text-violet-500" : "text-gray-500/90 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200") }>
                               <div className="flex items-center">
