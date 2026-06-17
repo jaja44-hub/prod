@@ -2,8 +2,9 @@ import React from 'react'
 import Sidebar from '../partials/Sidebar'
 import Header from '../partials/Header'
 import { SidebarProvider } from '../context/SidebarContext'
+import { Outlet } from 'react-router-dom'
 
-export default function MainLayout({ children }) {
+export default function MainLayout() {
   return (
     <SidebarProvider>
       <div className="app-root min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -12,7 +13,7 @@ export default function MainLayout({ children }) {
         <Header />
 
         <main className="max-w-[1200px] mx-auto p-4 pt-6">
-          {children}
+          <Outlet />
         </main>
       </div>
     </SidebarProvider>

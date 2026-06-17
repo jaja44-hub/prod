@@ -29,9 +29,12 @@ function App() {
   }, [location.pathname]); // triggered on route change
 
   return (
-    <MainLayout>
-      <Routes>
-        <Route exact path="/" element={<LoginPage />} />
+    <Routes>
+      {/* Public routes (no header/sidebar) */}
+      <Route exact path="/" element={<LoginPage />} />
+
+      {/* Protected routes use MainLayout which provides Header + Sidebar */}
+      <Route element={<MainLayout />}>
         <Route path='/Dashboard' element={<Dashboard />}/>
         <Route path='/inventory' element={<Inventory />} />
         <Route path='/inventory/new' element={<ItemDetail />} />
@@ -39,8 +42,8 @@ function App() {
         <Route path='/work-orders' element={<WorkOrders />} />
         <Route path='/work-orders/new' element={<WorkOrderDetail />} />
         <Route path='/work-orders/:id' element={<WorkOrderDetail />} />
-      </Routes>
-    </MainLayout>
+      </Route>
+    </Routes>
   );
 }
 

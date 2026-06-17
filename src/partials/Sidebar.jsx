@@ -5,17 +5,14 @@ import SidebarLinkGroup from "./SidebarLinkGroup";
 import { useSidebar } from '../context/SidebarContext'
 
 function Sidebar({ variant = 'default' }) {
-  const { sidebarOpen, setSidebarOpen } = useSidebar()
+  const { sidebarOpen, setSidebarOpen, sidebarExpanded, setSidebarExpanded, hoverExpand, hoverCollapseDelayed, collapse, expand } = useSidebar()
   const location = useLocation();
   const { pathname } = location;
 
   const trigger = useRef(null);
   const sidebar = useRef(null);
 
-  const storedSidebarExpanded = typeof window !== 'undefined' ? localStorage.getItem("sidebar-expanded") : null;
-  const [sidebarExpanded, setSidebarExpanded] = useState(storedSidebarExpanded === null ? false : storedSidebarExpanded === "true");
-
-  // close on click outside
+  // close on click outside (mobile overlay)
   useEffect(() => {
     const clickHandler = ({ target }) => {
       if (!sidebar.current) return;
@@ -37,13 +34,10 @@ function Sidebar({ variant = 'default' }) {
     return () => document.removeEventListener("keydown", keyHandler);
   }, [sidebarOpen, setSidebarOpen]);
 
+  // body class handled by SidebarContext; keep effect for safety
   useEffect(() => {
-    localStorage.setItem("sidebar-expanded", sidebarExpanded);
-    if (sidebarExpanded) {
-      document.querySelector("body").classList.add("sidebar-expanded");
-    } else {
-      document.querySelector("body").classList.remove("sidebar-expanded");
-    }
+    if (typeof window === 'undefined') return
+    try { localStorage.setItem("sidebar-expanded", sidebarExpanded) } catch (e) {}
   }, [sidebarExpanded]);
 
   return (
@@ -60,7 +54,9 @@ function Sidebar({ variant = 'default' }) {
       <div
         id="sidebar"
         ref={sidebar}
-        className={`flex lg:!flex flex-col absolute z-40 left-0 top-0 lg:static lg:left-auto lg:top-auto lg:translate-x-0 h-[100dvh] overflow-y-scroll lg:overflow-y-auto no-scrollbar w-64 lg:w-20 lg:sidebar-expanded:!w-64 2xl:!w-64 shrink-0 bg-white dark:bg-gray-800 p-4 transition-all duration-200 ease-in-out ${sidebarOpen ? "translate-x-0" : "-translate-x-64"} ${variant === 'v2' ? 'border-r border-gray-200 dark:border-gray-700/60' : 'rounded-r-2xl shadow-sm'}`}
+        onMouseEnter={() => hoverExpand()}
+        onMouseLeave={() => hoverCollapseDelayed(200)}
+        className={`flex lg:!flex flex-col absolute z-40 left-0 top-0 lg:static lg:left-auto lg:top-auto lg:translate-x-0 h-[100dvh] overflow-y-scroll lg:overflow-y-auto no-scrollbar ${sidebarExpanded ? 'w-64' : 'w-20'} 2xl:!w-64 shrink-0 bg-white dark:bg-gray-800 p-4 transition-all duration-200 ease-in-out ${sidebarOpen ? "translate-x-0" : "-translate-x-64"} ${variant === 'v2' ? 'border-r border-gray-200 dark:border-gray-700/60' : 'rounded-r-2xl shadow-sm'}`}
       >
         {/* Sidebar header */}
         <div className="flex justify-between mb-10 pr-3 sm:px-2">
@@ -75,6 +71,16 @@ function Sidebar({ variant = 'default' }) {
             <span className="sr-only">Close sidebar</span>
             <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path d="M10.7 18.7l1.4-1.4L7.8 13H20v-2H7.8l4.3-4.3-1.4-1.4L4 12z" />
+            </svg>
+          </button>
+          {/* Collapse/expand arrow for desktop */}
+          <button
+            title={sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+            onClick={() => { if (sidebarExpanded) collapse(); else expand() }}
+            className="hidden lg:flex items-center justify-center absolute -right-4 top-12 w-8 h-10 bg-white dark:bg-gray-800 rounded-r-md shadow-sm text-gray-500 hover:text-gray-700"
+          >
+            <svg className={`w-4 h-4 transform ${sidebarExpanded ? '' : 'rotate-180'}`} viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
             </svg>
           </button>
           {/* Logo */}
