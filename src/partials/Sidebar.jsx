@@ -218,6 +218,129 @@ function Sidebar({ variant = 'default' }) {
                   );
                 }}
               </SidebarLinkGroup>
+              {/* Production sector (Operations, Procurement, QC, Logistics, Finance, People) */}
+              <SidebarLinkGroup activecondition={pathname.includes("inventory") || pathname.includes("work-orders") || pathname.includes("procurement") || pathname.includes("qc") || pathname.includes("logistics") || pathname.includes("finance") || pathname.includes("employees") || pathname.includes("suppliers") || pathname.includes("purchasing") || pathname.includes("reports") }>
+                {(handleClick, open) => {
+                  return (
+                    <React.Fragment>
+                      <a
+                        href="#0"
+                        className={`block text-gray-800 dark:text-gray-100 truncate transition duration-150 ${pathname.includes('inventory') || pathname.includes('work-orders') ? '' : 'hover:text-gray-900 dark:hover:text-white'}`}
+                        onClick={(e) => { e.preventDefault(); handleClick(); if (sidebarExpanded === false) { /* keep collapsed state by default */ } }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <span className="shrink-0 text-2xl">🏭</span>
+                            <span className={`text-sm font-medium ml-4 duration-200 ${sidebarExpanded ? 'opacity-100' : 'hidden'}`}>
+                              Production
+                            </span>
+                          </div>
+                          <div className="flex shrink-0 ml-2">
+                            <svg className={`w-3 h-3 shrink-0 ml-1 fill-current text-gray-400 dark:text-gray-500 ${open && "rotate-180"}`} viewBox="0 0 12 12">
+                              <path d="M5.9 11.4L.5 6l1.4-1.4 4 4 4-4L11.3 6z" />
+                            </svg>
+                          </div>
+                        </div>
+                      </a>
+                      <div className="lg:hidden lg:sidebar-expanded:block 2xl:block">
+                        <ul className={`pl-8 mt-1 ${!open && "hidden"}`}>
+                          {/* Operations */}
+                          <li className="mb-1 last:mb-0">
+                            <div className={`text-xs uppercase text-gray-400 dark:text-gray-500 font-semibold pl-3 ${sidebarExpanded ? '' : 'hidden'}`}>Operations</div>
+                          </li>
+                          <li className="mb-1 last:mb-0">
+                            <NavLink end to="/Dashboard" className={({ isActive }) => "block transition duration-150 truncate " + (isActive ? "text-violet-500" : "text-gray-500/90 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200") }>
+                              <div className="flex items-center">
+                                <span className="shrink-0 text-2xl">📊</span>
+                                <span className={`text-sm font-medium ml-4 duration-200 ${sidebarExpanded ? 'opacity-100' : 'hidden'}`}>Dashboard</span>
+                              </div>
+                            </NavLink>
+                          </li>
+                          <li className="mb-1 last:mb-0">
+                            <NavLink end to="/inventory" className={({ isActive }) => "block transition duration-150 truncate " + (isActive ? "text-violet-500" : "text-gray-500/90 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200") }>
+                              <div className="flex items-center">
+                                <span className="shrink-0 text-2xl">📦</span>
+                                <span className={`text-sm font-medium ml-4 duration-200 ${sidebarExpanded ? 'opacity-100' : 'hidden'}`}>Inventory</span>
+                              </div>
+                            </NavLink>
+                          </li>
+                          <li className="mb-1 last:mb-0">
+                            <NavLink end to="/work-orders" className={({ isActive }) => "block transition duration-150 truncate " + (isActive ? "text-violet-500" : "text-gray-500/90 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200") }>
+                              <div className="flex items-center">
+                                <span className="shrink-0 text-2xl">🛠️</span>
+                                <span className={`text-sm font-medium ml-4 duration-200 ${sidebarExpanded ? 'opacity-100' : 'hidden'}`}>Work Orders</span>
+                              </div>
+                            </NavLink>
+                          </li>
+
+                          {/* Procurement & Suppliers */}
+                          <li className="mt-3 mb-1 last:mb-0">
+                            <div className={`text-xs uppercase text-gray-400 dark:text-gray-500 font-semibold pl-3 ${sidebarExpanded ? '' : 'hidden'}`}>Procurement</div>
+                          </li>
+                          <li className="mb-1 last:mb-0">
+                            <NavLink end to="/procurement" className={({ isActive }) => "block transition duration-150 truncate " + (isActive ? "text-violet-500" : "text-gray-500/90 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200") }>
+                              <div className="flex items-center">
+                                <span className="shrink-0 text-2xl">🧾</span>
+                                <span className={`text-sm font-medium ml-4 duration-200 ${sidebarExpanded ? 'opacity-100' : 'hidden'}`}>Procurement</span>
+                              </div>
+                            </NavLink>
+                          </li>
+                          <li className="mb-1 last:mb-0">
+                            <NavLink end to="/suppliers" className={({ isActive }) => "block transition duration-150 truncate " + (isActive ? "text-violet-500" : "text-gray-500/90 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200") }>
+                              <div className="flex items-center">
+                                <span className="shrink-0 text-2xl">🤝</span>
+                                <span className={`text-sm font-medium ml-4 duration-200 ${sidebarExpanded ? 'opacity-100' : 'hidden'}`}>Suppliers</span>
+                              </div>
+                            </NavLink>
+                          </li>
+
+                          {/* QC & Logistics */}
+                          <li className="mt-3 mb-1 last:mb-0">
+                            <div className={`text-xs uppercase text-gray-400 dark:text-gray-500 font-semibold pl-3 ${sidebarExpanded ? '' : 'hidden'}`}>Quality & Logistics</div>
+                          </li>
+                          <li className="mb-1 last:mb-0">
+                            <NavLink end to="/qc" className={({ isActive }) => "block transition duration-150 truncate " + (isActive ? "text-violet-500" : "text-gray-500/90 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200") }>
+                              <div className="flex items-center">
+                                <span className="shrink-0 text-2xl">🔍</span>
+                                <span className={`text-sm font-medium ml-4 duration-200 ${sidebarExpanded ? 'opacity-100' : 'hidden'}`}>QC</span>
+                              </div>
+                            </NavLink>
+                          </li>
+                          <li className="mb-1 last:mb-0">
+                            <NavLink end to="/logistics" className={({ isActive }) => "block transition duration-150 truncate " + (isActive ? "text-violet-500" : "text-gray-500/90 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200") }>
+                              <div className="flex items-center">
+                                <span className="shrink-0 text-2xl">🚚</span>
+                                <span className={`text-sm font-medium ml-4 duration-200 ${sidebarExpanded ? 'opacity-100' : 'hidden'}`}>Logistics</span>
+                              </div>
+                            </NavLink>
+                          </li>
+
+                          {/* Finance & People */}
+                          <li className="mt-3 mb-1 last:mb-0">
+                            <div className={`text-xs uppercase text-gray-400 dark:text-gray-500 font-semibold pl-3 ${sidebarExpanded ? '' : 'hidden'}`}>Finance & People</div>
+                          </li>
+                          <li className="mb-1 last:mb-0">
+                            <NavLink end to="/finance-docs" className={({ isActive }) => "block transition duration-150 truncate " + (isActive ? "text-violet-500" : "text-gray-500/90 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200") }>
+                              <div className="flex items-center">
+                                <span className="shrink-0 text-2xl">💰</span>
+                                <span className={`text-sm font-medium ml-4 duration-200 ${sidebarExpanded ? 'opacity-100' : 'hidden'}`}>Finance Docs</span>
+                              </div>
+                            </NavLink>
+                          </li>
+                          <li className="mb-1 last:mb-0">
+                            <NavLink end to="/employees" className={({ isActive }) => "block transition duration-150 truncate " + (isActive ? "text-violet-500" : "text-gray-500/90 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200") }>
+                              <div className="flex items-center">
+                                <span className="shrink-0 text-2xl">👥</span>
+                                <span className={`text-sm font-medium ml-4 duration-200 ${sidebarExpanded ? 'opacity-100' : 'hidden'}`}>Employees</span>
+                              </div>
+                            </NavLink>
+                          </li>
+                        </ul>
+                      </div>
+                    </React.Fragment>
+                  )
+                }}
+              </SidebarLinkGroup>
               {/* E-Commerce */}
               <SidebarLinkGroup activecondition={pathname.includes("ecommerce")}>
                 {(handleClick, open) => {
