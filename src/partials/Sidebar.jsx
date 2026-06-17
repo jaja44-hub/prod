@@ -1,237 +1,91 @@
-import React, { useEffect, useRef } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import React from "react";
+import { NavLink } from "react-router-dom";
 import { useSidebar } from "../context/SidebarContext";
 
 function Sidebar() {
-  const { sidebarOpen, setSidebarOpen, sidebarExpanded, setSidebarExpanded } = useSidebar();
-  const { pathname } = useLocation();
+  const { sidebarExpanded } = useSidebar();
 
   const sections = [
     {
-      title: 'Operations',
+      title: "Operations",
       items: [
-        { to: '/Dashboard', label: 'Dashboard' },
-        { to: '/inventory', label: 'Inventory' },
-        { to: '/work-orders', label: 'Work Orders' },
-        { to: '/orders', label: 'Orders' },
-        { to: '/barcode', label: 'Barcode' },
+        { to: "/dashboard", label: "Dashboard" },
+        { to: "/inventory", label: "Inventory" },
+        { to: "/work-orders", label: "Work Orders" },
+        { to: "/orders", label: "Orders" },
       ],
     },
     {
-      title: 'Procurement',
+      title: "Procurement",
       items: [
-        { to: '/procurement', label: 'Procurement' },
-        { to: '/purchasing', label: 'Purchasing' },
-        { to: '/suppliers', label: 'Suppliers' },
+        { to: "/procurement", label: "Procurement" },
+        { to: "/purchasing", label: "Purchasing" },
+        { to: "/suppliers", label: "Suppliers" },
       ],
     },
     {
-      title: 'Quality & Logistics',
+      title: "Quality & Logistics",
       items: [
-        { to: '/qc', label: 'QC' },
-        { to: '/logistics', label: 'Logistics' },
+        { to: "/qc", label: "QC" },
+        { to: "/logistics", label: "Logistics" },
       ],
     },
     {
-      title: 'Finance',
+      title: "Finance",
       items: [
-        { to: '/reports', label: 'Reports' },
-        { to: '/finance-docs', label: 'Finance Docs' },
-        { to: '/invoices', label: 'Invoices' },
+        { to: "/reports", label: "Reports" },
+        { to: "/invoices", label: "Invoices" },
       ],
     },
     {
-      title: 'People',
+      title: "People",
       items: [
-        { to: '/employees', label: 'Employees' },
-        { to: '/payroll', label: 'Payroll' },
+        { to: "/employees", label: "Employees" },
+        { to: "/payroll", label: "Payroll" },
       ],
     },
     {
-      title: 'Sales & CRM',
+      title: "Sales & CRM",
       items: [
-        { to: '/sales', label: 'Sales' },
-        { to: '/customers', label: 'Customers' },
+        { to: "/sales", label: "Sales" },
+        { to: "/customers", label: "Customers" },
       ],
     },
   ];
 
-  const trigger = useRef(null);
-  const sidebar = useRef(null);
-
-  // close overlay on route change only for small screens
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.innerWidth < 1024) setSidebarOpen(false);
-  }, [pathname, setSidebarOpen]);
-
-  // close on click outside (mobile overlay)
-  useEffect(() => {
-    const clickHandler = ({ target }) => {
-      if (!sidebar.current) return;
-      if (!sidebarOpen || sidebar.current.contains(target) || (trigger.current && trigger.current.contains(target))) return;
-      setSidebarOpen(false);
-    };
-    document.addEventListener("click", clickHandler);
-    return () => document.removeEventListener("click", clickHandler);
-  }, [sidebarOpen, setSidebarOpen]);
-
-  // close if the esc key is pressed
-  useEffect(() => {
-    const keyHandler = (e) => {
-      if (!sidebarOpen || e.key !== "Escape") return;
-      setSidebarOpen(false);
-    };
-    document.addEventListener("keydown", keyHandler);
-    return () => document.removeEventListener("keydown", keyHandler);
-  }, [sidebarOpen, setSidebarOpen]);
-
   return (
-    <div>
-      {/* Mobile backdrop */}
-      <div
-        className={`fixed inset-0 bg-slate-900 bg-opacity-30 z-40 lg:hidden transition-opacity duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-        aria-hidden="true"
-      />
-
-      {/* Sidebar */}
-      <div
-        ref={sidebar}
-        className={`fixed left-0 top-0 z-40 h-full w-64 transform bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-transform duration-200 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-64 lg:translate-x-0'
-        }`}
-      >
-        <div className="h-full flex flex-col py-6 overflow-y-auto">
-          <div className="px-4">
-            <div className="text-sm font-semibold text-slate-500 dark:text-slate-400">Production</div>
-          </div>
-
-          <nav className="mt-4 px-2 space-y-1">
-            {sections.map((section) => (
-              <div key={section.title}>
-                <SectionTitle title={section.title} symbol="┃" />
-                <ul className="mt-1 space-y-0.5">
-                  {section.items.map((it) => (
-                    <NavItem
-                      key={it.to}
-                      to={it.to}
-                      label={it.label}
-                      active={pathname === it.to || pathname.includes(it.to.replace('/', ''))}
-                      expanded={true}
-                      onClick={() => setSidebarExpanded(true)}
-                    />
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </nav>
-
-          <div className="mt-auto px-4 py-3">
-            <button
-              className="w-full text-sm text-left text-slate-600 dark:text-slate-300"
-              onClick={() => setSidebarExpanded(!sidebarExpanded)}
-            >
-              {sidebarExpanded ? 'Collapse' : 'Expand'}
-            </button>
-          </div>
+    <aside className="w-64 bg-white dark:bg-gray-900 h-full border-r">
+      <div className="p-4">
+        <div className="mb-6">
+          <div className="text-lg font-semibold">Production</div>
         </div>
+        <nav>
+          {sections.map((section) => (
+            <div key={section.title} className="mb-6">
+              <div className="text-xs text-gray-500 uppercase font-medium mb-2">{section.title}</div>
+              <ul>
+                {section.items.map((item) => (
+                  <li key={item.to} className="mb-1">
+                    <NavLink
+                      to={item.to}
+                      className={({ isActive }) =>
+                        "block text-sm px-2 py-1 rounded " + (isActive ? "text-violet-600" : "text-gray-700 hover:text-gray-900")
+                      }
+                    >
+                      <span className={sidebarExpanded ? "opacity-100" : "opacity-100"}>{item.label}</span>
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </nav>
       </div>
-    </div>
-  );
-}
-
-function NavItem({ to, label, active, expanded, onClick }) {
-  return (
-    <li>
-      <NavLink
-        end
-        to={to}
-        className={({ isActive }) =>
-          'block px-3 py-2 rounded-md text-sm transition ' + (isActive || active ? 'text-violet-500' : 'text-slate-700 dark:text-slate-300 hover:text-slate-900')
-        }
-        onClick={onClick}
-      >
-        <span className={`${expanded ? 'inline-block' : 'hidden'} truncate`}>{label}</span>
-      </NavLink>
-    </li>
-  );
-}
-
-function SectionTitle({ title, symbol = '┃' }) {
-  return (
-    <div className="mt-4 px-3 text-xs uppercase text-gray-400 font-semibold flex items-center gap-2">
-      <span className="text-gray-400">{symbol}</span>
-      <span>{title}</span>
-    </div>
+    </aside>
   );
 }
 
 export default Sidebar;
-                          <li className="mb-1 last:mb-0">
-                            <NavLink
-                              end
-                              //to="https://cruip.com/mosaic/"
-                              className={({ isActive }) =>
-                                "block transition duration-150 truncate " + (isActive ? "text-violet-500" : "text-gray-500/90 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200")
-                              }
-                            >
-                              <span className="text-sm font-medium lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">
-                                Single Product
-                              </span>
-                            </NavLink>
-                          </li>
-                          <li className="mb-1 last:mb-0">
-                            <NavLink
-                              end
-                              //to="https://cruip.com/mosaic/"
-                              className={({ isActive }) =>
-                                "block transition duration-150 truncate " + (isActive ? "text-violet-500" : "text-gray-500/90 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200")
-                              }
-                            >
-                              <span className="text-sm font-medium lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">
-                                Cart
-                              </span>
-                            </NavLink>
-                          </li>
-                          <li className="mb-1 last:mb-0">
-                            <NavLink
-                              end
-                              //to="https://cruip.com/mosaic/"
-                              className={({ isActive }) =>
-                                "block transition duration-150 truncate " + (isActive ? "text-violet-500" : "text-gray-500/90 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200")
-                              }
-                            >
-                              <span className="text-sm font-medium lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">
-                                Cart 2
-                              </span>
-                            </NavLink>
-                          </li>
-                          <li className="mb-1 last:mb-0">
-                            <NavLink
-                              end
-                              //to="https://cruip.com/mosaic/"
-                              className={({ isActive }) =>
-                                "block transition duration-150 truncate " + (isActive ? "text-violet-500" : "text-gray-500/90 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200")
-                              }
-                            >
-                              <span className="text-sm font-medium lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">
-                                Cart 3
-                              </span>
-                            </NavLink>
-                          </li>
-                          <li className="mb-1 last:mb-0">
-                            <NavLink
-                              end
-                              //to="https://cruip.com/mosaic/"
-                              className={({ isActive }) =>
-                                "block transition duration-150 truncate " + (isActive ? "text-violet-500" : "text-gray-500/90 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200")
-                              }
-                            >
-                              <span className="text-sm font-medium lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">
-                                Pay
-                              </span>
-                            </NavLink>
-                          </li>
                         </ul>
                       </div>
                     </React.Fragment>
