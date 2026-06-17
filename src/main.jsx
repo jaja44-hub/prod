@@ -1,19 +1,15 @@
 import React from 'react';
-import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter as Router } from 'react-router-dom';
+import ThemeProvider from './utils/ThemeContext';
 import App from './App';
-import { TenantProvider } from './context/TenantContext';
-import * as GW from './services/ServiceGateway';
-import './css/style.css';
 
-function Main() {
-  return (
-    <BrowserRouter>
-      <TenantProvider onTenantReady={(tenantId) => GW.setActiveTenant(tenantId)}>
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <Router>
+      <ThemeProvider>
         <App />
-      </TenantProvider>
-    </BrowserRouter>
-  );
-}
-
-createRoot(document.getElementById('root')).render(<Main />);
+      </ThemeProvider>
+    </Router>
+  </React.StrictMode>
+);
