@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { WorkOrderService } from '../services/WorkOrderService'
 
 export default function WorkOrders() {
@@ -32,16 +33,19 @@ export default function WorkOrders() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
   const pageItems = filtered.slice((page - 1) * pageSize, page * pageSize)
 
+  const navigate = useNavigate()
+
   function openCreate() {
-    setEditing(null)
-    setForm({ title: '', description: '', priority: 'normal' })
-    setShowForm(true)
+    navigate('/work-orders/new')
   }
 
   function openEdit(o) {
-    setEditing(o)
-    setForm({ title: o.title || '', description: o.description || '', priority: o.priority || 'normal' })
-    setShowForm(true)
+    if (o && o.id) navigate(`/work-orders/${o.id}`)
+    else {
+      setEditing(o)
+      setForm({ title: o.title || '', description: o.description || '', priority: o.priority || 'normal' })
+      setShowForm(true)
+    }
   }
 
   async function submitForm(e) {

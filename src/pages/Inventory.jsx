@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { InventoryService } from '../services/InventoryService'
 
 export default function Inventory() {
@@ -32,16 +33,21 @@ export default function Inventory() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
   const pageItems = filtered.slice((page - 1) * pageSize, page * pageSize)
 
+  const navigate = useNavigate()
+
   function openCreate() {
-    setEditing(null)
-    setForm({ sku: '', name: '', quantity: 0, unit: 'pcs', location: '' })
-    setShowForm(true)
+    // navigate to route-based create
+    navigate('/inventory/new')
   }
 
   function openEdit(it) {
-    setEditing(it)
-    setForm({ sku: it.sku || '', name: it.name || '', quantity: it.quantity || 0, unit: it.unit || 'pcs', location: it.location || '' })
-    setShowForm(true)
+    // navigate to item detail/edit route
+    if (it && it.id) navigate(`/inventory/${it.id}`)
+    else {
+      setEditing(it)
+      setForm({ sku: it.sku || '', name: it.name || '', quantity: it.quantity || 0, unit: it.unit || 'pcs', location: it.location || '' })
+      setShowForm(true)
+    }
   }
 
   async function submitForm(e) {

@@ -11,6 +11,9 @@ import {
   getDoc,
   addDoc,
   updateDoc,
+  orderBy,
+  limit as fbLimit,
+  startAfter as fbStartAfter,
 } from 'firebase/firestore';
 
 let _activeTenantId = null;
@@ -52,6 +55,25 @@ export async function listTenantCollection(collectionName, ...constraints) {
   const q = tenantQuery(collectionName, ...constraints);
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+// Basic paginated fetch using createdAt ordering. Returns { items, lastId }
+export async function listTenantCollectionPage(collectionName, pageSize = 25, startAfterId = null) {
+  const firestore = requireDb();
+  const tenantId = resolveTenantId();
+  const baseCol = collection(firestore, collectionName);
+  let constraints = [where('tenantId', '==', tenantId), orderBy('createdAt', 'desc'), fbLimit(Number(pageSize || 25))];
+  if (startAfterId) {
+    const startDoc = await getDoc(doc(firestore, collectionName, startAfterId));
+    if (startDoc && startDoc.exists()) {
+      constraints = [where('tenantId', '==', tenantId), orderBy('createdAt', 'desc'), fbStartAfter(startDoc), fbLimit(Number(pageSize || 25))];
+    }
+  }
+  const q = query(baseCol, ...constraints);
+  const snap = await getDocs(q);
+  const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const last = snap.docs[snap.docs.length - 1];
+  return { items, lastId: last ? last.id : null };
 }
 
 export async function getTenantDoc(collectionName, id) {
