@@ -24,7 +24,7 @@ function Header({
 
             {/* Hamburger button */}
             <button
-              className="text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 lg:hidden"
+              className="text-gray-500 hover:text-gray-600 dark:hover:text-gray-400"
               aria-controls="sidebar"
               aria-expanded={sidebarOpen}
               onClick={(e) => { e.stopPropagation(); setSidebarOpen(!sidebarOpen); }}
