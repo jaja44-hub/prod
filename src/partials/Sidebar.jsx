@@ -6,6 +6,56 @@ function Sidebar() {
   const { sidebarOpen, setSidebarOpen, sidebarExpanded, setSidebarExpanded } = useSidebar();
   const { pathname } = useLocation();
 
+  const sections = [
+    {
+      title: 'Operations',
+      items: [
+        { to: '/Dashboard', label: 'Dashboard' },
+        { to: '/inventory', label: 'Inventory' },
+        { to: '/work-orders', label: 'Work Orders' },
+        { to: '/orders', label: 'Orders' },
+        { to: '/barcode', label: 'Barcode' },
+      ],
+    },
+    {
+      title: 'Procurement',
+      items: [
+        { to: '/procurement', label: 'Procurement' },
+        { to: '/purchasing', label: 'Purchasing' },
+        { to: '/suppliers', label: 'Suppliers' },
+      ],
+    },
+    {
+      title: 'Quality & Logistics',
+      items: [
+        { to: '/qc', label: 'QC' },
+        { to: '/logistics', label: 'Logistics' },
+      ],
+    },
+    {
+      title: 'Finance',
+      items: [
+        { to: '/reports', label: 'Reports' },
+        { to: '/finance-docs', label: 'Finance Docs' },
+        { to: '/invoices', label: 'Invoices' },
+      ],
+    },
+    {
+      title: 'People',
+      items: [
+        { to: '/employees', label: 'Employees' },
+        { to: '/payroll', label: 'Payroll' },
+      ],
+    },
+    {
+      title: 'Sales & CRM',
+      items: [
+        { to: '/sales', label: 'Sales' },
+        { to: '/customers', label: 'Customers' },
+      ],
+    },
+  ];
+
   const trigger = useRef(null);
   const sidebar = useRef(null);
 
@@ -57,28 +107,23 @@ function Sidebar() {
           </div>
 
           <nav className="mt-4 px-2 space-y-1">
-            <NavItem to="/Dashboard" label="Dashboard" active={pathname === '/Dashboard'} expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
-            <NavItem to="/inventory" label="Inventory" active={pathname.includes('/inventory')} expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
-            <NavItem to="/work-orders" label="Work Orders" active={pathname.includes('/work-orders')} expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
-            <NavItem to="/orders" label="Orders" expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
-            <NavItem to="/barcode" label="Barcode" expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
-
-            <SectionTitle title="Procurement" />
-            <NavItem to="/procurement" label="Procurement" expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
-            <NavItem to="/purchasing" label="Purchasing" expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
-
-            <SectionTitle title="Quality & Logistics" />
-            <NavItem to="/qc" label="QC" expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
-            <NavItem to="/logistics" label="Logistics" expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
-
-            <SectionTitle title="Reports & Finance" />
-            <NavItem to="/reports" label="Reports" expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
-            <NavItem to="/finance-docs" label="Finance Docs" expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
-
-            <SectionTitle title="People & Sales" />
-            <NavItem to="/sales" label="Sales" expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
-            <NavItem to="/payroll" label="Payroll" expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
-            <NavItem to="/employees" label="Employees" expanded={sidebarExpanded} onClick={() => setSidebarExpanded(true)} />
+            {sections.map((section) => (
+              <div key={section.title}>
+                <SectionTitle title={section.title} symbol="┃" />
+                <ul className="mt-1 space-y-0.5">
+                  {section.items.map((it) => (
+                    <NavItem
+                      key={it.to}
+                      to={it.to}
+                      label={it.label}
+                      active={pathname === it.to || pathname.includes(it.to.replace('/', ''))}
+                      expanded={true}
+                      onClick={() => setSidebarExpanded(true)}
+                    />
+                  ))}
+                </ul>
+              </div>
+            ))}
           </nav>
 
           <div className="mt-auto px-4 py-3">
