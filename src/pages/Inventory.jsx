@@ -5,24 +5,28 @@ import { InventoryService } from '../services/InventoryService'
 export default function Inventory() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
-  const [page, setPage] = useState(1)
-  const [pageSize] = useState(10)
+  const [pageSize] = useState(25)
+  const [lastId, setLastId] = useState(null)
+  const [endReached, setEndReached] = useState(false)
   const [queryText, setQueryText] = useState('')
-  const [showForm, setShowForm] = useState(false)
-  const [editing, setEditing] = useState(null)
-  const [form, setForm] = useState({ sku: '', name: '', quantity: 0, unit: 'pcs', location: '' })
+
+  const navigate = useNavigate()
 
   useEffect(() => {
     let mounted = true
-    async function load() {
+    async function loadFirst() {
       setLoading(true)
-      const data = await InventoryService.listItems()
-      if (mounted) setItems(data || [])
+      const res = await InventoryService.listItemsPage(pageSize, null)
+      if (mounted) {
+        setItems(res.items || [])
+        setLastId(res.lastId)
+        setEndReached(!(res.items && res.items.length))
+      }
       setLoading(false)
     }
-    load()
+    loadFirst()
     return () => (mounted = false)
-  }, [])
+  }, [pageSize])
 
   const filtered = items.filter((it) => {
     if (!queryText) return true
@@ -30,37 +34,12 @@ export default function Inventory() {
     return (it.name || '').toLowerCase().includes(q) || (it.sku || '').toLowerCase().includes(q)
   })
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
-  const pageItems = filtered.slice((page - 1) * pageSize, page * pageSize)
-
-  const navigate = useNavigate()
-
   function openCreate() {
-    // navigate to route-based create
     navigate('/inventory/new')
   }
 
   function openEdit(it) {
-    // navigate to item detail/edit route
     if (it && it.id) navigate(`/inventory/${it.id}`)
-    else {
-      setEditing(it)
-      setForm({ sku: it.sku || '', name: it.name || '', quantity: it.quantity || 0, unit: it.unit || 'pcs', location: it.location || '' })
-      setShowForm(true)
-    }
-  }
-
-  async function submitForm(e) {
-    e.preventDefault()
-    if (editing) {
-      await InventoryService.updateItem(editing.id, { ...form })
-      const updated = items.map((it) => (it.id === editing.id ? { ...it, ...form } : it))
-      setItems(updated)
-    } else {
-      const created = await InventoryService.createItem(form)
-      setItems([...(items || []), created])
-    }
-    setShowForm(false)
   }
 
   return (
@@ -69,19 +48,18 @@ export default function Inventory() {
       <p className="text-sm text-gray-600 mb-4">Production sector inventory items (tenant-scoped).</p>
       <div className="bg-white dark:bg-gray-800 p-4 rounded shadow-sm">
         <div className="flex items-center justify-between mb-4">
-            <button onClick={() => { setQueryText(''); setPage(1) }} className="text-xs text-gray-500">Clear</button>
+          <div className="flex items-center space-x-3">
+            <input value={queryText} onChange={(e) => setQueryText(e.target.value)} placeholder="Search SKU or name" className="px-3 py-1 rounded border" />
+            <button onClick={() => setQueryText('')} className="text-xs text-gray-500">Clear</button>
           </div>
           <div>
             <button onClick={openCreate} className="bg-violet-600 text-white px-3 py-1 rounded">New Item</button>
-      const [pageSize] = useState(25)
-      const [lastId, setLastId] = useState(null)
-      const [endReached, setEndReached] = useState(false)
           </div>
         </div>
 
         {loading ? (
           <p className="text-gray-500">Loading…</p>
-        ) : pageItems.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <p className="text-gray-500">No items found for this tenant.</p>
         ) : (
           <>
@@ -95,24 +73,9 @@ export default function Inventory() {
                   <th className="py-2">Location</th>
                   <th className="py-2"> </th>
                 </tr>
-      useEffect(() => {
-        let mounted = true
-        async function loadFirst() {
-          setLoading(true)
-          const res = await InventoryService.listItemsPage(pageSize, null)
-          if (mounted) {
-            setItems(res.items || [])
-            setLastId(res.lastId)
-            setEndReached(!(res.items && res.items.length))
-          }
-          setLoading(false)
-        }
-        loadFirst()
-        return () => (mounted = false)
-      }, [pageSize])
-
-      const pageItems = filtered
-                {pageItems.map((it) => (
+              </thead>
+              <tbody>
+                {filtered.map((it) => (
                   <tr key={it.id} className="border-t">
                     <td className="py-2">{it.sku}</td>
                     <td className="py-2">{it.name}</td>
@@ -120,7 +83,7 @@ export default function Inventory() {
                     <td className="py-2">{it.unit}</td>
                     <td className="py-2">{it.location}</td>
                     <td className="py-2">
-                      <button onClick={() => openEdit(it)} className="text-xs text-violet-600">Edit</button>
+                      <button onClick={() => openEdit(it)} className="text-xs text-violet-600">View / Edit</button>
                     </td>
                   </tr>
                 ))}
@@ -128,44 +91,23 @@ export default function Inventory() {
             </table>
 
             <div className="flex items-center justify-between mt-4">
-              <div className="text-xs text-gray-500">Page {page} of {totalPages}</div>
-              <div className="space-x-2">
-                <button disabled={page<=1} onClick={() => setPage((p)=>Math.max(1,p-1))} className="px-2 py-1 border rounded disabled:opacity-50">Prev</button>
-                <button disabled={page>=totalPages} onClick={() => setPage((p)=>Math.min(totalPages,p+1))} className="px-2 py-1 border rounded disabled:opacity-50">Next</button>
+              <div className="text-xs text-gray-500">Loaded {items.length} items</div>
+              <div>
+                {!endReached ? (
+                  <button onClick={async () => {
+                    setLoading(true)
+                    const res = await InventoryService.listItemsPage(pageSize, lastId)
+                    setItems([...(items || []), ...(res.items || [])])
+                    setLastId(res.lastId)
+                    if (!res.items || res.items.length === 0) setEndReached(true)
+                    setLoading(false)
+                  }} className="px-3 py-1 border rounded">Load more</button>
+                ) : (
+                  <span className="text-xs text-gray-500">End of results</span>
+                )}
               </div>
             </div>
           </>
-        )}
-
-        {/* Form modal */}
-        {showForm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-            <form onSubmit={submitForm} className="bg-white dark:bg-gray-800 p-6 rounded shadow-lg w-11/12 max-w-md">
-              <h3 className="text-lg font-semibold mb-3">{editing ? 'Edit Item' : 'Create Item'}</h3>
-              <label className="block mb-2 text-xs">SKU</label>
-              <input value={form.sku} onChange={(e)=>setForm({...form, sku:e.target.value})} className="w-full p-2 border rounded mb-2" />
-              <label className="block mb-2 text-xs">Name</label>
-              <input value={form.name} onChange={(e)=>setForm({...form, name:e.target.value})} className="w-full p-2 border rounded mb-2" />
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label className="block mb-2 text-xs">Qty</label>
-                  <input type="number" value={form.quantity} onChange={(e)=>setForm({...form, quantity: Number(e.target.value)})} className="w-full p-2 border rounded" />
-                </div>
-                <div>
-                  <label className="block mb-2 text-xs">Unit</label>
-                  <input value={form.unit} onChange={(e)=>setForm({...form, unit:e.target.value})} className="w-full p-2 border rounded" />
-                </div>
-                <div>
-                  <label className="block mb-2 text-xs">Location</label>
-                  <input value={form.location} onChange={(e)=>setForm({...form, location:e.target.value})} className="w-full p-2 border rounded" />
-                </div>
-              </div>
-              <div className="mt-4 flex justify-end space-x-2">
-                <button type="button" onClick={()=>setShowForm(false)} className="px-3 py-1 border rounded">Cancel</button>
-                <button type="submit" className="px-3 py-1 bg-violet-600 text-white rounded">Save</button>
-              </div>
-            </form>
-          </div>
         )}
       </div>
     </div>
