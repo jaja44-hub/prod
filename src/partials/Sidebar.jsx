@@ -54,7 +54,7 @@ function Sidebar() {
   ];
 
   return (
-    <aside className="w-64 bg-white dark:bg-gray-900 h-full border-r">
+    <aside className="w-64 bg-white dark:bg-gray-900 min-h-screen h-screen border-r shrink-0">
       <div className="p-4">
         <div className="mb-6">
           <div className="text-lg font-semibold">Production</div>

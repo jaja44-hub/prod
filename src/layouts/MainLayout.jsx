@@ -19,9 +19,11 @@ function LayoutContent() {
 export default function MainLayout() {
   return (
     <SidebarProvider>
-      <div className="app-root min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="app-root min-h-screen bg-gray-50 dark:bg-gray-900 flex">
         <Sidebar />
-        <LayoutContent />
+        <div className="flex-1 flex flex-col">
+          <LayoutContent />
+        </div>
       </div>
     </SidebarProvider>
   )
