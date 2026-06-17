@@ -54,6 +54,41 @@ function Sidebar() {
   ];
 
   const [openSections, setOpenSections] = React.useState(() => Object.fromEntries(sections.map(s => [s.title, false])));
+  const hoverExpandedRef = React.useRef(false);
+
+  const icons = {
+    Operations: (
+      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 13h8V3H3v10zM13 21h8v-8h-8v8zM13 3v6h8V3h-8zM3 21h8v-6H3v6z" fill="currentColor" />
+      </svg>
+    ),
+    Procurement: (
+      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 6h18v2H3V6zm2 4h14v10H5V10z" fill="currentColor" />
+      </svg>
+    ),
+    "Quality & Logistics": (
+      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z" fill="currentColor" />
+      </svg>
+    ),
+    Finance: (
+      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 1v22M5 5h14M5 19h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+    People: (
+      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M16 11c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM6 11c1.657 0 3-1.343 3-3S7.657 5 6 5 3 6.343 3 8s1.343 3 3 3zM2 20c0-2.5 4-4 10-4s10 1.5 10 4v1H2v-1z" fill="currentColor" />
+      </svg>
+    ),
+    "Sales & CRM": (
+      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 3v18h18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M21 7l-6 6-4-4-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  };
 
   const toggleSection = (title) => {
     setOpenSections((prev) => ({ ...prev, [title]: !prev[title] }));
@@ -74,7 +109,7 @@ function Sidebar() {
       <div className="p-3">
         {/* Header area with title and collapse control */}
         <div className="mb-3 flex items-center justify-between">
-          <div className="text-sm font-semibold truncate">Production</div>
+          <div className="hidden lg:block text-sm font-semibold truncate">Production</div>
           <button
             aria-label={sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
             onClick={() => { sidebarExpanded ? collapse() : expand(); }}
@@ -94,7 +129,21 @@ function Sidebar() {
 
         {/* Collapsed-symbols view (icons only) */}
         {!sidebarExpanded && (
-          <div className="flex flex-col gap-2 items-center">
+          <div
+            className="flex flex-col gap-2 items-center"
+            onMouseEnter={() => {
+              if (!sidebarExpanded) {
+                hoverExpandedRef.current = true;
+                expand();
+              }
+            }}
+            onMouseLeave={() => {
+              if (hoverExpandedRef.current) {
+                hoverExpandedRef.current = false;
+                setTimeout(() => { if (!sidebarExpanded) collapse(); }, 250);
+              }
+            }}
+          >
             {sections.map((s) => (
               <button
                 key={s.title}
@@ -103,7 +152,7 @@ function Sidebar() {
                 className="w-10 h-10 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-800"
                 aria-label={`Open ${s.title}`}
               >
-                <span className="text-sm font-medium">{s.title.charAt(0)}</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{icons[s.title] || s.title.charAt(0)}</span>
               </button>
             ))}
             <div className="mt-2 w-full" />
