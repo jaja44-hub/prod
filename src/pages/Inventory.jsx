@@ -69,12 +69,13 @@ export default function Inventory() {
       <p className="text-sm text-gray-600 mb-4">Production sector inventory items (tenant-scoped).</p>
       <div className="bg-white dark:bg-gray-800 p-4 rounded shadow-sm">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <input value={queryText} onChange={(e) => { setQueryText(e.target.value); setPage(1) }} placeholder="Search SKU or name" className="px-3 py-1 rounded border" />
             <button onClick={() => { setQueryText(''); setPage(1) }} className="text-xs text-gray-500">Clear</button>
           </div>
           <div>
             <button onClick={openCreate} className="bg-violet-600 text-white px-3 py-1 rounded">New Item</button>
+      const [pageSize] = useState(25)
+      const [lastId, setLastId] = useState(null)
+      const [endReached, setEndReached] = useState(false)
           </div>
         </div>
 
@@ -94,8 +95,23 @@ export default function Inventory() {
                   <th className="py-2">Location</th>
                   <th className="py-2"> </th>
                 </tr>
-              </thead>
-              <tbody>
+      useEffect(() => {
+        let mounted = true
+        async function loadFirst() {
+          setLoading(true)
+          const res = await InventoryService.listItemsPage(pageSize, null)
+          if (mounted) {
+            setItems(res.items || [])
+            setLastId(res.lastId)
+            setEndReached(!(res.items && res.items.length))
+          }
+          setLoading(false)
+        }
+        loadFirst()
+        return () => (mounted = false)
+      }, [pageSize])
+
+      const pageItems = filtered
                 {pageItems.map((it) => (
                   <tr key={it.id} className="border-t">
                     <td className="py-2">{it.sku}</td>

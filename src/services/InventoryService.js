@@ -9,6 +9,14 @@ export const InventoryService = {
     }
   },
 
+  async listItemsPage(pageSize = 25, startAfterId = null) {
+    try {
+      return await GW.listTenantCollectionPage('inventory_items', pageSize, startAfterId);
+    } catch (err) {
+      return { items: [], lastId: null };
+    }
+  },
+
   async getItem(id) {
     return GW.getTenantDoc('inventory_items', id);
   },

@@ -5,24 +5,29 @@ import { WorkOrderService } from '../services/WorkOrderService'
 export default function WorkOrders() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
-  const [page, setPage] = useState(1)
-  const [pageSize] = useState(10)
+  const [pageSize] = useState(25)
   const [queryText, setQueryText] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState({ title: '', description: '', priority: 'normal' })
+  const [lastId, setLastId] = useState(null)
+  const [endReached, setEndReached] = useState(false)
 
   useEffect(() => {
     let mounted = true
-    async function load() {
+    async function loadFirst() {
       setLoading(true)
-      const data = await WorkOrderService.listWorkOrders()
-      if (mounted) setOrders(data || [])
+      const res = await WorkOrderService.listWorkOrdersPage(pageSize, null)
+      if (mounted) {
+        setOrders(res.items || [])
+        setLastId(res.lastId)
+        setEndReached(!(res.items && res.items.length))
+      }
       setLoading(false)
     }
-    load()
+    loadFirst()
     return () => (mounted = false)
-  }, [])
+  }, [pageSize])
 
   const filtered = orders.filter((o) => {
     if (!queryText) return true
@@ -30,8 +35,7 @@ export default function WorkOrders() {
     return (o.title || '').toLowerCase().includes(q) || (o.reference || '').toLowerCase().includes(q)
   })
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
-  const pageItems = filtered.slice((page - 1) * pageSize, page * pageSize)
+  const pageItems = filtered
 
   const navigate = useNavigate()
 
@@ -97,10 +101,20 @@ export default function WorkOrders() {
             </ul>
 
             <div className="flex items-center justify-between mt-4">
-              <div className="text-xs text-gray-500">Page {page} of {totalPages}</div>
-              <div className="space-x-2">
-                <button disabled={page<=1} onClick={() => setPage((p)=>Math.max(1,p-1))} className="px-2 py-1 border rounded disabled:opacity-50">Prev</button>
-                <button disabled={page>=totalPages} onClick={() => setPage((p)=>Math.min(totalPages,p+1))} className="px-2 py-1 border rounded disabled:opacity-50">Next</button>
+              <div className="text-xs text-gray-500">Loaded {orders.length} work orders</div>
+              <div>
+                {!endReached ? (
+                  <button onClick={async () => {
+                    setLoading(true)
+                    const res = await WorkOrderService.listWorkOrdersPage(pageSize, lastId)
+                    setOrders([...(orders || []), ...(res.items || [])])
+                    setLastId(res.lastId)
+                    if (!res.items || res.items.length === 0) setEndReached(true)
+                    setLoading(false)
+                  }} className="px-3 py-1 border rounded">Load more</button>
+                ) : (
+                  <span className="text-xs text-gray-500">End of results</span>
+                )}
               </div>
             </div>
           </>

@@ -9,6 +9,14 @@ export const WorkOrderService = {
     }
   },
 
+  async listWorkOrdersPage(pageSize = 25, startAfterId = null) {
+    try {
+      return await GW.listTenantCollectionPage('work_orders', pageSize, startAfterId);
+    } catch (err) {
+      return { items: [], lastId: null };
+    }
+  },
+
   async getWorkOrder(id) {
     return GW.getTenantDoc('work_orders', id);
   },
