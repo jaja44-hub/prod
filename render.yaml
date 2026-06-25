@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: addis-crown-odoo-backend
+    env: docker
+    dockerfilePath: ./odoo-backend/Dockerfile
+    dockerContext: ./odoo-backend
+    autoDeploy: false
+    envVars:
+      - key: DB_HOST
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        value: "neondb"

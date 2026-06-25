@@ -5,3 +5,15 @@ resources.md
 node_modules/
 dist/
 .vercel
+
+# Python / Odoo Backend
+*.pyc
+__pycache__/
+venv/
+env/
+odoo-backend/data/
+odoo-backend/filestore/
+odoo-backend/odoo.conf
+
+# Secure Docs
+dev notes/

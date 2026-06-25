@@ -8,7 +8,7 @@ import ThemeToggle from '../components/ThemeToggle';
 import { useSidebar } from '../context/SidebarContext'
 
 function Header({ variant = 'default' }) {
-  const { sidebarOpen, toggle, setSidebarOpen } = useSidebar()
+  const { sidebarOpen, toggle, setSidebarOpen, sidebarExpanded, expand, collapse } = useSidebar()
 
   const [searchModalOpen, setSearchModalOpen] = useState(false)
 
@@ -24,8 +24,16 @@ function Header({ variant = 'default' }) {
             <button
               className="text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 fixed left-4 top-4 z-50 lg:relative lg:left-0 lg:top-0"
               aria-controls="sidebar"
-              aria-expanded={sidebarOpen}
-              onClick={(e) => { e.stopPropagation(); toggle(); }}
+              aria-expanded={sidebarExpanded || sidebarOpen}
+              onClick={(e) => {
+                e.stopPropagation();
+                // On desktop (lg and up) toggle expanded state; on mobile toggle overlay
+                if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(min-width: 1024px)').matches) {
+                  sidebarExpanded ? collapse() : expand();
+                } else {
+                  toggle();
+                }
+              }}
             >
               <span className="sr-only">Open sidebar</span>
               <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

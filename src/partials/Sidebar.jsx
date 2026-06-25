@@ -54,7 +54,6 @@ function Sidebar() {
   ];
 
   const [openSections, setOpenSections] = React.useState(() => Object.fromEntries(sections.map(s => [s.title, false])));
-  const hoverExpandedRef = React.useRef(false);
 
   const icons = {
     Operations: (
@@ -132,16 +131,7 @@ function Sidebar() {
           <div
             className="flex flex-col gap-2 items-center"
             onMouseEnter={() => {
-              if (!sidebarExpanded) {
-                hoverExpandedRef.current = true;
-                expand();
-              }
-            }}
-            onMouseLeave={() => {
-              if (hoverExpandedRef.current) {
-                hoverExpandedRef.current = false;
-                setTimeout(() => { if (!sidebarExpanded) collapse(); }, 250);
-              }
+              if (!sidebarExpanded) expand();
             }}
           >
             {sections.map((s) => (
