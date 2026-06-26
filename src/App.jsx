@@ -17,6 +17,7 @@ import WorkOrders from './pages/WorkOrders';
 import ItemDetail from './pages/ItemDetail';
 import WorkOrderDetail from './pages/WorkOrderDetail';
 import MainLayout from './layouts/MainLayout';
+import OdooTest from './components/OdooTest';
 
 function App() {
 
@@ -42,6 +43,9 @@ function App() {
         <Route path='/work-orders' element={<WorkOrders />} />
         <Route path='/work-orders/new' element={<WorkOrderDetail />} />
         <Route path='/work-orders/:id' element={<WorkOrderDetail />} />
+        
+        {/* API Connection Test Route */}
+        <Route path='/test' element={<OdooTest />} />
       </Route>
     </Routes>
   );
