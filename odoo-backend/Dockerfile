@@ -14,8 +14,8 @@ COPY . /app
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose the default Odoo port
-EXPOSE 8069
+# Expose the mandatory Hugging Face port
+EXPOSE 7860
 
-# Start Odoo using environment variables (injected securely by Render)
-CMD ["sh", "-c", "./odoo-bin --db_host=$DB_HOST --db_port=5432 --db_user=$DB_USER --db_password=$DB_PASSWORD --database=$DB_NAME --workers=0 --max-cron-threads=1 --without-demo=all"]
+# Start Odoo using environment variables and bind to port 7860
+CMD ["sh", "-c", "./odoo-bin --db_host=$DB_HOST --db_port=5432 --db_user=$DB_USER --db_password=$DB_PASSWORD --database=$DB_NAME --xmlrpc-port=7860 --workers=0 --max-cron-threads=1 --without-demo=all"]

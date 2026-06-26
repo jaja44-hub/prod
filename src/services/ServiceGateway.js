@@ -116,7 +116,78 @@ export async function getOrders() {
   return listTenantCollection('orders');
 }
 
+// ============================================================
+// 🐘 ODOO ERP ROUTING LAYER (Phase 3.3)
+// Routes heavyweight ERP requests to Odoo via the secure
+// Vercel Serverless Proxy. Firestore handles real-time/tenant
+// data; Odoo handles accounting, inventory, HR, and purchasing.
+// ============================================================
+import { odooClient } from '../lib/odooClient';
+
+/**
+ * Fetch inventory products from Odoo.
+ * @param {number} limit - Max records to return
+ * @param {Array} fields - Fields to retrieve
+ */
+export async function getOdooProducts(limit = 50, fields = ['id', 'name', 'qty_available', 'list_price', 'default_code']) {
+  return odooClient.execute('product.product', 'search_read',
+    [[['active', '=', true]]],
+    { fields, limit }
+  );
+}
+
+/**
+ * Fetch vendors / suppliers from Odoo.
+ */
+export async function getOdooVendors(limit = 50) {
+  return odooClient.execute('res.partner', 'search_read',
+    [[['supplier_rank', '>', 0]]],
+    { fields: ['id', 'name', 'email', 'phone', 'city'], limit }
+  );
+}
+
+/**
+ * Fetch customers from Odoo.
+ */
+export async function getOdooCustomers(limit = 50) {
+  return odooClient.execute('res.partner', 'search_read',
+    [[['customer_rank', '>', 0]]],
+    { fields: ['id', 'name', 'email', 'phone', 'city'], limit }
+  );
+}
+
+/**
+ * Fetch purchase orders from Odoo.
+ */
+export async function getOdooPurchaseOrders(limit = 25) {
+  return odooClient.execute('purchase.order', 'search_read',
+    [[]],
+    { fields: ['id', 'name', 'partner_id', 'date_order', 'amount_total', 'state'], limit }
+  );
+}
+
+/**
+ * Fetch HR employees from Odoo.
+ */
+export async function getOdooEmployees(limit = 50) {
+  return odooClient.execute('hr.employee', 'search_read',
+    [[]],
+    { fields: ['id', 'name', 'job_title', 'department_id', 'work_email'], limit }
+  );
+}
+
+/**
+ * Fetch the chart of accounts from Odoo.
+ */
+export async function getOdooAccounts(limit = 50) {
+  return odooClient.execute('account.account', 'search_read',
+    [[['deprecated', '=', false]]],
+    { fields: ['id', 'name', 'code', 'account_type'], limit }
+  );
+}
+
 export default {
+  // Firestore layer
   tenantQuery,
   listTenantCollection,
   getTenantDoc,
@@ -124,4 +195,11 @@ export default {
   updateTenantDoc,
   setActiveTenant,
   getActiveTenant,
+  // Odoo ERP layer
+  getOdooProducts,
+  getOdooVendors,
+  getOdooCustomers,
+  getOdooPurchaseOrders,
+  getOdooEmployees,
+  getOdooAccounts,
 };
