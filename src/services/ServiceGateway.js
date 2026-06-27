@@ -188,6 +188,35 @@ export async function getOdooAccounts(limit = 50) {
   );
 }
 
+export async function getOdooProduct(id) {
+  if (!id) throw new Error('Product id is required');
+  const products = await odooClient.execute('product.product', 'search_read',
+    [[['id', '=', Number(id)]]],
+    { fields: ['id', 'name', 'default_code', 'list_price'], limit: 1 }
+  );
+  return Array.isArray(products) && products.length ? products[0] : null;
+}
+
+export async function updateOdooProduct(id, changes) {
+  if (!id) throw new Error('Product id is required');
+  await odooClient.execute('product.product', 'write', [[Number(id)], changes]);
+  return getOdooProduct(id);
+}
+
+export async function getOdooManufacturingOrders(limit = 50) {
+  return odooClient.execute('mrp.production', 'search_read',
+    [[]],
+    { fields: ['id', 'name', 'product_id', 'product_qty', 'state', 'date_planned_start'], limit }
+  );
+}
+
+export async function getOdooSalesOrders(limit = 50) {
+  return odooClient.execute('sale.order', 'search_read',
+    [[]],
+    { fields: ['id', 'name', 'partner_id', 'amount_total', 'state', 'date_order'], limit }
+  );
+}
+
 export default {
   // Firestore layer
   tenantQuery,
@@ -206,4 +235,8 @@ export default {
   getOdooPurchaseOrders,
   getOdooEmployees,
   getOdooAccounts,
+  getOdooProduct,
+  updateOdooProduct,
+  getOdooManufacturingOrders,
+  getOdooSalesOrders,
 };

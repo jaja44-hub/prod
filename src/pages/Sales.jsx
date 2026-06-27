@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { useLang } from '../context/LangContext'
-import { getOdooManufacturingOrders } from '../services/ServiceGateway'
+import { getOdooSalesOrders } from '../services/ServiceGateway'
 
-export default function WorkOrders() {
+export default function Sales() {
   const { t } = useLang()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
@@ -11,27 +11,23 @@ export default function WorkOrders() {
 
   useEffect(() => {
     let mounted = true
-    async function loadOrders() {
+
+    async function loadSales() {
       setLoading(true)
       setError('')
       try {
-        const result = await getOdooManufacturingOrders(50)
+        const result = await getOdooSalesOrders(50)
         if (!mounted) return
         setOrders(Array.isArray(result) ? result : [])
       } catch (err) {
         if (!mounted) return
-        const message = err?.response?.data?.error || err?.message || 'Failed to load manufacturing orders.'
-        if (message.toLowerCase().includes('mrp.production') || message.toLowerCase().includes('manufacturing module')) {
-          setError(t('manufacturingModuleInactive'))
-        } else {
-          setError(message)
-        }
+        setError(err?.response?.data?.error || err?.message || t('error'))
       } finally {
         if (mounted) setLoading(false)
       }
     }
 
-    loadOrders()
+    loadSales()
     return () => { mounted = false }
   }, [t])
 
@@ -40,22 +36,22 @@ export default function WorkOrders() {
     const q = queryText.toLowerCase()
     return (
       (order.name || '').toLowerCase().includes(q) ||
-      (order.product_id?.[1] || '').toLowerCase().includes(q) ||
+      (order.partner_id?.[1] || '').toLowerCase().includes(q) ||
       (order.state || '').toLowerCase().includes(q)
     )
   })
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">{t('manufacturingOrders')}</h1>
-      <p className="text-sm text-gray-600 mb-4">{t('manufacturingOrdersDescription')}</p>
+      <h1 className="text-2xl font-semibold mb-4">{t('sales')}</h1>
+      <p className="text-sm text-gray-600 mb-4">{t('salesOrdersDescription')}</p>
       <div className="bg-white dark:bg-gray-800 p-4 rounded shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
             <input
               value={queryText}
               onChange={(e) => setQueryText(e.target.value)}
-              placeholder={t('search') + ' ' + t('workOrders')}
+              placeholder={t('search') + ' ' + t('salesOrders')}
               className="px-3 py-1 rounded border"
             />
             <button onClick={() => setQueryText('')} className="text-xs text-gray-500">
@@ -73,7 +69,7 @@ export default function WorkOrders() {
               onClick={() => {
                 setLoading(true)
                 setError('')
-                getOdooManufacturingOrders(50)
+                getOdooSalesOrders(50)
                   .then((result) => setOrders(Array.isArray(result) ? result : []))
                   .catch((err) => setError(err?.response?.data?.error || err?.message || t('error')))
                   .finally(() => setLoading(false))
@@ -91,20 +87,20 @@ export default function WorkOrders() {
               <thead>
                 <tr className="text-left text-gray-600 border-b">
                   <th className="py-2">{t('order')}</th>
-                  <th className="py-2">{t('product')}</th>
-                  <th className="py-2">{t('quantity')}</th>
+                  <th className="py-2">{t('partner')}</th>
+                  <th className="py-2">{t('amount')}</th>
                   <th className="py-2">{t('state')}</th>
-                  <th className="py-2">{t('datePlannedStart')}</th>
+                  <th className="py-2">{t('dateOrder')}</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((order) => (
                   <tr key={order.id} className="border-b last:border-b-0">
                     <td className="py-2">{order.name || '—'}</td>
-                    <td className="py-2">{order.product_id?.[1] || '—'}</td>
-                    <td className="py-2">{order.product_qty ?? '—'}</td>
+                    <td className="py-2">{order.partner_id?.[1] || '—'}</td>
+                    <td className="py-2">{order.amount_total != null ? order.amount_total : '—'}</td>
                     <td className="py-2">{order.state || '—'}</td>
-                    <td className="py-2">{order.date_planned_start || '—'}</td>
+                    <td className="py-2">{order.date_order || '—'}</td>
                   </tr>
                 ))}
               </tbody>

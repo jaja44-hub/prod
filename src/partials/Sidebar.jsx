@@ -6,50 +6,52 @@ import { useLang } from "../context/LangContext";
 function Sidebar() {
   const { sidebarOpen, toggle, sidebarExpanded, setSidebarExpanded, collapse, expand } = useSidebar();
 
+  const { lang, setLang, t } = useLang();
+
   const sections = [
     {
       title: "Operations",
       items: [
-        { to: "/dashboard", label: "Dashboard" },
-        { to: "/inventory", label: "Inventory" },
-        { to: "/work-orders", label: "Work Orders" },
-        { to: "/orders", label: "Orders" },
+        { to: "/dashboard", label: t('dashboard') },
+        { to: "/inventory", label: t('inventory') },
+        { to: "/work-orders", label: t('workOrders') },
+        { to: "/orders", label: t('orders') },
       ],
     },
     {
       title: "Procurement",
       items: [
-        { to: "/procurement", label: "Procurement" },
-        { to: "/purchasing", label: "Purchasing" },
-        { to: "/suppliers", label: "Suppliers" },
+        { to: "/procurement", label: t('procurement') },
+        { to: "/purchasing", label: t('purchasing') },
+        { to: "/suppliers", label: t('vendors') },
       ],
     },
     {
       title: "Quality & Logistics",
       items: [
-        { to: "/qc", label: "QC" },
-        { to: "/logistics", label: "Logistics" },
+        { to: "/qc", label: t('qc') },
+        { to: "/logistics", label: t('logistics') },
       ],
     },
     {
       title: "Finance",
       items: [
-        { to: "/reports", label: "Reports" },
-        { to: "/invoices", label: "Invoices" },
+        { to: "/reports", label: t('reports') },
+        { to: "/invoices", label: t('invoices') },
       ],
     },
     {
       title: "People",
       items: [
-        { to: "/employees", label: "Employees" },
-        { to: "/payroll", label: "Payroll" },
+        { to: "/employees", label: t('employees') },
+        { to: "/payroll", label: t('payroll') },
       ],
     },
     {
       title: "Sales & CRM",
       items: [
-        { to: "/sales", label: "Sales" },
-        { to: "/customers", label: "Customers" },
+        { to: "/sales", label: t('sales') },
+        { to: "/customers", label: t('customers') },
       ],
     },
   ];
@@ -104,7 +106,6 @@ function Sidebar() {
     }
   };
 
-  const { lang, setLang } = useLang();
   const nextLang = lang === 'en' ? 'am' : 'en';
   const nextLangLabel = lang === 'en' ? 'አማርኛ' : 'English';
 
