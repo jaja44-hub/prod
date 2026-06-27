@@ -15,7 +15,8 @@ import {
   limit as fbLimit,
   startAfter as fbStartAfter,
 } from 'firebase/firestore';
-export { listDocuments, createDocument } from '../lib/firestoreUtils';
+import { listDocuments, createDocument } from '../lib/firestoreUtils';
+export { listDocuments, createDocument };
 
 let _activeTenantId = null;
 
