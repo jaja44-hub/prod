@@ -21,8 +21,7 @@ function Sidebar() {
     {
       title: "Procurement",
       items: [
-        { to: "/procurement", label: t('procurement') },
-        { to: "/purchasing", label: t('purchasing') },
+        { to: "/purchases", label: t('purchaseOrders') },
         { to: "/suppliers", label: t('vendors') },
       ],
     },
@@ -36,6 +35,7 @@ function Sidebar() {
     {
       title: "Finance",
       items: [
+        { to: "/finance", label: t('finance') },
         { to: "/reports", label: t('reports') },
         { to: "/invoices", label: t('invoices') },
       ],
@@ -44,6 +44,7 @@ function Sidebar() {
       title: "People",
       items: [
         { to: "/employees", label: t('employees') },
+        { to: "/hr", label: t('hr') },
         { to: "/payroll", label: t('payroll') },
       ],
     },
@@ -51,7 +52,7 @@ function Sidebar() {
       title: "Sales & CRM",
       items: [
         { to: "/sales", label: t('sales') },
-        { to: "/customers", label: t('customers') },
+        { to: "/crm", label: t('customers') },
       ],
     },
   ];

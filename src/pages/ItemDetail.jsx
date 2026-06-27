@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useLang } from '../context/LangContext'
-import { getOdooProduct, updateOdooProduct } from '../services/ServiceGateway'
+import { getOdooProduct, updateOdooProduct, createOdooProduct } from '../services/ServiceGateway'
 
 export default function ItemDetail() {
   const { id } = useParams()
@@ -40,10 +40,23 @@ export default function ItemDetail() {
 
   async function submit(e) {
     e.preventDefault()
-    if (!id || id === 'new') return
     setLoading(true)
     setError('')
+
     try {
+      if (id === 'new') {
+        const created = await createOdooProduct({
+          default_code: form.default_code,
+          name: form.name,
+          list_price: Number(form.list_price || 0),
+        })
+        if (!created?.id) {
+          throw new Error('Failed to create product in Odoo.')
+        }
+        navigate(`/inventory/${created.id}`)
+        return
+      }
+
       const updated = await updateOdooProduct(id, {
         default_code: form.default_code,
         name: form.name,
@@ -56,7 +69,7 @@ export default function ItemDetail() {
         list_price: updated?.list_price || 0,
       })
     } catch (err) {
-      setError(err?.response?.data?.error || err?.message || 'Failed to update product.')
+      setError(err?.response?.data?.error || err?.message || 'Failed to save product.')
     } finally {
       setLoading(false)
     }
@@ -76,10 +89,6 @@ export default function ItemDetail() {
 
         {loading ? (
           <p>{t('loading')}</p>
-        ) : id === 'new' ? (
-          <div className="rounded border border-yellow-300 bg-yellow-50 p-4 text-yellow-800">
-            {t('productCreateNotSupported')}
-          </div>
         ) : error ? (
           <div className="space-y-3">
             <p className="text-red-500">{error}</p>
@@ -111,7 +120,7 @@ export default function ItemDetail() {
                 className="w-full p-2 border rounded"
               />
             </div>
-            <div className="flex justify-end space-x-2">
+            <div className="flex justify-between items-center">
               <button type="button" onClick={() => navigate('/inventory')} className="px-3 py-1 border rounded">
                 {t('cancel')}
               </button>

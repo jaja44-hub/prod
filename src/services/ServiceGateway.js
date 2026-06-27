@@ -203,6 +203,14 @@ export async function updateOdooProduct(id, changes) {
   return getOdooProduct(id);
 }
 
+export async function createOdooProduct(payload) {
+  if (!payload || !payload.name) {
+    throw new Error('Product name is required');
+  }
+  const newId = await odooClient.execute('product.product', 'create', [payload]);
+  return getOdooProduct(newId);
+}
+
 export async function getOdooManufacturingOrders(limit = 50) {
   return odooClient.execute('mrp.production', 'search_read',
     [[]],
@@ -237,6 +245,7 @@ export default {
   getOdooAccounts,
   getOdooProduct,
   updateOdooProduct,
+  createOdooProduct,
   getOdooManufacturingOrders,
   getOdooSalesOrders,
 };
