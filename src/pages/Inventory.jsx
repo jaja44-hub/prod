@@ -1,13 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getOdooProducts } from '../services/ServiceGateway';
+import { useLang } from '../context/LangContext'
+import { getOdooProducts, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway';
 
 export default function Inventory() {
+  const { t } = useLang()
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [queryText, setQueryText] = useState('');
   const [endReached, setEndReached] = useState(true);
+
+  const normalizeErrorMessage = (err) => {
+    const raw = err?.response?.data?.error || err?.message || t('error')
+    return raw === BACKEND_WAKEUP_MESSAGE ? t('backendWakingUp') : raw
+  }
 
   const navigate = useNavigate();
 
@@ -24,7 +31,7 @@ export default function Inventory() {
         setEndReached(true);
       } catch (err) {
         if (!mounted) return;
-        setError(err?.message || 'Failed to load inventory from Odoo.');
+        setError(normalizeErrorMessage(err));
       } finally {
         if (!mounted) return;
         setLoading(false);
@@ -86,7 +93,7 @@ export default function Inventory() {
                 setError('');
                 getOdooProducts(50, ['id', 'name', 'default_code', 'qty_available', 'list_price'])
                   .then((products) => setItems(Array.isArray(products) ? products : []))
-                  .catch((err) => setError(err?.message || 'Failed to load inventory from Odoo.'))
+                  .catch((err) => setError(normalizeErrorMessage(err)))
                   .finally(() => setLoading(false));
               }}
               className="px-3 py-1 bg-violet-600 text-white rounded"

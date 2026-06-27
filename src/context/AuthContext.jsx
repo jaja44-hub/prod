@@ -37,8 +37,26 @@ export function AuthProvider({ children }) {
         if (!db) {
           throw new Error('Firestore is not initialized.');
         }
+        // Try 'users' collection first, fall back to 'users_extended'
+        let profile = null;
         const userDoc = await getDoc(doc(db, 'users', user.uid));
-        const profile = userDoc.exists() ? { id: userDoc.id, ...userDoc.data() } : null;
+        if (userDoc.exists()) {
+          profile = { id: userDoc.id, ...userDoc.data() };
+        } else {
+          const extDoc = await getDoc(doc(db, 'users_extended', user.uid));
+          if (extDoc.exists()) profile = { id: extDoc.id, ...extDoc.data() };
+        }
+        // If still no Firestore profile, derive minimal profile from Firebase Auth token claims
+        if (!profile) {
+          const tokenResult = await user.getIdTokenResult();
+          profile = {
+            uid: user.uid,
+            email: user.email,
+            name: user.displayName || user.email,
+            role: tokenResult.claims?.role || 'viewer',
+            tenantId: tokenResult.claims?.tenantId || 'production',
+          };
+        }
         setUserProfile(profile);
         if (profile?.tenantId) {
           setActiveTenant(profile.tenantId);
@@ -55,11 +73,11 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (!loading) {
-      if (!currentUser && location.pathname !== '/') {
-        navigate('/');
+      if (!currentUser && location.pathname !== '/login') {
+        navigate('/login');
       }
-      if (currentUser && location.pathname === '/') {
-        navigate('/Dashboard');
+      if (currentUser && location.pathname === '/login') {
+        navigate('/dashboard');
       }
     }
   }, [loading, currentUser, location.pathname, navigate]);

@@ -10,10 +10,12 @@ import {
   Alert,
 } from '@mui/material';
 import KeyIcon from '@mui/icons-material/VpnKey';
+import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../config/firebase';
 
 const LoginPage = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -50,6 +52,7 @@ const LoginPage = () => {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      navigate('/dashboard');
     } catch (err) {
       setError(normalizeError(err));
     } finally {

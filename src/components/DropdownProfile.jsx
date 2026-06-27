@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Transition from '../utils/Transition';
+import { useAuth } from '../context/AuthContext';
 
 import UserAvatar from '../images/user-avatar-32.png';
 
@@ -9,6 +10,9 @@ function DropdownProfile({
 }) {
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const { logout } = useAuth();
+  const navigate = useNavigate();
 
   const trigger = useRef(null);
   const dropdown = useRef(null);
@@ -33,6 +37,18 @@ function DropdownProfile({
     document.addEventListener('keydown', keyHandler);
     return () => document.removeEventListener('keydown', keyHandler);
   });
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await logout();
+      setDropdownOpen(false);
+      navigate('/login');
+    } catch (err) {
+      console.error('Logout failed:', err);
+      setLoggingOut(false);
+    }
+  };
 
   return (
     <div className="relative inline-flex">
@@ -73,22 +89,13 @@ function DropdownProfile({
           </div>
           <ul>
             <li>
-              <Link
-                className="font-medium text-sm text-violet-500 hover:text-violet-600 dark:hover:text-violet-400 flex items-center py-1 px-3"
-                to="/settings"
-                onClick={() => setDropdownOpen(!dropdownOpen)}
+              <button
+                className="font-medium text-sm text-violet-500 hover:text-violet-600 dark:hover:text-violet-400 flex items-center py-1 px-3 w-full text-left"
+                onClick={handleLogout}
+                disabled={loggingOut}
               >
-                Settings
-              </Link>
-            </li>
-            <li>
-              <Link
-                className="font-medium text-sm text-violet-500 hover:text-violet-600 dark:hover:text-violet-400 flex items-center py-1 px-3"
-                to="/signin"
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-              >
-                Sign Out
-              </Link>
+                {loggingOut ? 'Signing out…' : 'Sign Out'}
+              </button>
             </li>
           </ul>
         </div>

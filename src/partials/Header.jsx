@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-
 import SearchModal from '../components/ModalSearch';
 import Notifications from '../components/DropdownNotifications';
 import Help from '../components/DropdownHelp';
 import UserMenu from '../components/DropdownProfile';
 import ThemeToggle from '../components/ThemeToggle';
-import { useSidebar } from '../context/SidebarContext'
+import { useSidebar } from '../context/SidebarContext';
+import { useAuth } from '../context/AuthContext';
+import { ROLE_LABELS } from '../lib/rbac';
 
 function Header({ variant = 'default' }) {
-  const { sidebarOpen, toggle, setSidebarOpen, sidebarExpanded, expand, collapse } = useSidebar()
-
+  const { sidebarOpen, toggle, setSidebarOpen, sidebarExpanded, expand, collapse } = useSidebar();
+  const { userProfile } = useAuth();
+  const roleLabel = userProfile?.role ? ROLE_LABELS[userProfile.role] : null;
   const [searchModalOpen, setSearchModalOpen] = useState(false)
 
   return (
@@ -70,7 +72,11 @@ function Header({ variant = 'default' }) {
             <Notifications align="right" />
             <Help align="right" />
             <ThemeToggle />
-            {/*  Divider */}
+            {roleLabel && (
+              <span className="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300 whitespace-nowrap">
+                {roleLabel}
+              </span>
+            )}
             <hr className="w-px h-6 bg-gray-200 dark:bg-gray-700/60 border-none" />
             <UserMenu align="right" />
 

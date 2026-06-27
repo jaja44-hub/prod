@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useLang } from '../context/LangContext'
-import { getOdooProduct, updateOdooProduct, createOdooProduct } from '../services/ServiceGateway'
+import { getOdooProduct, updateOdooProduct, createOdooProduct, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway'
 
 export default function ItemDetail() {
   const { id } = useParams()
@@ -11,6 +11,11 @@ export default function ItemDetail() {
   const [error, setError] = useState('')
   const [item, setItem] = useState(null)
   const [form, setForm] = useState({ default_code: '', name: '', list_price: 0 })
+
+  const normalizeErrorMessage = (err) => {
+    const raw = err?.response?.data?.error || err?.message || t('error')
+    return raw === BACKEND_WAKEUP_MESSAGE ? t('backendWakingUp') : raw
+  }
 
   useEffect(() => {
     let mounted = true
@@ -29,7 +34,7 @@ export default function ItemDetail() {
           })
         }
       } catch (err) {
-        if (mounted) setError(err?.message || 'Failed to load product from Odoo.')
+        if (mounted) setError(normalizeErrorMessage(err))
       } finally {
         if (mounted) setLoading(false)
       }
@@ -69,7 +74,7 @@ export default function ItemDetail() {
         list_price: updated?.list_price || 0,
       })
     } catch (err) {
-      setError(err?.response?.data?.error || err?.message || 'Failed to save product.')
+      setError(normalizeErrorMessage(err))
     } finally {
       setLoading(false)
     }

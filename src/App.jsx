@@ -2,11 +2,11 @@ import React, { useEffect } from 'react';
 import {
   Routes,
   Route,
-  useLocation
+  useLocation,
+  Navigate,
 } from 'react-router-dom';
 
 import './css/style.css';
-
 import './charts/ChartjsConfig';
 
 // Import pages
@@ -23,39 +23,53 @@ import Employees from './pages/Employees';
 import Accounts from './pages/Accounts';
 import MainLayout from './layouts/MainLayout';
 import OdooTest from './components/OdooTest';
+import RoleGuard from './components/RoleGuard';
 
 function App() {
-
   const location = useLocation();
 
   useEffect(() => {
     document.querySelector('html').style.scrollBehavior = 'auto'
     window.scroll({ top: 0 })
     document.querySelector('html').style.scrollBehavior = ''
-  }, [location.pathname]); // triggered on route change
+  }, [location.pathname]);
 
   return (
     <Routes>
-      {/* Public routes (no header/sidebar) */}
-      <Route exact path="/" element={<LoginPage />} />
+      {/* Public routes */}
+      <Route path="/" element={<Navigate replace to="/login" />} />
+      <Route path="/login" element={<LoginPage />} />
 
-      {/* Protected routes use MainLayout which provides Header + Sidebar */}
+      {/* Protected routes — all inside MainLayout */}
       <Route element={<MainLayout />}>
-        <Route path='/Dashboard' element={<Dashboard />}/>
-        <Route path='/inventory' element={<Inventory />} />
-        <Route path='/inventory/new' element={<ItemDetail />} />
-        <Route path='/inventory/:id' element={<ItemDetail />} />
-        <Route path='/work-orders' element={<WorkOrders />} />
-        <Route path='/work-orders/new' element={<WorkOrderDetail />} />
-        <Route path='/work-orders/:id' element={<WorkOrderDetail />} />
-        <Route path='/sales' element={<Sales />} />
-        <Route path='/purchases' element={<PurchaseOrders />} />
-        <Route path='/crm' element={<Customers />} />
-        <Route path='/customers' element={<Customers />} />
-        <Route path='/hr' element={<Employees />} />
-        <Route path='/finance' element={<Accounts />} />
-        
-        {/* API Connection Test Route */}
+        {/* Dashboard — all roles can see, content adapts by role */}
+        <Route path='/dashboard' element={<Dashboard />} />
+
+        {/* Inventory — CEO & Warehouse Head */}
+        <Route path='/inventory' element={<RoleGuard><Inventory /></RoleGuard>} />
+        <Route path='/inventory/new' element={<RoleGuard><ItemDetail /></RoleGuard>} />
+        <Route path='/inventory/:id' element={<RoleGuard><ItemDetail /></RoleGuard>} />
+
+        {/* Manufacturing — CEO & Warehouse Head */}
+        <Route path='/work-orders' element={<RoleGuard><WorkOrders /></RoleGuard>} />
+        <Route path='/work-orders/new' element={<RoleGuard><WorkOrderDetail /></RoleGuard>} />
+        <Route path='/work-orders/:id' element={<RoleGuard><WorkOrderDetail /></RoleGuard>} />
+
+        {/* Sales & CRM — CEO & Sales Head */}
+        <Route path='/sales' element={<RoleGuard><Sales /></RoleGuard>} />
+        <Route path='/crm' element={<RoleGuard><Customers /></RoleGuard>} />
+        <Route path='/customers' element={<RoleGuard><Customers /></RoleGuard>} />
+
+        {/* Procurement — CEO & Warehouse Head */}
+        <Route path='/purchases' element={<RoleGuard><PurchaseOrders /></RoleGuard>} />
+
+        {/* HR — CEO & HR Head */}
+        <Route path='/hr' element={<RoleGuard><Employees /></RoleGuard>} />
+
+        {/* Finance — CEO only */}
+        <Route path='/finance' element={<RoleGuard><Accounts /></RoleGuard>} />
+
+        {/* Dev/test */}
         <Route path='/test' element={<OdooTest />} />
       </Route>
     </Routes>
@@ -63,4 +77,3 @@ function App() {
 }
 
 export default App;
-

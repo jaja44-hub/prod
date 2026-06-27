@@ -126,13 +126,29 @@ export async function getOrders() {
 // ============================================================
 import { odooClient } from '../lib/odooClient';
 
+async function executeOdoo(model, method, ...params) {
+  try {
+    return await odooClient.execute(model, method, ...params);
+  } catch (err) {
+    const status = err?.response?.status;
+    const message = err?.message || '';
+    const isColdStart = status === 502 || status === 503 || /timeout/i.test(message) || err?.code === 'ECONNABORTED';
+    if (isColdStart) {
+      throw new Error(BACKEND_WAKEUP_MESSAGE);
+    }
+    throw err;
+  }
+}
+
+export const BACKEND_WAKEUP_MESSAGE = 'The ERP backend is currently waking up. This may take 1-2 minutes. Please retry shortly.';
+
 /**
  * Fetch inventory products from Odoo.
  * @param {number} limit - Max records to return
  * @param {Array} fields - Fields to retrieve
  */
 export async function getOdooProducts(limit = 50, fields = ['id', 'name', 'qty_available', 'list_price', 'default_code']) {
-  return odooClient.execute('product.product', 'search_read',
+  return executeOdoo('product.product', 'search_read',
     [[['active', '=', true]]],
     { fields, limit }
   );
@@ -142,7 +158,7 @@ export async function getOdooProducts(limit = 50, fields = ['id', 'name', 'qty_a
  * Fetch vendors / suppliers from Odoo.
  */
 export async function getOdooVendors(limit = 50) {
-  return odooClient.execute('res.partner', 'search_read',
+  return executeOdoo('res.partner', 'search_read',
     [[['supplier_rank', '>', 0]]],
     { fields: ['id', 'name', 'email', 'phone', 'city'], limit }
   );
@@ -152,7 +168,7 @@ export async function getOdooVendors(limit = 50) {
  * Fetch customers from Odoo.
  */
 export async function getOdooCustomers(limit = 50) {
-  return odooClient.execute('res.partner', 'search_read',
+  return executeOdoo('res.partner', 'search_read',
     [[['customer_rank', '>', 0]]],
     { fields: ['id', 'name', 'email', 'phone', 'city'], limit }
   );
@@ -162,7 +178,7 @@ export async function getOdooCustomers(limit = 50) {
  * Fetch purchase orders from Odoo.
  */
 export async function getOdooPurchaseOrders(limit = 25) {
-  return odooClient.execute('purchase.order', 'search_read',
+  return executeOdoo('purchase.order', 'search_read',
     [[]],
     { fields: ['id', 'name', 'partner_id', 'date_order', 'amount_total', 'state'], limit }
   );
@@ -172,7 +188,7 @@ export async function getOdooPurchaseOrders(limit = 25) {
  * Fetch HR employees from Odoo.
  */
 export async function getOdooEmployees(limit = 50) {
-  return odooClient.execute('hr.employee', 'search_read',
+  return executeOdoo('hr.employee', 'search_read',
     [[]],
     { fields: ['id', 'name', 'job_title', 'department_id', 'work_email'], limit }
   );
@@ -182,7 +198,7 @@ export async function getOdooEmployees(limit = 50) {
  * Fetch the chart of accounts from Odoo.
  */
 export async function getOdooAccounts(limit = 50) {
-  return odooClient.execute('account.account', 'search_read',
+  return executeOdoo('account.account', 'search_read',
     [[['deprecated', '=', false]]],
     { fields: ['id', 'name', 'code', 'account_type'], limit }
   );
@@ -190,7 +206,7 @@ export async function getOdooAccounts(limit = 50) {
 
 export async function getOdooProduct(id) {
   if (!id) throw new Error('Product id is required');
-  const products = await odooClient.execute('product.product', 'search_read',
+  const products = await executeOdoo('product.product', 'search_read',
     [[['id', '=', Number(id)]]],
     { fields: ['id', 'name', 'default_code', 'list_price'], limit: 1 }
   );
@@ -199,7 +215,7 @@ export async function getOdooProduct(id) {
 
 export async function updateOdooProduct(id, changes) {
   if (!id) throw new Error('Product id is required');
-  await odooClient.execute('product.product', 'write', [[Number(id)], changes]);
+  await executeOdoo('product.product', 'write', [[Number(id)], changes]);
   return getOdooProduct(id);
 }
 
@@ -207,19 +223,19 @@ export async function createOdooProduct(payload) {
   if (!payload || !payload.name) {
     throw new Error('Product name is required');
   }
-  const newId = await odooClient.execute('product.product', 'create', [payload]);
+  const newId = await executeOdoo('product.product', 'create', [payload]);
   return getOdooProduct(newId);
 }
 
 export async function getOdooManufacturingOrders(limit = 50) {
-  return odooClient.execute('mrp.production', 'search_read',
+  return executeOdoo('mrp.production', 'search_read',
     [[]],
     { fields: ['id', 'name', 'product_id', 'product_qty', 'state', 'date_planned_start'], limit }
   );
 }
 
 export async function getOdooSalesOrders(limit = 50) {
-  return odooClient.execute('sale.order', 'search_read',
+  return executeOdoo('sale.order', 'search_read',
     [[]],
     { fields: ['id', 'name', 'partner_id', 'amount_total', 'state', 'date_order'], limit }
   );

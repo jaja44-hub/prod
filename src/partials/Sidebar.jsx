@@ -2,11 +2,14 @@ import React from "react";
 import { NavLink } from "react-router-dom";
 import { useSidebar } from "../context/SidebarContext";
 import { useLang } from "../context/LangContext";
+import { useAuth } from "../context/AuthContext";
+import { getNavSections } from "../lib/rbac";
 
 function Sidebar() {
   const { sidebarOpen, toggle, sidebarExpanded, setSidebarExpanded, collapse, expand } = useSidebar();
-
   const { lang, setLang, t } = useLang();
+  const { userProfile } = useAuth();
+  const allowedSections = getNavSections(userProfile?.role);
 
   const sections = [
     {
@@ -57,6 +60,10 @@ function Sidebar() {
     },
   ];
 
+  // Filter sections based on logged-in user's role (CEO sees all)
+  const visibleSections = allowedSections.length === 0
+    ? sections
+    : sections.filter(s => allowedSections.includes(s.title));
   const [openSections, setOpenSections] = React.useState(() => Object.fromEntries(sections.map(s => [s.title, false])));
 
   const icons = {
@@ -145,7 +152,7 @@ function Sidebar() {
           {/* Collapsed-symbols view (icons only) */}
           {!sidebarExpanded && (
             <div className="flex flex-col gap-2 items-center">
-              {sections.map((s) => (
+              {visibleSections.map((s) => (
                 <button
                   key={s.title}
                   onClick={() => openSectionAndExpand(s.title)}
@@ -163,7 +170,7 @@ function Sidebar() {
         {/* Expanded full view */}
         {sidebarExpanded && (
           <nav className="mt-2">
-            {sections.map((section) => {
+            {visibleSections.map((section) => {
               const open = !!openSections[section.title];
               return (
                 <div key={section.title} className="mb-4">

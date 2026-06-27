@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useLang } from '../context/LangContext'
-import { getOdooEmployees } from '../services/ServiceGateway'
+import { getOdooEmployees, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway'
 
 export default function Employees() {
   const { t } = useLang()
@@ -8,6 +8,11 @@ export default function Employees() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [queryText, setQueryText] = useState('')
+
+  const normalizeErrorMessage = (err) => {
+    const raw = err?.response?.data?.error || err?.message || t('error')
+    return raw === BACKEND_WAKEUP_MESSAGE ? t('backendWakingUp') : raw
+  }
 
   useEffect(() => {
     let mounted = true
@@ -21,7 +26,7 @@ export default function Employees() {
         setEmployees(Array.isArray(result) ? result : [])
       } catch (err) {
         if (!mounted) return
-        setError(err?.response?.data?.error || err?.message || t('error'))
+        setError(normalizeErrorMessage(err))
       } finally {
         if (mounted) setLoading(false)
       }
@@ -72,7 +77,7 @@ export default function Employees() {
                 setError('')
                 getOdooEmployees(50)
                   .then((result) => setEmployees(Array.isArray(result) ? result : []))
-                  .catch((err) => setError(err?.response?.data?.error || err?.message || t('error')))
+                  .catch((err) => setError(normalizeErrorMessage(err)))
                   .finally(() => setLoading(false))
               }}
               className="px-3 py-1 bg-violet-600 text-white rounded"

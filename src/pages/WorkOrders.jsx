@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useLang } from '../context/LangContext'
-import { getOdooManufacturingOrders } from '../services/ServiceGateway'
+import { getOdooManufacturingOrders, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway'
 
 export default function WorkOrders() {
   const { t } = useLang()
@@ -8,6 +8,11 @@ export default function WorkOrders() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [queryText, setQueryText] = useState('')
+
+  const normalizeErrorMessage = (err) => {
+    const raw = err?.response?.data?.error || err?.message || t('error')
+    return raw === BACKEND_WAKEUP_MESSAGE ? t('backendWakingUp') : raw
+  }
 
   useEffect(() => {
     let mounted = true
@@ -24,7 +29,7 @@ export default function WorkOrders() {
         if (message.toLowerCase().includes('mrp.production') || message.toLowerCase().includes('manufacturing module')) {
           setError(t('manufacturingModuleInactive'))
         } else {
-          setError(message)
+          setError(message === BACKEND_WAKEUP_MESSAGE ? t('backendWakingUp') : message)
         }
       } finally {
         if (mounted) setLoading(false)
@@ -75,7 +80,7 @@ export default function WorkOrders() {
                 setError('')
                 getOdooManufacturingOrders(50)
                   .then((result) => setOrders(Array.isArray(result) ? result : []))
-                  .catch((err) => setError(err?.response?.data?.error || err?.message || t('error')))
+                  .catch((err) => setError(normalizeErrorMessage(err)))
                   .finally(() => setLoading(false))
               }}
               className="px-3 py-1 bg-violet-600 text-white rounded"

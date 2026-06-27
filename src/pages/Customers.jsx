@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useLang } from '../context/LangContext'
-import { getOdooCustomers, getOdooVendors } from '../services/ServiceGateway'
+import { getOdooCustomers, getOdooVendors, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway'
 
 export default function Customers() {
   const { t } = useLang()
@@ -10,6 +10,11 @@ export default function Customers() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [queryText, setQueryText] = useState('')
+
+  const normalizeErrorMessage = (err) => {
+    const raw = err?.response?.data?.error || err?.message || t('error')
+    return raw === BACKEND_WAKEUP_MESSAGE ? t('backendWakingUp') : raw
+  }
 
   useEffect(() => {
     let mounted = true
@@ -27,7 +32,7 @@ export default function Customers() {
         setVendors(Array.isArray(vendorResult) ? vendorResult : [])
       } catch (err) {
         if (!mounted) return
-        setError(err?.response?.data?.error || err?.message || t('error'))
+        setError(normalizeErrorMessage(err))
       } finally {
         if (mounted) setLoading(false)
       }
@@ -99,7 +104,7 @@ export default function Customers() {
                     setCustomers(Array.isArray(customerResult) ? customerResult : [])
                     setVendors(Array.isArray(vendorResult) ? vendorResult : [])
                   })
-                  .catch((err) => setError(err?.response?.data?.error || err?.message || t('error')))
+                  .catch((err) => setError(normalizeErrorMessage(err)))
                   .finally(() => setLoading(false))
               }}
               className="px-3 py-1 bg-violet-600 text-white rounded"
