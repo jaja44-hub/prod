@@ -1,64 +1,99 @@
-import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { InventoryService } from '../services/InventoryService'
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getOdooProducts } from '../services/ServiceGateway';
 
 export default function Inventory() {
-  const [items, setItems] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [pageSize] = useState(25)
-  const [lastId, setLastId] = useState(null)
-  const [endReached, setEndReached] = useState(false)
-  const [queryText, setQueryText] = useState('')
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [queryText, setQueryText] = useState('');
+  const [endReached, setEndReached] = useState(true);
 
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   useEffect(() => {
-    let mounted = true
-    async function loadFirst() {
-      setLoading(true)
-      const res = await InventoryService.listItemsPage(pageSize, null)
-      if (mounted) {
-        setItems(res.items || [])
-        setLastId(res.lastId)
-        setEndReached(!(res.items && res.items.length))
+    let mounted = true;
+
+    async function loadProducts() {
+      setLoading(true);
+      setError('');
+      try {
+        const products = await getOdooProducts(50, ['id', 'name', 'default_code', 'qty_available', 'list_price']);
+        if (!mounted) return;
+        setItems(Array.isArray(products) ? products : []);
+        setEndReached(true);
+      } catch (err) {
+        if (!mounted) return;
+        setError(err?.message || 'Failed to load inventory from Odoo.');
+      } finally {
+        if (!mounted) return;
+        setLoading(false);
       }
-      setLoading(false)
     }
-    loadFirst()
-    return () => (mounted = false)
-  }, [pageSize])
+
+    loadProducts();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const filtered = items.filter((it) => {
-    if (!queryText) return true
-    const q = queryText.toLowerCase()
-    return (it.name || '').toLowerCase().includes(q) || (it.sku || '').toLowerCase().includes(q)
-  })
+    if (!queryText) return true;
+    const q = queryText.toLowerCase();
+    return (it.name || '').toLowerCase().includes(q) || (it.default_code || '').toLowerCase().includes(q);
+  });
 
   function openCreate() {
-    navigate('/inventory/new')
+    navigate('/inventory/new');
   }
 
   function openEdit(it) {
-    if (it && it.id) navigate(`/inventory/${it.id}`)
+    if (it && it.id) navigate(`/inventory/${it.id}`);
   }
 
   return (
     <div className="p-6">
       <h1 className="text-2xl font-semibold mb-4">Inventory</h1>
-      <p className="text-sm text-gray-600 mb-4">Production sector inventory items (tenant-scoped).</p>
+      <p className="text-sm text-gray-600 mb-4">Production sector inventory items sourced from Odoo.</p>
       <div className="bg-white dark:bg-gray-800 p-4 rounded shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
-            <input value={queryText} onChange={(e) => setQueryText(e.target.value)} placeholder="Search SKU or name" className="px-3 py-1 rounded border" />
-            <button onClick={() => setQueryText('')} className="text-xs text-gray-500">Clear</button>
+            <input
+              value={queryText}
+              onChange={(e) => setQueryText(e.target.value)}
+              placeholder="Search SKU or name"
+              className="px-3 py-1 rounded border"
+            />
+            <button onClick={() => setQueryText('')} className="text-xs text-gray-500">
+              Clear
+            </button>
           </div>
           <div>
-            <button onClick={openCreate} className="bg-violet-600 text-white px-3 py-1 rounded">New Item</button>
+            <button onClick={openCreate} className="bg-violet-600 text-white px-3 py-1 rounded">
+              New Item
+            </button>
           </div>
         </div>
 
         {loading ? (
           <p className="text-gray-500">Loading…</p>
+        ) : error ? (
+          <div className="space-y-3">
+            <p className="text-red-500">{error}</p>
+            <button
+              onClick={() => {
+                setLoading(true);
+                setError('');
+                getOdooProducts(50, ['id', 'name', 'default_code', 'qty_available', 'list_price'])
+                  .then((products) => setItems(Array.isArray(products) ? products : []))
+                  .catch((err) => setError(err?.message || 'Failed to load inventory from Odoo.'))
+                  .finally(() => setLoading(false));
+              }}
+              className="px-3 py-1 bg-violet-600 text-white rounded"
+            >
+              Retry
+            </button>
+          </div>
         ) : filtered.length === 0 ? (
           <p className="text-gray-500">No items found for this tenant.</p>
         ) : (
@@ -77,13 +112,15 @@ export default function Inventory() {
               <tbody>
                 {filtered.map((it) => (
                   <tr key={it.id} className="border-t">
-                    <td className="py-2">{it.sku}</td>
-                    <td className="py-2">{it.name}</td>
-                    <td className="py-2">{it.quantity}</td>
-                    <td className="py-2">{it.unit}</td>
-                    <td className="py-2">{it.location}</td>
+                    <td className="py-2">{it.default_code || '—'}</td>
+                    <td className="py-2">{it.name || '—'}</td>
+                    <td className="py-2">{typeof it.qty_available === 'number' ? it.qty_available : '—'}</td>
+                    <td className="py-2">{it.uom_id?.[1] || 'unit'}</td>
+                    <td className="py-2">{it.location || 'N/A'}</td>
                     <td className="py-2">
-                      <button onClick={() => openEdit(it)} className="text-xs text-violet-600">View / Edit</button>
+                      <button onClick={() => openEdit(it)} className="text-xs text-violet-600">
+                        View / Edit
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -93,23 +130,12 @@ export default function Inventory() {
             <div className="flex items-center justify-between mt-4">
               <div className="text-xs text-gray-500">Loaded {items.length} items</div>
               <div>
-                {!endReached ? (
-                  <button onClick={async () => {
-                    setLoading(true)
-                    const res = await InventoryService.listItemsPage(pageSize, lastId)
-                    setItems([...(items || []), ...(res.items || [])])
-                    setLastId(res.lastId)
-                    if (!res.items || res.items.length === 0) setEndReached(true)
-                    setLoading(false)
-                  }} className="px-3 py-1 border rounded">Load more</button>
-                ) : (
-                  <span className="text-xs text-gray-500">End of results</span>
-                )}
+                <span className="text-xs text-gray-500">End of results</span>
               </div>
             </div>
           </>
         )}
       </div>
     </div>
-  )
+  );
 }
