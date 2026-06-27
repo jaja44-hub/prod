@@ -15,6 +15,7 @@ import {
   limit as fbLimit,
   startAfter as fbStartAfter,
 } from 'firebase/firestore';
+export { listDocuments, createDocument } from '../lib/firestoreUtils';
 
 let _activeTenantId = null;
 
@@ -190,6 +191,8 @@ export default {
   // Firestore layer
   tenantQuery,
   listTenantCollection,
+  listDocuments,
+  createDocument,
   getTenantDoc,
   saveTenantDoc,
   updateTenantDoc,

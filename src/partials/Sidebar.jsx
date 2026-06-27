@@ -1,9 +1,10 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
 import { useSidebar } from "../context/SidebarContext";
+import { useLang } from "../context/LangContext";
 
 function Sidebar() {
-  const { sidebarExpanded, setSidebarExpanded, collapse, expand } = useSidebar();
+  const { sidebarOpen, toggle, sidebarExpanded, setSidebarExpanded, collapse, expand } = useSidebar();
 
   const sections = [
     {
@@ -103,51 +104,59 @@ function Sidebar() {
     }
   };
 
-  return (
-    <aside className={`${sidebarExpanded ? 'w-64' : 'w-20'} bg-white dark:bg-gray-900 min-h-screen h-screen border-r shrink-0 relative transition-all duration-300`}>
-      <div className="p-3">
-        {/* Header area with title and collapse control */}
-        <div className="mb-3 flex items-center justify-between">
-          <div className="hidden lg:block text-sm font-semibold truncate">Production</div>
-          <button
-            aria-label={sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
-            onClick={() => { sidebarExpanded ? collapse() : expand(); }}
-            className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-1 rounded"
-          >
-            {sidebarExpanded ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M15 6L9 12L15 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            )}
-          </button>
-        </div>
+  const { lang, setLang } = useLang();
+  const nextLang = lang === 'en' ? 'am' : 'en';
+  const nextLangLabel = lang === 'en' ? 'አማርኛ' : 'English';
 
-        {/* Collapsed-symbols view (icons only) */}
-        {!sidebarExpanded && (
-          <div
-            className="flex flex-col gap-2 items-center"
-            onMouseEnter={() => {
-              if (!sidebarExpanded) expand();
-            }}
-          >
-            {sections.map((s) => (
-              <button
-                key={s.title}
-                onClick={() => openSectionAndExpand(s.title)}
-                title={s.title}
-                className="w-10 h-10 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-800"
-                aria-label={`Open ${s.title}`}
-              >
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{icons[s.title] || s.title.charAt(0)}</span>
-              </button>
-            ))}
-            <div className="mt-2 w-full" />
+  return (
+    <>
+      <div
+        className={`fixed inset-0 z-30 bg-slate-900/50 transition-opacity duration-300 lg:hidden ${sidebarOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+        onClick={toggle}
+        aria-hidden="true"
+      />
+      <aside
+        id="sidebar"
+        className={`${sidebarExpanded ? 'w-64' : 'w-20'} fixed inset-y-0 left-0 z-40 flex h-full flex-col border-r border-slate-200 bg-white transition-all duration-300 dark:border-slate-700 dark:bg-gray-900 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+      >
+        <div className="p-3 flex flex-col h-full justify-between">
+          {/* Header area with title and collapse control */}
+          <div className="mb-3 flex items-center justify-between">
+            <div className="hidden lg:block text-sm font-semibold truncate">Production</div>
+            <button
+              aria-label={sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+              onClick={() => { sidebarExpanded ? collapse() : expand(); }}
+              className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-1 rounded"
+            >
+              {sidebarExpanded ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M15 6L9 12L15 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </button>
           </div>
-        )}
+
+          {/* Collapsed-symbols view (icons only) */}
+          {!sidebarExpanded && (
+            <div className="flex flex-col gap-2 items-center">
+              {sections.map((s) => (
+                <button
+                  key={s.title}
+                  onClick={() => openSectionAndExpand(s.title)}
+                  title={s.title}
+                  className="w-10 h-10 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-800"
+                  aria-label={`Open ${s.title}`}
+                >
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{icons[s.title] || s.title.charAt(0)}</span>
+                </button>
+              ))}
+              <div className="mt-2 w-full" />
+            </div>
+          )}
 
         {/* Expanded full view */}
         {sidebarExpanded && (
@@ -185,8 +194,20 @@ function Sidebar() {
             })}
           </nav>
         )}
+
+        <div className="mt-4 pt-4 border-t border-slate-200 dark:border-gray-800">
+          <button
+            type="button"
+            onClick={() => setLang(nextLang)}
+            className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+            aria-label={`Switch language to ${nextLangLabel}`}
+          >
+            {sidebarExpanded ? nextLangLabel : <span className="sr-only">{nextLangLabel}</span>}
+          </button>
+        </div>
       </div>
     </aside>
+    </>
   );
 }
 
