@@ -20,8 +20,9 @@ export const ROLE_LABELS = {
 };
 
 // Which nav sections each role can see
+// If array is empty, user sees all sections (e.g. CEO)
 export const ROLE_NAV_ACCESS = {
-  ceo: ['Operations', 'Procurement', 'Finance', 'People', 'Sales & CRM'],
+  ceo: [],
   hr_head: ['People'],
   sales_head: ['Sales & CRM', 'Operations'],
   warehouse_head: ['Operations', 'Procurement'],
@@ -36,6 +37,7 @@ export const ROLE_ROUTE_ACCESS = {
 };
 
 export function canAccess(role, route) {
+  if (role === 'ceo') return true; // DEV BYPASS: CEO has unrestricted access to all routes
   const allowed = ROLE_ROUTE_ACCESS[role] || [];
   return allowed.some(r => route.startsWith(r));
 }

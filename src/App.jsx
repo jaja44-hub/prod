@@ -24,6 +24,7 @@ import Accounts from './pages/Accounts';
 import MainLayout from './layouts/MainLayout';
 import OdooTest from './components/OdooTest';
 import RoleGuard from './components/RoleGuard';
+import ComingSoon from './pages/ComingSoon';
 
 function App() {
   const location = useLocation();
@@ -71,6 +72,9 @@ function App() {
 
         {/* Dev/test */}
         <Route path='/test' element={<OdooTest />} />
+
+        {/* Catch-all for unbuilt modules like /qc, /logistics, /payroll, etc. */}
+        <Route path='*' element={<RoleGuard><ComingSoon /></RoleGuard>} />
       </Route>
     </Routes>
   );
