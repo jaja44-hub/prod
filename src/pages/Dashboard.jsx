@@ -222,7 +222,7 @@ export default function AnalyticsDashboard() {
   useEffect(() => { loadData(); }, []);
 
   // ── Access guard ───────────────────────────────────────────────────────────
-  if (!user || user.tier > 2) {
+  if (!user || (user.role !== 'ceo' && user.tier > 2)) {
     return (
       <>
         <style>{`

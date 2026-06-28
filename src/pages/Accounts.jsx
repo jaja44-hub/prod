@@ -133,7 +133,7 @@ export default function ImperialFinanceMinistry() {
   // ── Access Guard ───────────────────────────────────────────────────────────
   // Imperial Treasury — CEO + Manager (tier 1) only. tier > 1 → locked.
 
-  if (user?.tier > 1) {
+  if (user?.role !== 'ceo' && user?.tier > 1) {
     return (
       <>
         <style>{`

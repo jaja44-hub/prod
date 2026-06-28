@@ -19,12 +19,16 @@ initializeApp({ credential: cert(serviceAccount) });
 const auth = getAuth();
 const db = getFirestore();
 
-// CEO, Sales Head, Warehouse Head
+// CEO, Sales Head, Warehouse Head, HR Director
 const demoUsers = [
-  { email: "ceo@addiscrown.com", password: "Password123!", displayName: "CEO Super Admin", role: "ceo" },
-  { email: "sales@addiscrown.com", password: "Password123!", displayName: "Sales Department Head", role: "sales_head" },
-  { email: "warehouse@addiscrown.com", password: "Password123!", displayName: "Warehouse Store Head", role: "warehouse_head" },
-  { email: "hr@addiscrown.com", password: "Password123!", displayName: "HR Director", role: "hr_head" }
+  { email: "ceo@addiscrown.com", password: "Password123!", displayName: "CEO Super Admin", role: "ceo", tier: 1 },
+  { email: "ceo@addiscrown.et", password: "Password123!", displayName: "CEO Super Admin", role: "ceo", tier: 1 },
+  { email: "sales@addiscrown.com", password: "Password123!", displayName: "Sales Department Head", role: "sales_head", tier: 2 },
+  { email: "sales@addiscrown.et", password: "Password123!", displayName: "Sales Department Head", role: "sales_head", tier: 2 },
+  { email: "warehouse@addiscrown.com", password: "Password123!", displayName: "Warehouse Store Head", role: "warehouse_head", tier: 2 },
+  { email: "warehouse@addiscrown.et", password: "Password123!", displayName: "Warehouse Store Head", role: "warehouse_head", tier: 2 },
+  { email: "hr@addiscrown.com", password: "Password123!", displayName: "HR Director", role: "hr_head", tier: 2 },
+  { email: "hr@addiscrown.et", password: "Password123!", displayName: "HR Director", role: "hr_head", tier: 2 }
 ];
 
 async function ensureUser(u) {
@@ -36,7 +40,7 @@ async function ensureUser(u) {
         name: u.displayName,
         role: u.role,
         tenantId: "production",
-        tier: 3,
+        tier: u.tier || 3,
         createdAt: new Date().toISOString(),
     };
 
