@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "ci-check": "node ./scripts/check-no-engineering.mjs",
     "deploy:rules": "node ./scripts/deploy-firestore-rules.mjs",
-    "seed:auth": "node ./scripts/seed_auth_users.mjs",
+    "seed:auth": "node ./scripts/seed_rbac_users.mjs",
     "add:auth-domain": "node ./scripts/add-authorized-domain.mjs"
   },
   "dependencies": {
