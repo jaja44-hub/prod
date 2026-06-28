@@ -6,11 +6,13 @@ import {
 import {
   TrendingUp, TrendingDown, DollarSign, FileText, Users,
   Building2, AlertTriangle, Activity, RefreshCw, Download, BarChart2,
+  Wifi, WifiOff,
 } from "lucide-react";
 import { useLang } from "../context/LangContext";
 import { useAuth } from "../context/AuthContext";
 import DemoDataBanner from "../components/DemoDataBanner";
 import * as GW from "../services/ServiceGateway";
+import { checkEngConnection, ENG_PROJECT_ID } from "../services/EngineeringGateway";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -188,24 +190,29 @@ export default function AnalyticsDashboard() {
   const [loading,    setLoading]    = useState(true);
   const [activeTab,  setActiveTab]  = useState("overview");
   const [refreshing, setRefreshing] = useState(false);
+  const [engStatus,  setEngStatus]  = useState(null); // null=checking, {connected,project}|{connected:false,error}
 
   // ── Data loading ───────────────────────────────────────────────────────────
   const loadData = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     else           setLoading(true);
     try {
-      const [p, inv, emp, con] = await Promise.all([
+      // Probe engineering connection in parallel with data fetch
+      const [p, inv, emp, con, engConn] = await Promise.all([
         GW.getProjects(),
         GW.getInvoices(),
         GW.getEmployees(),
         GW.getContracts(),
+        checkEngConnection(),
       ]);
       setProjects(p   || []);
       setInvoices(inv || []);
       setEmployees(emp || []);
       setContracts(con || []);
+      setEngStatus(engConn);
     } catch (err) {
       console.error("[AnalyticsDashboard] Data load failed:", err);
+      setEngStatus({ connected: false, error: err.message });
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -775,6 +782,45 @@ export default function AnalyticsDashboard() {
 
             {/* Right: action buttons */}
             <div className="analytics-header-actions">
+
+              {/* Engineering Sector connection status badge */}
+              {engStatus !== null && (
+                <div
+                  title={engStatus.connected
+                    ? `Live data from: ${engStatus.project}`
+                    : `Engineering offline: ${engStatus.error}`}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    padding: '6px 14px', borderRadius: 20,
+                    background: engStatus.connected
+                      ? 'rgba(22,163,74,0.15)'
+                      : 'rgba(220,38,38,0.15)',
+                    border: `1px solid ${engStatus.connected ? 'rgba(22,163,74,0.5)' : 'rgba(220,38,38,0.5)'}`,
+                    color: engStatus.connected ? '#16a34a' : '#dc2626',
+                    fontSize: 12, fontWeight: 700, cursor: 'default',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {engStatus.connected
+                    ? <Wifi size={13} />
+                    : <WifiOff size={13} />}
+                  {engStatus.connected ? 'Eng. Live' : 'Eng. Offline'}
+                </div>
+              )}
+              {engStatus === null && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '6px 14px', borderRadius: 20,
+                  background: 'rgba(212,160,23,0.12)',
+                  border: '1px solid rgba(212,160,23,0.4)',
+                  color: '#d97706', fontSize: 12, fontWeight: 700,
+                  whiteSpace: 'nowrap',
+                }}>
+                  <Activity size={13} />
+                  Connecting…
+                </div>
+              )}
+
               <button
                 className="analytics-btn-ghost"
                 onClick={() => loadData(true)}
@@ -792,6 +838,7 @@ export default function AnalyticsDashboard() {
                 {bi("Export PDF", "PDF ወደ ውጭ ላክ")}
               </button>
             </div>
+
 
           </div>
         </div>

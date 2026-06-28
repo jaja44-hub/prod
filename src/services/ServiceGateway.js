@@ -1,5 +1,7 @@
 /**
- * Production-sector data layer — Firestore via tenantId scoping (aligned with engineers repo).
+ * Production-sector data layer — Firestore via tenantId scoping.
+ * Adopted modules (Dashboard analytics, HR, Finance) route through
+ * EngineeringGateway for live cross-sector data from ethiobusiness-hub.
  */
 import { db } from '../config/firebase';
 import {
@@ -17,6 +19,23 @@ import {
 } from 'firebase/firestore';
 import { listDocuments, createDocument } from '../lib/firestoreUtils';
 export { listDocuments, createDocument };
+
+// ── Engineering Sector Bridge (cross-sector live data) ────────────────────────
+import {
+  getEngProjects,
+  getEngInvoices,
+  getEngContracts,
+  getEngEmployees,
+  getEngAllEmployees,
+  getEngPayrollRuns,
+  getEngAuditLog,
+  getEngOrders,
+  getEngFinanceLedger,
+  checkEngConnection,
+} from './EngineeringGateway';
+
+// Re-export connection checker so components can show live/offline status
+export { checkEngConnection };
 
 let _activeTenantId = null;
 
@@ -115,11 +134,23 @@ export async function updateTenantDoc(collectionName, id, changes) {
   return { id, ...changes, tenantId };
 }
 
+/**
+ * getEmployees — routes through Engineering Sector Firestore.
+ * Falls back to prod Firestore if engineering is unreachable.
+ */
 export async function getEmployees() {
+  try {
+    const eng = await getEngEmployees();
+    if (eng && eng.length > 0) return eng;
+  } catch { /* fall through */ }
   return listTenantCollection('employees');
 }
 
 export async function getOrders() {
+  try {
+    const eng = await getEngOrders();
+    if (eng && eng.length > 0) return eng;
+  } catch { /* fall through */ }
   return listTenantCollection('orders');
 }
 
@@ -246,23 +277,62 @@ export async function getOdooSalesOrders(limit = 50) {
   );
 }
 
-// ── Firestore-backed functions used by adopted engineering-sector UI ──────────
+// ── Adopted module functions — live cross-sector data via EngineeringGateway ──
+// Each function first tries Engineering Sector Firestore (ethiobusiness-hub).
+// Falls back gracefully to prod Firestore if engineering is unreachable.
 
 export async function getProjects() {
-  try { return await listTenantCollection('projects'); }
-  catch { return []; }
+  try {
+    const eng = await getEngProjects();
+    if (eng && eng.length > 0) return eng;
+  } catch { /* fall through */ }
+  try { return await listTenantCollection('projects'); } catch { return []; }
 }
 
 export async function getInvoices() {
-  try { return await listTenantCollection('invoices'); }
-  catch { return []; }
+  try {
+    const eng = await getEngInvoices();
+    if (eng && eng.length > 0) return eng;
+  } catch { /* fall through */ }
+  try { return await listTenantCollection('invoices'); } catch { return []; }
+}
+
+export async function getFinanceLedger() {
+  try {
+    const eng = await getEngFinanceLedger();
+    if (eng && eng.length > 0) return eng;
+  } catch { /* fall through */ }
+  try { return await listTenantCollection('finance_ledger'); } catch { return []; }
 }
 
 export async function getContracts() {
-  try { return await listTenantCollection('contracts'); }
-  catch { return []; }
+  try {
+    const eng = await getEngContracts();
+    if (eng && eng.length > 0) return eng;
+  } catch { /* fall through */ }
+  try { return await listTenantCollection('contracts'); } catch { return []; }
 }
 
+export async function getPayrollRuns(limitCount = 8) {
+  try {
+    const eng = await getEngPayrollRuns(limitCount);
+    if (eng && eng.length > 0) return eng;
+  } catch { /* fall through */ }
+  try {
+    const runs = await listTenantCollection('payroll_runs');
+    return runs.slice(0, limitCount).sort((a, b) => b.runAt?.localeCompare?.(a.runAt) ?? 0);
+  } catch { return []; }
+}
+
+export async function getAuditLog(limitCount = 50) {
+  try {
+    const eng = await getEngAuditLog(limitCount);
+    if (eng && eng.length > 0) return eng;
+  } catch { /* fall through */ }
+  try { return await listTenantCollection('audit_log'); } catch { return []; }
+}
+
+// Write functions — always write to prod Firestore (engineering is read-only source)
 export async function createEmployee(data) {
   return saveTenantDoc('employees', { ...data, status: 'active', createdAt: new Date().toISOString() });
 }
@@ -273,13 +343,6 @@ export async function updateEmployee(id, changes) {
 
 export async function savePayrollRun(data) {
   return saveTenantDoc('payroll_runs', { ...data, runAt: new Date().toISOString() });
-}
-
-export async function getPayrollRuns(limit = 8) {
-  try {
-    const runs = await listTenantCollection('payroll_runs');
-    return runs.slice(0, limit).sort((a, b) => b.runAt?.localeCompare?.(a.runAt) ?? 0);
-  } catch { return []; }
 }
 
 export async function logAuditEvent(data) {
