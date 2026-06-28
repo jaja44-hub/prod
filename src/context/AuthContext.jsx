@@ -91,7 +91,7 @@ export function AuthProvider({ children }) {
     setUserProfile(null);
   };
 
-  const value = useMemo(() => ({ currentUser, userProfile, loading, logout, authError }), [currentUser, userProfile, loading, authError]);
+  const value = useMemo(() => ({ currentUser, userProfile, user: userProfile, loading, logout, authError }), [currentUser, userProfile, loading, authError]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

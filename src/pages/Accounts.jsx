@@ -28,7 +28,8 @@ const CURRENT_YEAR = now.getFullYear();
 export default function ImperialFinanceMinistry() {
   const { language: lang } = useLang();
   const language = lang;
-  const { user } = useAuth();
+  const { userProfile } = useAuth();
+  const user = userProfile;
 
   // Data state
   const [ledger, setLedger]         = useState([]);

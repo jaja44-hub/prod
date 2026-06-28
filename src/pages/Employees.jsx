@@ -29,7 +29,8 @@ import { PayrollService } from "../services/PayrollService";
 export default function HRFortress() {
   const { language: lang } = useLang();
   const language = lang;
-  const { user } = useAuth();
+  const { userProfile } = useAuth();
+  const user = userProfile;
   const [employees, setEmployees] = useState([]);
   const [search, setSearch] = useState("");
   const [payrollResults, setPayrollResults] = useState(null);

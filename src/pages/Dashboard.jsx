@@ -177,7 +177,8 @@ function EmployeeStatusBadge({ status }) {
 // ── Main component ───────────────────────────────────────────────────────────
 
 export default function AnalyticsDashboard() {
-  const { user }     = useAuth();
+  const { userProfile } = useAuth();
+  const user = userProfile;
   const { language: lang } = useLang();
   const language = lang;
   const bi = (en, am) => language === "am" ? am : en;
