@@ -63,12 +63,18 @@ function App() {
 
         {/* Procurement — CEO & Warehouse Head */}
         <Route path='/purchases' element={<RoleGuard><PurchaseOrders /></RoleGuard>} />
+        <Route path='/suppliers' element={<RoleGuard><PurchaseOrders /></RoleGuard>} />
+        <Route path='/orders' element={<RoleGuard><Sales /></RoleGuard>} />
 
         {/* HR — CEO & HR Head */}
         <Route path='/hr' element={<RoleGuard><Employees /></RoleGuard>} />
+        <Route path='/employees' element={<RoleGuard><Employees /></RoleGuard>} />
+        <Route path='/payroll' element={<RoleGuard><Employees /></RoleGuard>} />
 
         {/* Finance — CEO only */}
         <Route path='/finance' element={<RoleGuard><Accounts /></RoleGuard>} />
+        <Route path='/invoices' element={<RoleGuard><Accounts /></RoleGuard>} />
+        <Route path='/reports' element={<RoleGuard><Accounts /></RoleGuard>} />
 
         {/* Dev/test */}
         <Route path='/test' element={<OdooTest />} />
