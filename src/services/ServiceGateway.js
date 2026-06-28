@@ -32,6 +32,11 @@ export function getActiveTenant() {
   return import.meta.env.VITE_TENANT_ID || 'production';
 }
 
+/** Tags a data object with the active tenantId for multi-tenant Firestore writes. */
+export function withTenantData(data) {
+  return { ...data, tenantId: getActiveTenant() };
+}
+
 function resolveTenantId() {
   return getActiveTenant();
 }
@@ -239,6 +244,47 @@ export async function getOdooSalesOrders(limit = 50) {
     [[]],
     { fields: ['id', 'name', 'partner_id', 'amount_total', 'state', 'date_order'], limit }
   );
+}
+
+// ── Firestore-backed functions used by adopted engineering-sector UI ──────────
+
+export async function getProjects() {
+  try { return await listTenantCollection('projects'); }
+  catch { return []; }
+}
+
+export async function getInvoices() {
+  try { return await listTenantCollection('invoices'); }
+  catch { return []; }
+}
+
+export async function getContracts() {
+  try { return await listTenantCollection('contracts'); }
+  catch { return []; }
+}
+
+export async function createEmployee(data) {
+  return saveTenantDoc('employees', { ...data, status: 'active', createdAt: new Date().toISOString() });
+}
+
+export async function updateEmployee(id, changes) {
+  return updateTenantDoc('employees', id, changes);
+}
+
+export async function savePayrollRun(data) {
+  return saveTenantDoc('payroll_runs', { ...data, runAt: new Date().toISOString() });
+}
+
+export async function getPayrollRuns(limit = 8) {
+  try {
+    const runs = await listTenantCollection('payroll_runs');
+    return runs.slice(0, limit).sort((a, b) => b.runAt?.localeCompare?.(a.runAt) ?? 0);
+  } catch { return []; }
+}
+
+export async function logAuditEvent(data) {
+  try { return await saveTenantDoc('audit_log', { ...data, ts: new Date().toISOString() }); }
+  catch { /* non-critical — swallow */ }
 }
 
 export default {
