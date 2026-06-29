@@ -12,15 +12,22 @@ const statCards = [
 
 function ErpSummaryPanel() {
   const { t } = useLang();
+  const { currentUser, loading: authLoading } = useAuth();
   const [stats, setStats] = useState({ products: 0, customers: 0, vendors: 0, purchaseOrders: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [errorDetail, setErrorDetail] = useState('');
 
   useEffect(() => {
+    if (authLoading || !currentUser) {
+      return undefined;
+    }
+
     let mounted = true;
     async function fetchStats() {
       setLoading(true);
       setError(false);
+      setErrorDetail('');
       try {
         const [products, customers, vendors, purchaseOrders] = await Promise.all([
           getOdooProducts(500, ['id']),
@@ -39,16 +46,31 @@ function ErpSummaryPanel() {
         });
       } catch (err) {
         console.error('ErpSummaryPanel error', err);
-        if (mounted) setError(true);
+        if (!mounted) return;
+        const detail = err?.response?.data?.error || err?.message || t('error');
+        setError(true);
+        setErrorDetail(String(detail));
       } finally {
         if (mounted) setLoading(false);
       }
     }
+
     fetchStats();
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [authLoading, currentUser, t]);
+
+  const errorLabel = (() => {
+    const msg = errorDetail.toLowerCase();
+    if (msg.includes('waking up') || msg.includes('502') || msg.includes('503')) {
+      return t('backendWakingUp');
+    }
+    if (msg.includes('unauthorized') || msg.includes('401')) {
+      return t('odooAuthError');
+    }
+    return t('odooConnectionError');
+  })();
 
   return (
     <section className="mb-6">
@@ -59,10 +81,10 @@ function ErpSummaryPanel() {
         </div>
         {error && (
           <span
-            className="inline-flex items-center gap-1 rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200 px-3 py-1 text-xs font-semibold"
-            title={errorDetail}
+            className="inline-flex items-center gap-1 rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200 px-3 py-1 text-xs font-semibold max-w-md"
+            title={errorDetail || undefined}
           >
-            ⚠ {errorDetail.includes('waking up') ? t('backendWakingUp') : t('odooConnectionError')}
+            ⚠ {errorLabel}
           </span>
         )}
       </div>

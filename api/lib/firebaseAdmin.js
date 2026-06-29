@@ -1,22 +1,41 @@
 import admin from 'firebase-admin';
+import { existsSync, readFileSync } from 'fs';
+import { resolve } from 'path';
 
 let initialized = false;
 let warningLogged = false;
 
-function loadServiceAccount() {
-  const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
-  if (!raw) return null;
-
-  try {
-    return JSON.parse(raw);
-  } catch {
+function loadServiceAccountFromFile() {
+  const candidates = [
+    resolve(process.cwd(), 'service-account.json'),
+    resolve(process.cwd(), 'api/service-account.json'),
+  ];
+  for (const filePath of candidates) {
+    if (!existsSync(filePath)) continue;
     try {
-      const decoded = Buffer.from(raw, 'base64').toString('utf8');
-      return JSON.parse(decoded);
+      return JSON.parse(readFileSync(filePath, 'utf8'));
     } catch {
-      return null;
+      // try next path
     }
   }
+  return null;
+}
+
+function loadServiceAccount() {
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (raw) {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      try {
+        const decoded = Buffer.from(raw, 'base64').toString('utf8');
+        return JSON.parse(decoded);
+      } catch {
+        // fall through to file
+      }
+    }
+  }
+  return loadServiceAccountFromFile();
 }
 
 export function getFirebaseAdmin() {

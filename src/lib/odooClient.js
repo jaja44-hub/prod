@@ -26,7 +26,7 @@ async function getAuthHeader() {
   try {
     const user = auth?.currentUser || await waitForAuthUser();
     if (!user) return {};
-    const token = await user.getIdToken();
+    const token = await user.getIdToken(true);
     return { Authorization: `Bearer ${token}` };
   } catch (error) {
     console.warn('[Odoo Client] Failed to get ID token', error);

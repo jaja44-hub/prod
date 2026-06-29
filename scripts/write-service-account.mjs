@@ -1,15 +1,10 @@
-import { writeFileSync } from 'fs';
+import { mkdirSync, writeFileSync } from 'fs';
+import { dirname, resolve } from 'path';
 
 /*
-  Writes `service-account.json` from the environment variable
-  `FIREBASE_SERVICE_ACCOUNT` at build/runtime.
-
-  Expected formats:
-  - Raw JSON string
-  - Base64-encoded JSON string
-
-  Usage (in Vercel): set `FIREBASE_SERVICE_ACCOUNT` to the JSON (or base64) in project envs,
-  and add `npm run vercel-build` as the Vercel Build Command or pre-build step.
+  Writes service account JSON from FIREBASE_SERVICE_ACCOUNT for:
+  - local scripts (project root)
+  - Vercel serverless api/odooProxy (api/service-account.json)
 */
 
 const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
@@ -19,18 +14,17 @@ if (!raw) {
 }
 
 function tryParseJson(s) {
-  try { return JSON.parse(s); } catch (e) { return null; }
+  try { return JSON.parse(s); } catch { return null; }
 }
 
 let jsonText = null;
 if (tryParseJson(raw)) {
   jsonText = raw;
 } else {
-  // try base64 decode
   try {
     const dec = Buffer.from(raw, 'base64').toString('utf8');
     if (tryParseJson(dec)) jsonText = dec;
-  } catch (e) {
+  } catch {
     // ignore
   }
 }
@@ -40,5 +34,13 @@ if (!jsonText) {
   process.exit(1);
 }
 
-writeFileSync('service-account.json', jsonText, { encoding: 'utf8', mode: 0o600 });
-console.log('Wrote service-account.json from FIREBASE_SERVICE_ACCOUNT');
+const targets = [
+  resolve(process.cwd(), 'service-account.json'),
+  resolve(process.cwd(), 'api/service-account.json'),
+];
+
+for (const target of targets) {
+  mkdirSync(dirname(target), { recursive: true });
+  writeFileSync(target, jsonText, { encoding: 'utf8', mode: 0o600 });
+  console.log(`Wrote ${target}`);
+}
