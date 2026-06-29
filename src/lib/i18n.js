@@ -1,6 +1,8 @@
 export const translations = {
   en: {
     dashboard: 'Dashboard',
+    dashboardWelcome: 'Welcome back',
+    dashboardWidgetsComingSoon: 'Operational widgets coming soon',
     inventory: 'Inventory',
     workOrders: 'Work Orders',
     products: 'Products',
@@ -70,6 +72,8 @@ export const translations = {
   },
   am: {
     dashboard: 'ዳሽቦርድ',
+    dashboardWelcome: 'እንኳን ደህና መጡ',
+    dashboardWidgetsComingSoon: 'ተጨማሪ የክወና መረጃ በቅርቡ',
     inventory: 'ክምችት',
     workOrders: 'የሥራ ትዕዛዞች',
     products: 'ምርቶች',
