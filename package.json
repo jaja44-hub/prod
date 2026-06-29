@@ -11,6 +11,7 @@
     "ci-check": "node ./scripts/check-no-engineering.mjs",
     "deploy:rules": "node ./scripts/deploy-firestore-rules.mjs",
     "seed:auth": "node ./scripts/seed_rbac_users.mjs",
+    "seed:odoo": "node ./scripts/seed_odoo_demo_data.mjs",
     "add:auth-domain": "node ./scripts/add-authorized-domain.mjs"
   },
   "dependencies": {
