@@ -1,4 +1,18 @@
 import axios from 'axios';
+import { auth } from '../config/firebase';
+
+async function getAuthHeader() {
+  const user = auth?.currentUser;
+  if (!user) return {};
+
+  try {
+    const token = await user.getIdToken();
+    return { Authorization: `Bearer ${token}` };
+  } catch (error) {
+    console.warn('[Odoo Client] Failed to get ID token', error);
+    return {};
+  }
+}
 
 /**
  * Universal Odoo Client wrapper for React.
@@ -17,13 +31,13 @@ export const odooClient = {
    */
   async execute(model, method, args = [], kwargs = {}) {
     try {
-      // Calls the secure Vercel Serverless proxy
+      const headers = await getAuthHeader();
       const response = await axios.post('/api/odooProxy', {
         model,
         method,
         args,
         kwargs
-      });
+      }, { headers });
 
       return response.data.data;
     } catch (error) {
