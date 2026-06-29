@@ -80,7 +80,16 @@ export default async function handler(req, res) {
     if (skipAuth) {
       logSkipAuthWarning();
     } else {
-      decoded = await verifyBearerToken(authHeader);
+      try {
+        decoded = await verifyBearerToken(authHeader);
+      } catch (verifyErr) {
+        console.error('[Odoo Proxy] Token verification failed:', verifyErr.message);
+        return res.status(401).json({
+          error: verifyErr.message?.includes('FIREBASE_SERVICE_ACCOUNT')
+            ? 'Proxy auth misconfigured — set FIREBASE_SERVICE_ACCOUNT on Vercel'
+            : 'Unauthorized',
+        });
+      }
       if (!decoded) {
         return res.status(401).json({ error: 'Unauthorized' });
       }

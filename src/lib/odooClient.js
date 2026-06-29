@@ -1,11 +1,31 @@
 import axios from 'axios';
+import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../config/firebase';
 
-async function getAuthHeader() {
-  const user = auth?.currentUser;
-  if (!user) return {};
+function waitForAuthUser(timeoutMs = 10000) {
+  if (!auth) return Promise.resolve(null);
+  if (auth.currentUser) return Promise.resolve(auth.currentUser);
 
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      unsub();
+      reject(new Error('Timed out waiting for Firebase auth'));
+    }, timeoutMs);
+
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        clearTimeout(timer);
+        unsub();
+        resolve(user);
+      }
+    });
+  });
+}
+
+async function getAuthHeader() {
   try {
+    const user = auth?.currentUser || await waitForAuthUser();
+    if (!user) return {};
     const token = await user.getIdToken();
     return { Authorization: `Bearer ${token}` };
   } catch (error) {
@@ -16,59 +36,31 @@ async function getAuthHeader() {
 
 /**
  * Universal Odoo Client wrapper for React.
- * This securely routes all requests through the Vercel Serverless Function,
- * keeping the Odoo Master Password completely hidden from the browser.
+ * Routes requests through the Vercel serverless proxy with Firebase Bearer auth.
  */
 export const odooClient = {
-  /**
-   * Execute a method on an Odoo model.
-   * 
-   * @param {string} model - The Odoo model (e.g., 'res.partner')
-   * @param {string} method - The method to call (e.g., 'search_read', 'create', 'write')
-   * @param {Array} args - Positional arguments (e.g., [[['is_company', '=', true]]])
-   * @param {Object} kwargs - Keyword arguments (e.g., { limit: 10, offset: 0, fields: ['name'] })
-   * @returns {Promise<any>} - The data returned by Odoo
-   */
   async execute(model, method, args = [], kwargs = {}) {
+    const headers = await getAuthHeader();
+    if (!headers.Authorization) {
+      throw new Error('Not authenticated — sign in to access ERP data');
+    }
+
     try {
-      const headers = await getAuthHeader();
       const response = await axios.post('/api/odooProxy', {
         model,
         method,
         args,
-        kwargs
+        kwargs,
       }, { headers });
+
+      if (response.data?.success === false) {
+        throw new Error(response.data?.error || 'Odoo proxy request failed');
+      }
 
       return response.data.data;
     } catch (error) {
       console.error('[Odoo Client Error]', error?.response?.data || error.message);
       throw error;
     }
-  }
+  },
 };
-
-// =========================================================
-// USAGE EXAMPLES:
-// =========================================================
-
-// 1. SEARCH & READ (Fetching Data)
-/*
-  const partners = await odooClient.execute('res.partner', 'search_read', 
-    [[['is_company', '=', true]]], // Domain filter
-    { fields: ['id', 'name', 'email'], limit: 5 } // Options
-  );
-*/
-
-// 2. CREATE (Inserting Data)
-/*
-  const newPartnerId = await odooClient.execute('res.partner', 'create', 
-    [{ name: 'Addis Crown Corp', email: 'hello@addiscrown.com' }]
-  );
-*/
-
-// 3. WRITE (Updating Data)
-/*
-  await odooClient.execute('res.partner', 'write', 
-    [ [newPartnerId], { email: 'newemail@addiscrown.com' } ]
-  );
-*/

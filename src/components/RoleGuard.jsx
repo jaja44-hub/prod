@@ -27,14 +27,17 @@ function getModuleId(pathname) {
 }
 
 /**
- * Wraps any route. If the logged-in user doesn't have access,
- * redirects to /dashboard. CEOs always pass through.
+ * Route guard: CEO passes; others need rbac route OR module policy match.
  */
 export default function RoleGuard({ children }) {
-  const { userProfile, loading } = useAuth();
+  const { userProfile, currentUser, loading } = useAuth();
   const location = useLocation();
 
   if (loading) return null;
+
+  if (!currentUser) {
+    return <Navigate replace to="/login" />;
+  }
 
   const principal = getPrincipal(userProfile);
   const role = principal?.role;
@@ -42,9 +45,16 @@ export default function RoleGuard({ children }) {
 
   if (isCeo(principal)) return children;
 
-  if (!role || !canAccess(role, location.pathname) || (moduleId && !canViewModule(principal, moduleId))) {
+  if (!role) {
     return <Navigate replace to="/dashboard" />;
   }
 
-  return children;
+  const routeAllowed = canAccess(role, location.pathname);
+  const moduleAllowed = moduleId ? canViewModule(principal, moduleId) : true;
+
+  if (routeAllowed || moduleAllowed) {
+    return children;
+  }
+
+  return <Navigate replace to="/dashboard" />;
 }

@@ -30,10 +30,10 @@ export const ROLE_NAV_ACCESS = {
 
 // Which routes each role can access
 export const ROLE_ROUTE_ACCESS = {
-  ceo: ['/dashboard', '/inventory', '/inventory/new', '/work-orders', '/sales', '/purchases', '/crm', '/hr', '/finance'],
-  hr_head: ['/hr', '/dashboard'],
-  sales_head: ['/sales', '/crm', '/dashboard'],
-  warehouse_head: ['/inventory', '/inventory/new', '/purchases', '/dashboard'],
+  ceo: ['/dashboard', '/inventory', '/work-orders', '/sales', '/purchases', '/crm', '/hr', '/finance', '/customers', '/suppliers', '/employees', '/orders', '/invoices', '/reports', '/payroll'],
+  hr_head: ['/hr', '/employees', '/payroll', '/dashboard'],
+  sales_head: ['/sales', '/crm', '/customers', '/orders', '/dashboard'],
+  warehouse_head: ['/inventory', '/work-orders', '/purchases', '/suppliers', '/dashboard'],
 };
 
 export function canAccess(role, route) {

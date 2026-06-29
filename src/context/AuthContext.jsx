@@ -8,6 +8,18 @@ import { setActiveTenant } from '../services/ServiceGateway';
 
 const AuthContext = createContext(null);
 
+async function profileFromToken(user) {
+  const tokenResult = await user.getIdTokenResult();
+  return {
+    uid: user.uid,
+    email: user.email,
+    name: user.displayName || user.email,
+    role: tokenResult.claims?.role || 'viewer',
+    tenantId: tokenResult.claims?.tenantId || 'production',
+    tier: tokenResult.claims?.tier ?? 1,
+  };
+}
+
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
@@ -46,15 +58,15 @@ export function AuthProvider({ children }) {
           const extDoc = await getDoc(doc(db, 'users_extended', user.uid));
           if (extDoc.exists()) profile = { id: extDoc.id, ...extDoc.data() };
         }
-        // If still no Firestore profile, derive minimal profile from Firebase Auth token claims
         if (!profile) {
-          const tokenResult = await user.getIdTokenResult();
+          profile = await profileFromToken(user);
+        } else {
+          const tokenProfile = await profileFromToken(user);
           profile = {
-            uid: user.uid,
-            email: user.email,
-            name: user.displayName || user.email,
-            role: tokenResult.claims?.role || 'viewer',
-            tenantId: tokenResult.claims?.tenantId || 'production',
+            ...profile,
+            role: profile.role || tokenProfile.role,
+            tenantId: profile.tenantId || tokenProfile.tenantId,
+            tier: profile.tier ?? tokenProfile.tier,
           };
         }
         setUserProfile(profile);
@@ -63,6 +75,13 @@ export function AuthProvider({ children }) {
         }
       } catch (err) {
         console.error('AuthContext: failed to load user profile', err);
+        try {
+          const profile = await profileFromToken(user);
+          setUserProfile(profile);
+          if (profile.tenantId) setActiveTenant(profile.tenantId);
+        } catch (tokenErr) {
+          console.error('AuthContext: token fallback failed', tokenErr);
+        }
       } finally {
         setLoading(false);
       }
