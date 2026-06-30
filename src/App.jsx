@@ -15,6 +15,7 @@ import LoginPage from './pages/login';
 import Inventory from './pages/Inventory';
 import WorkOrders from './pages/WorkOrders';
 import Sales from './pages/Sales';
+import SalesOrderDetail from './pages/SalesOrderDetail';
 import ItemDetail from './pages/ItemDetail';
 import WorkOrderDetail from './pages/WorkOrderDetail';
 import PurchaseOrders from './pages/PurchaseOrders';
@@ -58,6 +59,8 @@ function App() {
 
         {/* Sales & CRM — CEO & Sales Head */}
         <Route path='/sales' element={<RoleGuard><Sales /></RoleGuard>} />
+        <Route path='/sales/new' element={<RoleGuard><SalesOrderDetail /></RoleGuard>} />
+        <Route path='/sales/:id' element={<RoleGuard><SalesOrderDetail /></RoleGuard>} />
         <Route path='/crm' element={<RoleGuard><Customers /></RoleGuard>} />
         <Route path='/customers' element={<RoleGuard><Customers /></RoleGuard>} />
 

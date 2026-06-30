@@ -277,6 +277,35 @@ export async function getOdooSalesOrders(limit = 50) {
   );
 }
 
+export async function getOdooSalesOrder(id) {
+  if (!id) throw new Error('Sales order id is required');
+  const orders = await executeOdoo('sale.order', 'search_read',
+    [[['id', '=', Number(id)]]],
+    { fields: ['id', 'name', 'partner_id', 'amount_total', 'state', 'date_order', 'origin'], limit: 1 }
+  );
+  const order = Array.isArray(orders) && orders.length ? orders[0] : null;
+  if (!order) return null;
+  const lines = await executeOdoo('sale.order.line', 'search_read',
+    [[['order_id', '=', Number(id)]]],
+    { fields: ['id', 'product_id', 'product_uom_qty', 'price_unit'], limit: 50 }
+  );
+  return { ...order, order_lines: Array.isArray(lines) ? lines : [] };
+}
+
+export async function createOdooSalesOrder({ partner_id, origin, lines = [] }) {
+  if (!partner_id) throw new Error('Customer is required');
+  const newId = await executeOdoo('sale.order', 'create', [{ partner_id: Number(partner_id), origin: origin || '' }]);
+  for (const line of lines) {
+    await executeOdoo('sale.order.line', 'create', [{
+      order_id: Number(newId),
+      product_id: Number(line.product_id),
+      product_uom_qty: Number(line.quantity || 0),
+      price_unit: Number(line.unitPrice || 0),
+    }]);
+  }
+  return getOdooSalesOrder(newId);
+}
+
 // ── Adopted module functions — live cross-sector data via EngineeringGateway ──
 // Each function first tries Engineering Sector Firestore (ethiobusiness-hub).
 // Falls back gracefully to prod Firestore if engineering is unreachable.
@@ -373,4 +402,6 @@ export default {
   createOdooProduct,
   getOdooManufacturingOrders,
   getOdooSalesOrders,
+  getOdooSalesOrder,
+  createOdooSalesOrder,
 };
