@@ -27,7 +27,7 @@ export default function Inventory() {
       setLoading(true);
       setError('');
       try {
-        const products = await getOdooProducts(50, ['id', 'name', 'default_code', 'qty_available', 'list_price', 'uom_id', 'location']);
+        const products = await getOdooProducts(50, ['id', 'name', 'default_code', 'qty_available', 'list_price', 'uom_id']);
         if (!mounted) return;
         setItems(Array.isArray(products) ? products : []);
         setEndReached(true);
@@ -94,7 +94,7 @@ export default function Inventory() {
               onClick={() => {
                 setLoading(true);
                 setError('');
-                getOdooProducts(50, ['id', 'name', 'default_code', 'qty_available', 'list_price', 'uom_id', 'location'])
+                getOdooProducts(50, ['id', 'name', 'default_code', 'qty_available', 'list_price', 'uom_id'])
                   .then((products) => setItems(Array.isArray(products) ? products : []))
                   .catch((err) => setError(normalizeErrorMessage(err)))
                   .finally(() => setLoading(false));
@@ -115,7 +115,6 @@ export default function Inventory() {
                   <th className="py-2">{t('name')}</th>
                   <th className="py-2">{t('quantity')}</th>
                   <th className="py-2">{t('unit')}</th>
-                  <th className="py-2">{t('location')}</th>
                   <th className="py-2">{t('actions')}</th>
                 </tr>
               </thead>
@@ -126,7 +125,6 @@ export default function Inventory() {
                     <td className="py-2">{it.name || '—'}</td>
                     <td className="py-2">{typeof it.qty_available === 'number' ? it.qty_available : '—'}</td>
                     <td className="py-2">{it.uom_id?.[1] || t('unit')}</td>
-                    <td className="py-2">{it.location || t('notAvailable')}</td>
                     <td className="py-2">
                       <button onClick={() => openEdit(it)} className="text-xs text-violet-600">
                         {t('viewEdit')}
