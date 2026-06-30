@@ -13,11 +13,13 @@ cd /home/ja/Documents/addis-crown-v3/production-submodule
 2. Export the required Odoo environment variables:
 
 ```bash
-export ODOO_URL="https://..."
-export ODOO_DB="..."
-export ODOO_USER="..."
-export ODOO_APIKEY="..."
+export ODOO_URL="https://jafiface-addis-crown-erp.hf.space"
+export ODOO_DB="POSTGRES_DATABASE=neondb"
+export ODOO_USER="admin"
+export ODOO_APIKEY="your-api-key"
 ```
+
+**Hugging Face quirk:** the live Odoo database name is the literal string `POSTGRES_DATABASE=neondb`, not `neondb`. The seeder auto-falls back between those two values if you set `ODOO_DB=neondb`.
 
 3. Run the seed script:
 

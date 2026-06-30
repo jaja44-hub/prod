@@ -1,5 +1,6 @@
 import xmlrpc from 'xmlrpc';
 import { verifyBearerToken, logSkipAuthWarning } from './lib/firebaseAdmin.js';
+import { authenticateOdooDb } from './lib/resolveOdooDb.js';
 
 const ALLOWED_MODELS = new Set([
   'product.product',
@@ -28,13 +29,10 @@ const getClient = (path) => {
     : xmlrpc.createClient(options);
 };
 
-const authenticate = (db, user, apiKey) => new Promise((resolve, reject) => {
+const authenticate = (db, user, apiKey) => {
   const client = getClient('/xmlrpc/2/common');
-  client.methodCall('authenticate', [db, user, apiKey, {}], (error, value) => {
-    if (error) reject(error);
-    else resolve(value);
-  });
-});
+  return authenticateOdooDb(client, db, user, apiKey);
+};
 
 const executeKw = (db, uid, apiKey, model, method, args, kwargs) => new Promise((resolve, reject) => {
   const client = getClient('/xmlrpc/2/object');
@@ -113,13 +111,15 @@ export default async function handler(req, res) {
       throw new Error('Missing Odoo credentials in environment variables (ODOO_DB, ODOO_USER, ODOO_APIKEY).');
     }
 
-    const sessionUid = await authenticate(db, user, apiKey);
+    const session = await authenticate(db, user, apiKey);
 
-    if (!sessionUid) {
-      return res.status(401).json({ error: 'Odoo authentication failed. Check ODOO_USER and ODOO_APIKEY.' });
+    if (!session) {
+      return res.status(401).json({
+        error: 'Odoo authentication failed. Check ODOO_DB, ODOO_USER, and ODOO_APIKEY.',
+      });
     }
 
-    const data = await executeKw(db, sessionUid, apiKey, model, method, args, kwargs);
+    const data = await executeKw(session.db, session.uid, apiKey, model, method, args, kwargs);
 
     return res.status(200).json({
       success: true,

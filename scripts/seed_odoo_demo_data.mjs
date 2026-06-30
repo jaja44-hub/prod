@@ -1,6 +1,8 @@
 import xmlrpc from 'xmlrpc';
+import { authenticateOdooDb } from '../api/lib/resolveOdooDb.js';
 
 const { ODOO_URL, ODOO_DB, ODOO_USER, ODOO_APIKEY } = process.env;
+let activeDb = ODOO_DB;
 
 if (!ODOO_URL || !ODOO_DB || !ODOO_USER || !ODOO_APIKEY) {
   console.error('Missing env: ODOO_URL, ODOO_DB, ODOO_USER, ODOO_APIKEY');
@@ -13,18 +15,23 @@ const normalizedUrl = ODOO_URL.replace(/\/+$/, '');
 const commonClient = xmlrpc.createSecureClient({ url: `${normalizedUrl}/xmlrpc/2/common` });
 const objectClient = xmlrpc.createSecureClient({ url: `${normalizedUrl}/xmlrpc/2/object` });
 
-function authenticate() {
-  return new Promise((resolve, reject) => {
-    commonClient.methodCall('authenticate', [ODOO_DB, ODOO_USER, ODOO_APIKEY, {}], (err, uid) => {
-      if (err || !uid) return reject(err || new Error('Authentication failed'));
-      resolve(uid);
-    });
-  });
+async function authenticate() {
+  const session = await authenticateOdooDb(commonClient, ODOO_DB, ODOO_USER, ODOO_APIKEY);
+  if (!session) {
+    throw new Error(
+      `Authentication failed for ODOO_DB="${ODOO_DB}". On Hugging Face, try ODOO_DB="POSTGRES_DATABASE=neondb".`
+    );
+  }
+  if (session.db !== ODOO_DB) {
+    console.log(`ℹ️  Resolved ODOO_DB "${ODOO_DB}" → "${session.db}"`);
+  }
+  activeDb = session.db;
+  return session.uid;
 }
 
 function execute(uid, model, method, args, kwargs = {}) {
   return new Promise((resolve, reject) => {
-    objectClient.methodCall('execute_kw', [ODOO_DB, uid, ODOO_APIKEY, model, method, args, kwargs], (err, value) => {
+    objectClient.methodCall('execute_kw', [activeDb, uid, ODOO_APIKEY, model, method, args, kwargs], (err, value) => {
       if (err) return reject(err);
       resolve(value);
     });
