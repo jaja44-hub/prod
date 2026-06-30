@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useLang } from '../context/LangContext'
-import { getOdooProduct, updateOdooProduct, createOdooProduct, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway'
+import { useAuth } from '../context/AuthContext'
+import { getOdooProduct, updateOdooProduct, createOdooProduct, logAuditEvent, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway'
 
 export default function ItemDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { t } = useLang()
+  const { currentUser, userProfile, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [item, setItem] = useState(null)
@@ -39,9 +41,10 @@ export default function ItemDetail() {
         if (mounted) setLoading(false)
       }
     }
+    if (authLoading || !currentUser) return
     load()
     return () => (mounted = false)
-  }, [id])
+  }, [id, authLoading, currentUser])
 
   async function submit(e) {
     e.preventDefault()
@@ -58,6 +61,21 @@ export default function ItemDetail() {
         if (!created?.id) {
           throw new Error('Failed to create product in Odoo.')
         }
+        try {
+          await logAuditEvent({
+            type: 'product.create',
+            productId: created.id,
+            productName: created.name,
+            actor: userProfile?.name || userProfile?.email || currentUser?.uid || 'unknown',
+            tenant: currentUser?.uid,
+            details: {
+              default_code: created.default_code,
+              list_price: created.list_price,
+            },
+          })
+        } catch {
+          // Audit failures must not block user flow.
+        }
         navigate(`/inventory/${created.id}`)
         return
       }
@@ -73,6 +91,21 @@ export default function ItemDetail() {
         name: updated?.name || '',
         list_price: updated?.list_price || 0,
       })
+      try {
+        await logAuditEvent({
+          type: 'product.update',
+          productId: updated.id,
+          productName: updated.name,
+          actor: userProfile?.name || userProfile?.email || currentUser?.uid || 'unknown',
+          tenant: currentUser?.uid,
+          details: {
+            default_code: updated.default_code,
+            list_price: updated.list_price,
+          },
+        })
+      } catch {
+        // Audit failures must not block user flow.
+      }
     } catch (err) {
       setError(normalizeErrorMessage(err))
     } finally {
