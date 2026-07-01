@@ -1,7 +1,9 @@
 import React from 'react';
-import ErpSummaryPanel from '../components/ErpSummaryPanel';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
+import ErpSummaryPanel from '../components/ErpSummaryPanel';
+import RecentSalesOrdersWidget from '../components/RecentSalesOrdersWidget';
+import LowStockAlertWidget from '../components/LowStockAlertWidget';
 
 export default function Dashboard() {
   const { t } = useLang();
@@ -30,9 +32,10 @@ export default function Dashboard() {
 
       <ErpSummaryPanel />
 
-      <section className="mt-8 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 p-6 text-center text-sm text-gray-500 dark:text-gray-400">
-        {t('dashboardWidgetsComingSoon')}
-      </section>
+      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+        <RecentSalesOrdersWidget />
+        <LowStockAlertWidget />
+      </div>
     </div>
   );
 }
