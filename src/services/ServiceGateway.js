@@ -220,6 +220,35 @@ export async function getOdooPurchaseOrders(limit = 25) {
   );
 }
 
+export async function getOdooPurchaseOrder(id) {
+  if (!id) throw new Error('Purchase order id is required');
+  const orders = await executeOdoo('purchase.order', 'search_read',
+    [[['id', '=', Number(id)]]],
+    { fields: ['id', 'name', 'partner_id', 'amount_total', 'state', 'date_order', 'origin'], limit: 1 }
+  );
+  const order = Array.isArray(orders) && orders.length ? orders[0] : null;
+  if (!order) return null;
+  const lines = await executeOdoo('purchase.order.line', 'search_read',
+    [[['order_id', '=', Number(id)]]],
+    { fields: ['id', 'product_id', 'product_qty', 'price_unit'], limit: 50 }
+  );
+  return { ...order, order_lines: Array.isArray(lines) ? lines : [] };
+}
+
+export async function createOdooPurchaseOrder({ partner_id, origin, lines = [] }) {
+  if (!partner_id) throw new Error('Vendor is required');
+  const newId = await executeOdoo('purchase.order', 'create', [{ partner_id: Number(partner_id), origin: origin || '' }]);
+  for (const line of lines) {
+    await executeOdoo('purchase.order.line', 'create', [{
+      order_id: Number(newId),
+      product_id: Number(line.product_id),
+      product_qty: Number(line.quantity || 0),
+      price_unit: Number(line.unitPrice || 0),
+    }]);
+  }
+  return getOdooPurchaseOrder(newId);
+}
+
 /**
  * Fetch HR employees from Odoo.
  */
@@ -404,4 +433,6 @@ export default {
   getOdooSalesOrders,
   getOdooSalesOrder,
   createOdooSalesOrder,
+  getOdooPurchaseOrder,
+  createOdooPurchaseOrder,
 };

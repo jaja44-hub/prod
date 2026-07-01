@@ -7,6 +7,7 @@ const ALLOWED_MODELS = new Set([
   'sale.order',
   'sale.order.line',
   'purchase.order',
+  'purchase.order.line',
   'res.partner',
   'hr.employee',
   'account.account',

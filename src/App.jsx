@@ -19,6 +19,7 @@ import SalesOrderDetail from './pages/SalesOrderDetail';
 import ItemDetail from './pages/ItemDetail';
 import WorkOrderDetail from './pages/WorkOrderDetail';
 import PurchaseOrders from './pages/PurchaseOrders';
+import PurchaseOrderDetail from './pages/PurchaseOrderDetail';
 import Customers from './pages/Customers';
 import Employees from './pages/Employees';
 import Accounts from './pages/Accounts';
@@ -66,6 +67,8 @@ function App() {
 
         {/* Procurement — CEO & Warehouse Head */}
         <Route path='/purchases' element={<RoleGuard><PurchaseOrders /></RoleGuard>} />
+        <Route path='/purchases/new' element={<RoleGuard><PurchaseOrderDetail /></RoleGuard>} />
+        <Route path='/purchases/:id' element={<RoleGuard><PurchaseOrderDetail /></RoleGuard>} />
         <Route path='/suppliers' element={<RoleGuard><PurchaseOrders /></RoleGuard>} />
         <Route path='/orders' element={<RoleGuard><Sales /></RoleGuard>} />
 
