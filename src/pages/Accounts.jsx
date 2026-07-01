@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useLang } from '../context/LangContext';
+import { useAuth } from '../context/AuthContext';
 import { getOdooAccounts, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway';
 
 export default function Accounts() {
   const { t } = useLang();
+  const { currentUser, loading: authLoading } = useAuth();
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -32,9 +34,10 @@ export default function Accounts() {
       }
     }
 
+    if (authLoading || !currentUser) return;
     loadAccounts();
     return () => { mounted = false; };
-  }, [t]);
+  }, [authLoading, currentUser, t]);
 
   const filtered = accounts.filter((account) => {
     if (!queryText) return true;
@@ -56,7 +59,7 @@ export default function Accounts() {
             <input
               value={queryText}
               onChange={(e) => setQueryText(e.target.value)}
-              placeholder={`${t('search')} ${t('accounts')}`}
+              placeholder={t('searchAccounts')}
               className="px-3 py-1 rounded border dark:bg-gray-900 dark:border-gray-700"
             />
             <button type="button" onClick={() => setQueryText('')} className="text-xs text-gray-500">
@@ -66,7 +69,7 @@ export default function Accounts() {
         </div>
 
         {loading ? (
-          <p className="text-gray-500">{t('loading')}</p>
+          <p className="text-gray-500">{t('loadingFinance')}</p>
         ) : error ? (
           <div className="space-y-3">
             <p className="text-red-500">{error}</p>
@@ -86,7 +89,7 @@ export default function Accounts() {
             </button>
           </div>
         ) : filtered.length === 0 ? (
-          <p className="text-gray-500">{t('noResults')}</p>
+          <p className="text-gray-500">{t('noAccountsForTenant')}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm table-auto">
@@ -107,6 +110,12 @@ export default function Accounts() {
                 ))}
               </tbody>
             </table>
+            <div className="flex items-center justify-between mt-4">
+              <div className="text-xs text-gray-500">{t('loadedAccounts', { count: accounts.length })}</div>
+              <div>
+                <span className="text-xs text-gray-500">{t('endOfResults')}</span>
+              </div>
+            </div>
           </div>
         )}
       </div>
