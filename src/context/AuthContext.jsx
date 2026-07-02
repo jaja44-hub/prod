@@ -20,6 +20,36 @@ async function profileFromToken(user) {
   };
 }
 
+async function loadUserProfile(user) {
+  const tokenProfile = await profileFromToken(user);
+  if (!db) return tokenProfile;
+
+  for (const collection of ['users', 'users_extended']) {
+    try {
+      const snap = await getDoc(doc(db, collection, user.uid));
+      if (!snap.exists()) continue;
+      const data = snap.data();
+      return {
+        id: snap.id,
+        ...data,
+        uid: user.uid,
+        email: data.email || tokenProfile.email,
+        name: data.name || tokenProfile.name,
+        role: data.role || tokenProfile.role,
+        tenantId: data.tenantId || tokenProfile.tenantId,
+        tier: data.tier ?? tokenProfile.tier,
+      };
+    } catch (err) {
+      const code = err?.code || '';
+      if (code !== 'permission-denied') {
+        console.warn(`AuthContext: could not read ${collection}/${user.uid}`, err);
+      }
+    }
+  }
+
+  return tokenProfile;
+}
+
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
@@ -46,29 +76,7 @@ export function AuthProvider({ children }) {
 
       setCurrentUser(user);
       try {
-        if (!db) {
-          throw new Error('Firestore is not initialized.');
-        }
-        // Try 'users' collection first, fall back to 'users_extended'
-        let profile = null;
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          profile = { id: userDoc.id, ...userDoc.data() };
-        } else {
-          const extDoc = await getDoc(doc(db, 'users_extended', user.uid));
-          if (extDoc.exists()) profile = { id: extDoc.id, ...extDoc.data() };
-        }
-        if (!profile) {
-          profile = await profileFromToken(user);
-        } else {
-          const tokenProfile = await profileFromToken(user);
-          profile = {
-            ...profile,
-            role: profile.role || tokenProfile.role,
-            tenantId: profile.tenantId || tokenProfile.tenantId,
-            tier: profile.tier ?? tokenProfile.tier,
-          };
-        }
+        const profile = await loadUserProfile(user);
         setUserProfile(profile);
         if (profile?.tenantId) {
           setActiveTenant(profile.tenantId);

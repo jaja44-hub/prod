@@ -48,6 +48,7 @@ async function ensureUser(u) {
       console.log(`✅ exists: ${u.email} (uid=${existing.uid})`);
       await auth.setCustomUserClaims(existing.uid, { tenantId: "production", role: u.role, tier: u.tier ?? 1 });
       await db.collection("users").doc(existing.uid).set(profile, { merge: true });
+      await db.collection("users_extended").doc(existing.uid).set(profile, { merge: true });
       return existing.uid;
     }
 
@@ -61,6 +62,7 @@ async function ensureUser(u) {
     profile.uid = created.uid;
     await auth.setCustomUserClaims(created.uid, { tenantId: "production", role: u.role, tier: u.tier ?? 1 });
     await db.collection("users").doc(created.uid).set(profile);
+    await db.collection("users_extended").doc(created.uid).set(profile);
 
     console.log(`✨ created: ${u.email} (uid=${created.uid}, role=${u.role})`);
     return created.uid;

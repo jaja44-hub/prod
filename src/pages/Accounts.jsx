@@ -40,6 +40,7 @@ export default function Accounts() {
   }, [authLoading, currentUser, t]);
 
   const filtered = accounts.filter((account) => {
+    if (account.active === false) return false;
     if (!queryText) return true;
     const q = queryText.toLowerCase();
     return (

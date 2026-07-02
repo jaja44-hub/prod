@@ -263,9 +263,10 @@ export async function getOdooEmployees(limit = 50) {
  * Fetch the chart of accounts from Odoo.
  */
 export async function getOdooAccounts(limit = 50) {
+  // HF Odoo build removed account.account.deprecated; use open domain + active field only in response.
   return executeOdoo('account.account', 'search_read',
-    [[['deprecated', '=', false]]],
-    { fields: ['id', 'name', 'code', 'account_type'], limit }
+    [[]],
+    { fields: ['id', 'name', 'code', 'account_type', 'active'], limit }
   );
 }
 
