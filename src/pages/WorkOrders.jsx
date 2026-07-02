@@ -99,7 +99,6 @@ export default function WorkOrders() {
                   <th className="py-2">{t('product')}</th>
                   <th className="py-2">{t('quantity')}</th>
                   <th className="py-2">{t('state')}</th>
-                  <th className="py-2">{t('datePlannedStart')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -109,7 +108,6 @@ export default function WorkOrders() {
                     <td className="py-2">{order.product_id?.[1] || '—'}</td>
                     <td className="py-2">{order.product_qty ?? '—'}</td>
                     <td className="py-2">{order.state || '—'}</td>
-                    <td className="py-2">{order.date_planned_start || '—'}</td>
                   </tr>
                 ))}
               </tbody>

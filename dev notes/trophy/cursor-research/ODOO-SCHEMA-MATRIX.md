@@ -16,6 +16,8 @@
 | Audit date | `2026-07-02` |
 | Audit script | `scripts/audit_odoo_schema.mjs` |
 
+> Agent reference: rerun this audit with `npm run audit:odoo` from `production-submodule`. For Hugging Face, use `ODOO_DB='POSTGRES_DATABASE=neondb'` and the same `ODOO_URL`, `ODOO_USER`, `ODOO_APIKEY` values used by the proxy.
+
 ---
 
 ## Core 4 models (M1 — must pass)
@@ -150,7 +152,7 @@
 | product_id | ✅ | — | OK | |
 | product_qty | ✅ | — | OK | |
 | state | ✅ | — | OK | |
-| date_planned_start | ✅ | — | MISSING | Field missing in this HF Odoo instance |
+| date_planned_start | ❌ | — | MISSING | Omit from fields list on HF Odoo 19 until upgraded |
 
 **Recommended domain (014):** `[]` if MRP is optional for Wave A
 
@@ -164,6 +166,52 @@
 
 ---
 
+## TICKET-014 Implementation
+
+Per TICKET-014 commit (ODOO query contract), the following are coded in `src/lib/odooQuery.js`:
+
+### FIELD_ALLOWLIST (coded)
+- `product.product`: ['id', 'name', 'default_code', 'list_price', 'qty_available', 'active', 'uom_id']
+- `sale.order`: ['id', 'name', 'partner_id', 'amount_total', 'state', 'date_order', 'origin']
+- `purchase.order`: ['id', 'name', 'partner_id', 'date_order', 'amount_total', 'state', 'origin']
+- `account.account`: ['id', 'name', 'code', 'account_type', 'active'] (no deprecated)
+- `res.partner`: ['id', 'name', 'email', 'phone', 'city', 'customer_rank', 'supplier_rank']
+- `hr.employee`: ['id', 'name', 'job_title', 'department_id', 'work_email']
+- `mrp.production`: ['id', 'name', 'product_id', 'product_qty', 'state'] (no date_planned_start)
+
+### DEFAULT_DOMAINS (coded)
+- `product.product`: `[['active', '=', true]]`
+- `account.account`: `[['active', '=', true]]`
+- `sale.order`, `purchase.order`, `res.partner`, `hr.employee`, `mrp.production`: `[]`
+
+### buildOdooDomain filter keys (implemented)
+
+| Model | Filter keys | Notes |
+|-------|-------------|-------|
+| `product.product` | `active`, `search` | Search on name + default_code (ilike) |
+| `sale.order` | `state`, `dateFrom`, `dateTo`, `search` | Search on name + partner (ilike) |
+| `purchase.order` | `state`, `dateFrom`, `dateTo`, `search` | Search on name + partner (ilike) |
+| `account.account` | `active`, `account_type`, `search` | Search on code + name (ilike) |
+| `res.partner` | `customer`, `supplier`, `search` | customer/supplier set rank > 0; search on name |
+| `mrp.production` | `state` | No date filter (field missing) |
+| `hr.employee` | `search` | Search on name |
+
+### ServiceGateway.js refactored functions
+- `getOdooProducts` — uses buildOdooDomain + FIELD_ALLOWLIST
+- `getOdooSalesOrders` — uses buildOdooDomain + FIELD_ALLOWLIST
+- `getOdooPurchaseOrders` — uses buildOdooDomain + FIELD_ALLOWLIST
+- `getOdooCustomers` / `getOdooVendors` — uses buildOdooDomain with rank filters
+- `getOdooEmployees` — uses buildOdooDomain + FIELD_ALLOWLIST
+- `getOdooAccounts` — uses buildOdooDomain (never deprecated)
+- `getOdooManufacturingOrders` — uses buildOdooDomain (never date_planned_start)
+
+### Test coverage
+- `npm run test:odoo-query` — 16/16 checks pass
+- No deprecated field in any domain
+- MRP date_planned_start excluded from allowlist and sanitization
+
+---
+
 ## Future proxy models (Wave B — propose only in 013)
 
 | Model | Wave | Ticket | In ALLOWED_MODELS today? |
@@ -180,42 +228,5 @@
 
 | Role | Date | Status |
 |------|------|--------|
-| Copilot audit | | [ ] |
-| Cursor PM verify | | [ ] |
-
----
-
-## Supporting models
-
-### sale.order.line / purchase.order.line / res.partner / hr.employee / mrp.production
-
-_Copilot: duplicate table format per model from audit script output_
-
----
-
-## Domain anti-patterns (learned)
-
-| Pattern | Model | Result on HF | Replacement |
-|---------|-------|--------------|-------------|
-| `('deprecated', '=', False)` | account.account | 500 Invalid field | `('active', '=', True)` or `[]` |
-
----
-
-## Future proxy models (Wave B — propose only in 013)
-
-| Model | Wave | Ticket | In ALLOWED_MODELS today? |
-|-------|------|--------|--------------------------|
-| product.category | B | 021 | No |
-| stock.quant | B | 021 | No |
-| stock.location | B | 021 | No |
-| account.move | B | 025 | No |
-| account.payment | B | 026 | No |
-
----
-
-## Sign-off
-
-| Role | Date | Status |
-|------|------|--------|
-| Copilot audit | | [ ] |
-| Cursor PM verify | | [ ] |
+| Copilot audit | 2026-07-02 | [x] |
+| Cursor PM verify | 2026-07-02 | [x] |

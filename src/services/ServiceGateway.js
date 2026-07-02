@@ -162,6 +162,9 @@ export async function getOrders() {
 // ============================================================
 import { odooClient } from '../lib/odooClient';
 
+// TICKET-014: Centralized schema-safe query builder
+import { buildOdooDomain, sanitizeFields, buildSearchReadKwargs, FIELD_ALLOWLIST, DEFAULT_DOMAINS } from '../lib/odooQuery';
+
 async function executeOdoo(model, method, ...params) {
   try {
     return await odooClient.execute(model, method, ...params);
@@ -182,42 +185,46 @@ export const BACKEND_WAKEUP_MESSAGE = 'The ERP backend is currently waking up. T
  * Fetch inventory products from Odoo.
  * @param {number} limit - Max records to return
  * @param {Array} fields - Fields to retrieve
+ * @param {object} filters - Optional filters: { active, search, offset, order }
  */
-export async function getOdooProducts(limit = 50, fields = ['id', 'name', 'qty_available', 'list_price', 'default_code']) {
-  return executeOdoo('product.product', 'search_read',
-    [[['active', '=', true]]],
-    { fields, limit }
-  );
+export async function getOdooProducts(limit = 50, fields = null, filters = {}) {
+  const domain = buildOdooDomain('product.product', filters);
+  const safeFields = fields ? sanitizeFields('product.product', fields) : FIELD_ALLOWLIST['product.product'];
+  const kwargs = buildSearchReadKwargs({ fields: safeFields, limit, offset: filters.offset, order: filters.order, model: 'product.product' });
+  return executeOdoo('product.product', 'search_read', [domain], kwargs);
 }
 
 /**
  * Fetch vendors / suppliers from Odoo.
+ * TICKET-014: Uses buildOdooDomain for rank-safe filtering
  */
-export async function getOdooVendors(limit = 50) {
-  return executeOdoo('res.partner', 'search_read',
-    [[['supplier_rank', '>', 0]]],
-    { fields: ['id', 'name', 'email', 'phone', 'city'], limit }
-  );
+export async function getOdooVendors(limit = 50, filters = {}) {
+  const domain = buildOdooDomain('res.partner', { ...filters, supplier: true });
+  const safeFields = FIELD_ALLOWLIST['res.partner'];
+  const kwargs = buildSearchReadKwargs({ fields: safeFields, limit, offset: filters.offset, order: filters.order, model: 'res.partner' });
+  return executeOdoo('res.partner', 'search_read', [domain], kwargs);
 }
 
 /**
  * Fetch customers from Odoo.
+ * TICKET-014: Uses buildOdooDomain for rank-safe filtering
  */
-export async function getOdooCustomers(limit = 50) {
-  return executeOdoo('res.partner', 'search_read',
-    [[['customer_rank', '>', 0]]],
-    { fields: ['id', 'name', 'email', 'phone', 'city'], limit }
-  );
+export async function getOdooCustomers(limit = 50, filters = {}) {
+  const domain = buildOdooDomain('res.partner', { ...filters, customer: true });
+  const safeFields = FIELD_ALLOWLIST['res.partner'];
+  const kwargs = buildSearchReadKwargs({ fields: safeFields, limit, offset: filters.offset, order: filters.order, model: 'res.partner' });
+  return executeOdoo('res.partner', 'search_read', [domain], kwargs);
 }
 
 /**
  * Fetch purchase orders from Odoo.
+ * TICKET-014: Uses buildOdooDomain and schema-safe fields
  */
-export async function getOdooPurchaseOrders(limit = 25) {
-  return executeOdoo('purchase.order', 'search_read',
-    [[]],
-    { fields: ['id', 'name', 'partner_id', 'date_order', 'amount_total', 'state'], limit }
-  );
+export async function getOdooPurchaseOrders(limit = 25, filters = {}) {
+  const domain = buildOdooDomain('purchase.order', filters);
+  const safeFields = FIELD_ALLOWLIST['purchase.order'];
+  const kwargs = buildSearchReadKwargs({ fields: safeFields, limit, offset: filters.offset, order: filters.order, model: 'purchase.order' });
+  return executeOdoo('purchase.order', 'search_read', [domain], kwargs);
 }
 
 export async function getOdooPurchaseOrder(id) {
@@ -251,23 +258,24 @@ export async function createOdooPurchaseOrder({ partner_id, origin, lines = [] }
 
 /**
  * Fetch HR employees from Odoo.
+ * TICKET-014: Uses buildOdooDomain and schema-safe fields
  */
-export async function getOdooEmployees(limit = 50) {
-  return executeOdoo('hr.employee', 'search_read',
-    [[]],
-    { fields: ['id', 'name', 'job_title', 'department_id', 'work_email'], limit }
-  );
+export async function getOdooEmployees(limit = 50, filters = {}) {
+  const domain = buildOdooDomain('hr.employee', filters);
+  const safeFields = FIELD_ALLOWLIST['hr.employee'];
+  const kwargs = buildSearchReadKwargs({ fields: safeFields, limit, offset: filters.offset, order: filters.order, model: 'hr.employee' });
+  return executeOdoo('hr.employee', 'search_read', [domain], kwargs);
 }
 
 /**
  * Fetch the chart of accounts from Odoo.
+ * TICKET-014: Uses active field only (deprecated removed per TICKET-013)
  */
-export async function getOdooAccounts(limit = 50) {
-  // HF Odoo build removed account.account.deprecated; use open domain + active field only in response.
-  return executeOdoo('account.account', 'search_read',
-    [[]],
-    { fields: ['id', 'name', 'code', 'account_type', 'active'], limit }
-  );
+export async function getOdooAccounts(limit = 50, filters = {}) {
+  const domain = buildOdooDomain('account.account', filters);
+  const safeFields = FIELD_ALLOWLIST['account.account'];
+  const kwargs = buildSearchReadKwargs({ fields: safeFields, limit, offset: filters.offset, order: filters.order, model: 'account.account' });
+  return executeOdoo('account.account', 'search_read', [domain], kwargs);
 }
 
 export async function getOdooProduct(id) {
@@ -293,18 +301,20 @@ export async function createOdooProduct(payload) {
   return getOdooProduct(newId);
 }
 
-export async function getOdooManufacturingOrders(limit = 50) {
-  return executeOdoo('mrp.production', 'search_read',
-    [[]],
-    { fields: ['id', 'name', 'product_id', 'product_qty', 'state', 'date_planned_start'], limit }
-  );
+export async function getOdooManufacturingOrders(limit = 50, filters = {}) {
+  // TICKET-014: date_planned_start missing on HF Odoo 19, so strip from requests
+  const domain = buildOdooDomain('mrp.production', filters);
+  const safeFields = FIELD_ALLOWLIST['mrp.production'];
+  const kwargs = buildSearchReadKwargs({ fields: safeFields, limit, offset: filters.offset, order: filters.order, model: 'mrp.production' });
+  return executeOdoo('mrp.production', 'search_read', [domain], kwargs);
 }
 
-export async function getOdooSalesOrders(limit = 50) {
-  return executeOdoo('sale.order', 'search_read',
-    [[]],
-    { fields: ['id', 'name', 'partner_id', 'amount_total', 'state', 'date_order'], limit }
-  );
+export async function getOdooSalesOrders(limit = 50, filters = {}) {
+  // TICKET-014: Uses buildOdooDomain and schema-safe fields
+  const domain = buildOdooDomain('sale.order', filters);
+  const safeFields = FIELD_ALLOWLIST['sale.order'];
+  const kwargs = buildSearchReadKwargs({ fields: safeFields, limit, offset: filters.offset, order: filters.order, model: 'sale.order' });
+  return executeOdoo('sale.order', 'search_read', [domain], kwargs);
 }
 
 export async function getOdooSalesOrder(id) {
