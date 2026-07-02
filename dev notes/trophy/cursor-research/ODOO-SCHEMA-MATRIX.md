@@ -1,7 +1,7 @@
 # ODOO Schema Matrix — HF Compatibility
 
 **Author:** Copilot (TICKET-013) + Cursor PM  
-**Status:** 🟡 **TEMPLATE** — Copilot fills after `npm run audit:odoo`  
+**Status:** � **AUDITED** — live HF Odoo results included  
 **Purpose:** Single source of truth for safe Odoo fields/domains in `ServiceGateway` (feeds TICKET-014)
 
 ---
@@ -10,10 +10,10 @@
 
 | Item | Value |
 |------|--------|
-| Odoo host | _fill from ODOO_URL hostname_ |
-| Database | _fill from ODOO_DB_ |
-| Odoo version | _from /xmlrpc/2/common version or fields metadata_ |
-| Audit date | _YYYY-MM-DD_ |
+| Odoo host | `jafiface-addis-crown-erp.hf.space` |
+| Database | `POSTGRES_DATABASE=neondb` |
+| Odoo version | `19.0` |
+| Audit date | `2026-07-02` |
 | Audit script | `scripts/audit_odoo_schema.mjs` |
 
 ---
@@ -24,13 +24,13 @@
 
 | Field | search_read | domain filter | Status | Notes |
 |-------|-------------|---------------|--------|-------|
-| id | ✅ | — | PENDING | |
-| name | ✅ | — | PENDING | |
-| default_code | ✅ | — | PENDING | |
-| list_price | ✅ | — | PENDING | |
-| qty_available | ✅ | — | PENDING | |
-| active | ✅ | `[('active','=',true)]` | PENDING | |
-| uom_id | ✅ | — | PENDING | |
+| id | ✅ | — | OK | |
+| name | ✅ | — | OK | |
+| default_code | ✅ | — | OK | |
+| list_price | ✅ | — | OK | |
+| qty_available | ✅ | — | OK | |
+| active | ✅ | `[('active','=',true)]` | OK | |
+| uom_id | ✅ | — | OK | |
 
 **Recommended domain (014):** `[['active', '=', true]]`
 
@@ -40,13 +40,13 @@
 
 | Field | search_read | domain filter | Status | Notes |
 |-------|-------------|---------------|--------|-------|
-| id | ✅ | — | PENDING | |
-| name | ✅ | — | PENDING | |
-| partner_id | ✅ | — | PENDING | |
-| amount_total | ✅ | — | PENDING | |
-| state | ✅ | — | PENDING | |
-| date_order | ✅ | — | PENDING | |
-| origin | ✅ | — | PENDING | |
+| id | ✅ | — | OK | |
+| name | ✅ | — | OK | |
+| partner_id | ✅ | — | OK | |
+| amount_total | ✅ | — | OK | |
+| state | ✅ | — | OK | |
+| date_order | ✅ | — | OK | |
+| origin | ✅ | — | OK | |
 
 **Recommended domain (014):** `[]` + optional state/date facets in UI
 
@@ -56,10 +56,10 @@
 
 | Field | search_read | domain filter | Status | Notes |
 |-------|-------------|---------------|--------|-------|
-| id | ✅ | `order_id != False` | PENDING | |
-| product_id | ✅ | `order_id != False` | PENDING | |
-| product_uom_qty | ✅ | `order_id != False` | PENDING | |
-| price_unit | ✅ | `order_id != False` | PENDING | |
+| id | ✅ | `order_id != False` | OK | |
+| product_id | ✅ | `order_id != False` | OK | |
+| product_uom_qty | ✅ | `order_id != False` | OK | |
+| price_unit | ✅ | `order_id != False` | OK | |
 
 **Recommended domain (014):** `[['order_id', '!=', False]]`
 
@@ -69,13 +69,13 @@
 
 | Field | search_read | domain filter | Status | Notes |
 |-------|-------------|---------------|--------|-------|
-| id | ✅ | — | PENDING | |
-| name | ✅ | — | PENDING | |
-| partner_id | ✅ | — | PENDING | |
-| date_order | ✅ | — | PENDING | |
-| amount_total | ✅ | — | PENDING | |
-| state | ✅ | — | PENDING | |
-| origin | ✅ | — | PENDING | |
+| id | ✅ | — | OK | |
+| name | ✅ | — | OK | |
+| partner_id | ✅ | — | OK | |
+| date_order | ✅ | — | OK | |
+| amount_total | ✅ | — | OK | |
+| state | ✅ | — | OK | |
+| origin | ✅ | — | OK | |
 
 **Recommended domain (014):** `[]` + optional purchase-state filters
 
@@ -85,10 +85,10 @@
 
 | Field | search_read | domain filter | Status | Notes |
 |-------|-------------|---------------|--------|-------|
-| id | ✅ | `order_id != False` | PENDING | |
-| product_id | ✅ | `order_id != False` | PENDING | |
-| product_qty | ✅ | `order_id != False` | PENDING | |
-| price_unit | ✅ | `order_id != False` | PENDING | |
+| id | ✅ | `order_id != False` | OK | |
+| product_id | ✅ | `order_id != False` | OK | |
+| product_qty | ✅ | `order_id != False` | OK | |
+| price_unit | ✅ | `order_id != False` | OK | |
 
 **Recommended domain (014):** `[['order_id', '!=', False]]`
 
@@ -98,13 +98,13 @@
 
 | Field | search_read | domain filter | Status | Notes |
 |-------|-------------|---------------|--------|-------|
-| id | ✅ | `customer_rank > 0 or supplier_rank > 0` | PENDING | |
-| name | ✅ | `customer_rank > 0 or supplier_rank > 0` | PENDING | |
-| email | ✅ | `customer_rank > 0 or supplier_rank > 0` | PENDING | |
-| phone | ✅ | `customer_rank > 0 or supplier_rank > 0` | PENDING | |
-| city | ✅ | `customer_rank > 0 or supplier_rank > 0` | PENDING | |
-| customer_rank | ✅ | `customer_rank > 0 or supplier_rank > 0` | PENDING | |
-| supplier_rank | ✅ | `customer_rank > 0 or supplier_rank > 0` | PENDING | |
+| id | ✅ | `customer_rank > 0 or supplier_rank > 0` | OK | |
+| name | ✅ | `customer_rank > 0 or supplier_rank > 0` | OK | |
+| email | ✅ | `customer_rank > 0 or supplier_rank > 0` | OK | |
+| phone | ✅ | `customer_rank > 0 or supplier_rank > 0` | OK | |
+| city | ✅ | `customer_rank > 0 or supplier_rank > 0` | OK | |
+| customer_rank | ✅ | `customer_rank > 0 or supplier_rank > 0` | OK | |
+| supplier_rank | ✅ | `customer_rank > 0 or supplier_rank > 0` | OK | |
 
 **Recommended domain (014):** `['|', ['customer_rank','>',0], ['supplier_rank','>',0]]`
 
@@ -114,11 +114,11 @@
 
 | Field | search_read | domain filter | Status | Notes |
 |-------|-------------|---------------|--------|-------|
-| id | ✅ | — | PENDING | |
-| name | ✅ | — | PENDING | |
-| code | ✅ | — | PENDING | |
-| account_type | ✅ | — | PENDING | |
-| active | ✅ | — | PENDING | |
+| id | ✅ | — | OK | |
+| name | ✅ | — | OK | |
+| code | ✅ | — | OK | |
+| account_type | ✅ | — | OK | |
+| active | ✅ | — | OK | |
 | ~~deprecated~~ | ❌ **DO NOT USE** | ❌ breaks HF | REMOVED | Use `active` instead (hotfix 0749987b) |
 
 **Recommended domain (014):** `[['active', '=', true]]` if the field exists; otherwise `[]`
@@ -131,11 +131,11 @@
 
 | Field | search_read | domain filter | Status | Notes |
 |-------|-------------|---------------|--------|-------|
-| id | ✅ | — | PENDING | |
-| name | ✅ | — | PENDING | |
-| job_title | ✅ | — | PENDING | |
-| department_id | ✅ | — | PENDING | |
-| work_email | ✅ | — | PENDING | |
+| id | ✅ | — | OK | |
+| name | ✅ | — | OK | |
+| job_title | ✅ | — | OK | |
+| department_id | ✅ | — | OK | |
+| work_email | ✅ | — | OK | |
 
 **Recommended domain (014):** `[]` if model is optional
 
@@ -145,12 +145,12 @@
 
 | Field | search_read | domain filter | Status | Notes |
 |-------|-------------|---------------|--------|-------|
-| id | ✅ | — | PENDING | |
-| name | ✅ | — | PENDING | |
-| product_id | ✅ | — | PENDING | |
-| product_qty | ✅ | — | PENDING | |
-| state | ✅ | — | PENDING | |
-| date_planned_start | ✅ | — | PENDING | |
+| id | ✅ | — | OK | |
+| name | ✅ | — | OK | |
+| product_id | ✅ | — | OK | |
+| product_qty | ✅ | — | OK | |
+| state | ✅ | — | OK | |
+| date_planned_start | ✅ | — | MISSING | Field missing in this HF Odoo instance |
 
 **Recommended domain (014):** `[]` if MRP is optional for Wave A
 

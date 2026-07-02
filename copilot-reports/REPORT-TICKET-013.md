@@ -20,17 +20,25 @@ Implemented TICKET-013 by adding a live Odoo schema audit script, an Odoo schema
 - Verified `audit:odoo` is registered in `package.json`.
 - Verified the audit script imports the same Odoo auth flow (`authenticateOdooDb`) used by `api/odooProxy.js`.
 - Verified `npm run build` passes after adding the script.
+- Executed the audit against the HF-hosted Odoo instance.
+- Confirmed all core 4 model fields are present and safe, except `mrp.production.date_planned_start` is missing.
 
-## Known limitation
-- The audit script requires live Odoo credentials via environment variables: `ODOO_URL`, `ODOO_DB`, `ODOO_USER`, `ODOO_APIKEY`.
-- No Odoo audit run was executed in this environment because those variables were not present.
+## Live audit results
+- `product.product`, `sale.order`, `sale.order.line`, `purchase.order`, `purchase.order.line`, `res.partner`, `account.account`, and `hr.employee` are all INSTALLED and field-compatible.
+- `mrp.production` is installed, but `date_planned_start` is missing in this HF instance.
+
+## Notes
+- The audit uses the same HF Odoo credentials pattern as the production proxy: `ODOO_URL`, `ODOO_DB`, `ODOO_USER`, `ODOO_APIKEY`.
+- `dev notes/trophy/cursor-research/ODOO-SCHEMA-MATRIX.md` and `ODOO-MODULE-CHECKLIST.md` now contain the audited statuses.
 
 ## Next step
-Run the audit locally with:
+If you want a second validation run with updated HF credentials, use:
 
 ```bash
-cd production-submodule
-ODOO_URL=... ODOO_DB=... ODOO_USER=... ODOO_APIKEY=... npm run audit:odoo
+cd /home/ja/Documents/addis-crown-v3/production-submodule
+ODOO_URL='https://jafiface-addis-crown-erp.hf.space' \
+ODOO_DB='POSTGRES_DATABASE=neondb' \
+ODOO_USER='admin' \
+ODOO_APIKEY='YOUR_API_KEY' \
+npm run audit:odoo
 ```
-
-Update `dev notes/trophy/cursor-research/ODOO-SCHEMA-MATRIX.md` and `ODOO-MODULE-CHECKLIST.md` with live results after the run.
