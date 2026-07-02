@@ -4,11 +4,32 @@ import { useSidebar } from "../context/SidebarContext";
 import { useLang } from "../context/LangContext";
 import { useAuth } from "../context/AuthContext";
 import { getNavSections } from "../lib/rbac";
+import { getPrincipal, isCeo, canViewModule } from "../lib/policy";
+
+function getModuleId(pathname) {
+  if (pathname.startsWith('/finance') || pathname.startsWith('/invoices') || pathname.startsWith('/reports')) {
+    return 'finance';
+  }
+  if (pathname.startsWith('/inventory') || pathname.startsWith('/work-orders')) {
+    return 'inventory';
+  }
+  if (pathname.startsWith('/sales') || pathname.startsWith('/crm') || pathname.startsWith('/orders') || pathname.startsWith('/customers')) {
+    return 'sales';
+  }
+  if (pathname.startsWith('/purchases') || pathname.startsWith('/suppliers')) {
+    return 'purchase';
+  }
+  if (pathname === '/dashboard' || pathname.startsWith('/dashboard')) {
+    return 'dashboard';
+  }
+  return null;
+}
 
 function Sidebar() {
   const { sidebarOpen, toggle, sidebarExpanded, setSidebarExpanded, collapse, expand } = useSidebar();
   const { lang, setLang, t } = useLang();
   const { userProfile } = useAuth();
+  const principal = getPrincipal(userProfile);
   const allowedSections = getNavSections(userProfile?.role);
 
   const sections = [
@@ -60,10 +81,20 @@ function Sidebar() {
     },
   ];
 
-  // Filter sections based on logged-in user's role (CEO sees all)
-  const visibleSections = allowedSections.length === 0
+  const roleVisibleSections = allowedSections.length === 0
     ? sections
     : sections.filter(s => allowedSections.includes(s.title));
+
+  const visibleSections = roleVisibleSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => {
+        const moduleId = getModuleId(item.to);
+        return isCeo(principal) || !moduleId || canViewModule(principal, moduleId);
+      }),
+    }))
+    .filter((section) => section.items.length > 0);
+
   const [openSections, setOpenSections] = React.useState(() => Object.fromEntries(sections.map(s => [s.title, false])));
 
   const icons = {

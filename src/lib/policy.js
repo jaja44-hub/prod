@@ -28,11 +28,23 @@ const MODULE_ACCESS = {
   hr: (principal) => ['ceo', 'hr_head'].includes(principal.role),
 };
 
+// planTier: 1 = enterprise, 2 = pro, 3 = starter
+const TIER_MODULES = {
+  1: ['dashboard', 'inventory', 'sales', 'purchase', 'finance'],
+  2: ['dashboard', 'inventory', 'sales', 'purchase'],
+  3: ['dashboard', 'inventory', 'sales'],
+};
+
+export function modulesForPlanTier(planTier) {
+  return TIER_MODULES[planTier] || TIER_MODULES[3];
+}
+
 export function canViewModule(principal, moduleId) {
   if (!principal) return false;
   if (isCeo(principal)) return true;
   const fn = MODULE_ACCESS[moduleId];
-  return fn ? fn(principal) : false;
+  if (!fn || !fn(principal)) return false;
+  return modulesForPlanTier(principal.planTier).includes(moduleId);
 }
 
 export function canViewAnalytics(principal) {
