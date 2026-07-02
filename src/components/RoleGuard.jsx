@@ -52,9 +52,14 @@ export default function RoleGuard({ children }) {
   const routeAllowed = canAccess(role, location.pathname);
   const moduleAllowed = moduleId ? canViewModule(principal, moduleId) : true;
 
-  if (routeAllowed || moduleAllowed) {
-    return children;
+  // Enforce plan-tier module policy even when the route itself is role-allowed.
+  if (moduleId && !moduleAllowed) {
+    return <Navigate replace to="/dashboard" />;
   }
 
-  return <Navigate replace to="/dashboard" />;
+  if (!routeAllowed) {
+    return <Navigate replace to="/dashboard" />;
+  }
+
+  return children;
 }

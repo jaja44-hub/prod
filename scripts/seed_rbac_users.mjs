@@ -23,8 +23,8 @@ const db = getFirestore();
 const demoUsers = [
   { email: "ceo@addiscrown.com", password: "Password123!", displayName: "CEO Super Admin", role: "ceo", tier: 1 },
   { email: "ceo@addiscrown.et", password: "Password123!", displayName: "CEO Super Admin", role: "ceo", tier: 1 },
-  { email: "sales@addiscrown.com", password: "Password123!", displayName: "Sales Department Head", role: "sales_head", tier: 2 },
-  { email: "sales@addiscrown.et", password: "Password123!", displayName: "Sales Department Head", role: "sales_head", tier: 2 },
+  { email: "sales@addiscrown.com", password: "Password123!", displayName: "Sales Department Head", role: "sales_head", tier: 3 },
+  { email: "sales@addiscrown.et", password: "Password123!", displayName: "Sales Department Head", role: "sales_head", tier: 3 },
   { email: "warehouse@addiscrown.com", password: "Password123!", displayName: "Warehouse Store Head", role: "warehouse_head", tier: 2 },
   { email: "warehouse@addiscrown.et", password: "Password123!", displayName: "Warehouse Store Head", role: "warehouse_head", tier: 2 },
   { email: "hr@addiscrown.com", password: "Password123!", displayName: "HR Director", role: "hr_head", tier: 2 },
