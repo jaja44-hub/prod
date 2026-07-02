@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useLang } from '../context/LangContext'
+import { useLang } from '../context/LangContext';
 import { getOdooProducts, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway';
+import ListFilterBar from '../components/ListFilterBar';
 
 export default function Inventory() {
-  const { t } = useLang()
+  const { t } = useLang();
   const { currentUser, loading: authLoading } = useAuth();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [queryText, setQueryText] = useState('');
+  const [filters, setFilters] = useState({ search: '', active: true });
   const [endReached, setEndReached] = useState(true);
 
   const normalizeErrorMessage = (err) => {
@@ -23,14 +24,18 @@ export default function Inventory() {
   useEffect(() => {
     let mounted = true;
 
-    async function loadProducts() {
+    async function loadProducts(initialFilters) {
       setLoading(true);
       setError('');
       try {
-        const products = await getOdooProducts(50, ['id', 'name', 'default_code', 'qty_available', 'list_price', 'uom_id']);
+        const products = await getOdooProducts(50, ['id', 'name', 'default_code', 'qty_available', 'list_price', 'uom_id'], {
+          search: initialFilters.search || undefined,
+          active: initialFilters.active,
+        });
         if (!mounted) return;
-        setItems(Array.isArray(products) ? products : []);
-        setEndReached(true);
+        const list = Array.isArray(products) ? products : [];
+        setItems(list);
+        setEndReached(list.length < 50);
       } catch (err) {
         if (!mounted) return;
         setError(normalizeErrorMessage(err));
@@ -40,18 +45,14 @@ export default function Inventory() {
       }
     }
 
-    if (authLoading || !currentUser) return;
-    loadProducts();
+      if (authLoading || !currentUser) return;
+    loadProducts(filters);
     return () => {
       mounted = false;
     };
-  }, [authLoading, currentUser]);
+  }, [authLoading, currentUser, filters]);
 
-  const filtered = items.filter((it) => {
-    if (!queryText) return true;
-    const q = queryText.toLowerCase();
-    return (it.name || '').toLowerCase().includes(q) || (it.default_code || '').toLowerCase().includes(q);
-  });
+  const filtered = items;
 
   function openCreate() {
     navigate('/inventory/new');
@@ -66,18 +67,17 @@ export default function Inventory() {
       <h1 className="text-2xl font-semibold mb-4">{t('inventory')}</h1>
       <p className="text-sm text-gray-600 mb-4">{t('inventoryDescription')}</p>
       <div className="bg-white dark:bg-gray-800 p-4 rounded shadow-sm">
+        <ListFilterBar
+          model="product.product"
+          value={filters}
+          onChange={setFilters}
+          onApply={() => setFilters((current) => ({ ...current }))}
+          onClear={() => setFilters({ search: '', active: true })}
+          fields={['search', 'active']}
+          loading={loading}
+        />
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <input
-              value={queryText}
-              onChange={(e) => setQueryText(e.target.value)}
-              placeholder={t('searchSkuOrName')}
-              className="px-3 py-1 rounded border"
-            />
-            <button onClick={() => setQueryText('')} className="text-xs text-gray-500">
-              {t('clear')}
-            </button>
-          </div>
+          <div />
           <div>
             <button onClick={openCreate} className="bg-violet-600 text-white px-3 py-1 rounded">
               {t('addItem')}
@@ -94,8 +94,15 @@ export default function Inventory() {
               onClick={() => {
                 setLoading(true);
                 setError('');
-                getOdooProducts(50, ['id', 'name', 'default_code', 'qty_available', 'list_price', 'uom_id'])
-                  .then((products) => setItems(Array.isArray(products) ? products : []))
+                getOdooProducts(50, ['id', 'name', 'default_code', 'qty_available', 'list_price', 'uom_id'], {
+                  search: filters.search || undefined,
+                  active: filters.active,
+                })
+                  .then((products) => {
+                    const list = Array.isArray(products) ? products : [];
+                    setItems(list);
+                    setEndReached(list.length < 50);
+                  })
                   .catch((err) => setError(normalizeErrorMessage(err)))
                   .finally(() => setLoading(false));
               }}

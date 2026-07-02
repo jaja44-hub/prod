@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
 import { getOdooSalesOrders, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway'
+import ListFilterBar from '../components/ListFilterBar'
 
 export default function Sales() {
   const { t } = useLang()
@@ -11,7 +12,7 @@ export default function Sales() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [queryText, setQueryText] = useState('')
+  const [filters, setFilters] = useState({ search: '', state: '', dateFrom: '', dateTo: '' })
 
   const normalizeErrorMessage = (err) => {
     const raw = err?.response?.data?.error || err?.message || t('error')
@@ -21,11 +22,18 @@ export default function Sales() {
   useEffect(() => {
     let mounted = true
 
-    async function loadSales() {
+    async function loadSales(nextFilters) {
       setLoading(true)
       setError('')
+
       try {
-        const result = await getOdooSalesOrders(50)
+        const result = await getOdooSalesOrders(50, null, {
+          search: nextFilters.search || undefined,
+          state: nextFilters.state || undefined,
+          dateFrom: nextFilters.dateFrom || undefined,
+          dateTo: nextFilters.dateTo || undefined,
+        })
+
         if (!mounted) return
         setOrders(Array.isArray(result) ? result : [])
       } catch (err) {
@@ -37,37 +45,37 @@ export default function Sales() {
     }
 
     if (authLoading || !currentUser) return
-    loadSales()
-    return () => { mounted = false }
-  }, [currentUser, authLoading, t])
+    loadSales(filters)
 
-  const filtered = orders.filter((order) => {
-    if (!queryText) return true
-    const q = queryText.toLowerCase()
-    return (
-      (order.name || '').toLowerCase().includes(q) ||
-      (order.partner_id?.[1] || '').toLowerCase().includes(q) ||
-      (order.state || '').toLowerCase().includes(q)
-    )
-  })
+    return () => {
+      mounted = false
+    }
+  }, [currentUser, authLoading, filters, t])
 
   return (
     <div className="p-6">
       <h1 className="text-2xl font-semibold mb-4">{t('sales')}</h1>
       <p className="text-sm text-gray-600 mb-4">{t('salesOrdersDescription')}</p>
       <div className="bg-white dark:bg-gray-800 p-4 rounded shadow-sm">
+        <ListFilterBar
+          model="sale.order"
+          value={filters}
+          onChange={setFilters}
+          onApply={() => setFilters((current) => ({ ...current }))}
+          onClear={() => setFilters({ search: '', state: '', dateFrom: '', dateTo: '' })}
+          fields={['search', 'state', 'dateRange']}
+          stateOptions={[
+            { value: 'draft', label: t('stateDraft') },
+            { value: 'sent', label: t('stateSent') },
+            { value: 'sale', label: t('stateSale') },
+            { value: 'done', label: t('stateDone') },
+            { value: 'cancel', label: t('stateCancel') },
+          ]}
+          loading={loading}
+        />
+
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
-          <div className="flex items-center space-x-3 w-full sm:w-auto">
-            <input
-              value={queryText}
-              onChange={(e) => setQueryText(e.target.value)}
-              placeholder={t('searchSalesOrders')}
-              className="px-3 py-1 rounded border w-full sm:w-80"
-            />
-            <button onClick={() => setQueryText('')} className="text-xs text-gray-500">
-              {t('clear')}
-            </button>
-          </div>
+          <div />
           <button
             onClick={() => navigate('/sales/new')}
             className="px-3 py-1 bg-violet-600 text-white rounded"
@@ -85,7 +93,12 @@ export default function Sales() {
               onClick={() => {
                 setLoading(true)
                 setError('')
-                getOdooSalesOrders(50)
+                getOdooSalesOrders(50, null, {
+                  search: filters.search || undefined,
+                  state: filters.state || undefined,
+                  dateFrom: filters.dateFrom || undefined,
+                  dateTo: filters.dateTo || undefined,
+                })
                   .then((result) => setOrders(Array.isArray(result) ? result : []))
                   .catch((err) => setError(normalizeErrorMessage(err)))
                   .finally(() => setLoading(false))
@@ -95,7 +108,7 @@ export default function Sales() {
               {t('retry')}
             </button>
           </div>
-        ) : filtered.length === 0 ? (
+        ) : orders.length === 0 ? (
           <p className="text-gray-500">{t('noSalesOrdersForTenant')}</p>
         ) : (
           <div className="overflow-x-auto">
@@ -111,7 +124,7 @@ export default function Sales() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((order) => (
+                {orders.map((order) => (
                   <tr key={order.id} className="border-b last:border-b-0">
                     <td className="py-2">{order.name || '—'}</td>
                     <td className="py-2">{order.partner_id?.[1] || '—'}</td>
