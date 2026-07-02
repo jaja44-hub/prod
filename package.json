@@ -12,6 +12,7 @@
     "deploy:rules": "node ./scripts/deploy-firestore-rules.mjs",
     "seed:auth": "node ./scripts/seed_rbac_users.mjs",
     "seed:odoo": "node ./scripts/seed_odoo_demo_data.mjs",
+    "audit:odoo": "node ./scripts/audit_odoo_schema.mjs",
     "add:auth-domain": "node ./scripts/add-authorized-domain.mjs"
   },
   "dependencies": {
