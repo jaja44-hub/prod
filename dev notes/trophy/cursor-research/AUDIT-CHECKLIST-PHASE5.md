@@ -2,7 +2,8 @@
 
 **Author:** Cursor  
 **For:** TICKET-012  
-**Source:** `dev notes/history/expected 5 batch execution outcomes.md` (filtered)
+**Source:** `dev notes/history/expected 5 batch execution outcomes.md` (filtered)  
+**Agent column completed:** 2026-07-02 (Cursor PM verify pass)
 
 ---
 
@@ -72,10 +73,12 @@ Only checklist items relating to **Inventory, Sales, Purchase, Finance, Dashboar
 |---|-------|-------|------|--------|
 | F1 | Chart of accounts list | [x] | | 002, 009 |
 | F2 | No engineering treasury UI | [x] | | 002 |
-| F3 | Policy-gated access | [x] | | 003, 011 |
+| F3 | Policy-gated access | [x] | | 003, 011, 012 |
 
 ---
 
 ## Sign-off (TICKET-012)
 
 Cursor marks Agent column; Commander marks User column; all core rows must be checked before M1 gate.
+
+**Agent sign-off:** Cursor PM — 2026-07-02 — all core rows [x] via code audit (tickets 001–012).

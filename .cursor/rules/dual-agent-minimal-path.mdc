@@ -1,0 +1,30 @@
+---
+description: Free-plan dual-agent workflow — Cursor plans/verifies, Copilot implements
+alwaysApply: true
+---
+
+# Dual-Agent Minimal Path (Commander: Ja)
+
+**Plan:** Cursor Free — conserve Agent quota. **No BYOK/OpenRouter required.**
+
+## Roles
+
+| Agent | Responsibility |
+|-------|----------------|
+| **Cursor** | Strategy, tickets (`dev notes/trophy/cursor-tickets/`), verification reports, blockers registry, architecture — **planning & QA only unless Commander explicitly asks to implement** |
+| **GitHub Copilot** | Execute **one active ticket** at a time; commit with `TICKET-00N:` prefix; fill `copilot-reports/REPORT-TICKET-00N.md` |
+| **Commander (Ja)** | Relay tickets Copilot → verify with Cursor → sign off milestones |
+
+## Cursor session rules (minimal quota)
+
+1. **Default: do not implement** — author/verify tickets; avoid full builds unless verifying a Copilot report
+2. **One ticket focus** per session when possible
+3. **After Copilot reports done:** verify AC → `CURSOR-VERIFY-TICKET-00N.md` → publish next ticket → update `BLOCKERS-REGISTRY.md` + `TICKET-ROADMAP.md`
+4. **Path A:** Odoo-first production routes; trophy/ is source of truth
+5. **Active queue (M1):** TICKET-009 Finance → 010 widgets → 011 packaging → 012 audit
+
+## Out of scope for Cursor unless asked
+
+- Bulk feature implementation (Copilot's job)
+- OpenRouter/API key setup in chat
+- Unrequested refactors or commits

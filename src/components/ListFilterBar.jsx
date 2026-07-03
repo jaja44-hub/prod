@@ -9,6 +9,7 @@ export default function ListFilterBar({
   onClear,
   fields = [],
   stateOptions = [],
+  accountTypeOptions = [],
   loading = false,
 }) {
   const { t } = useLang();
@@ -92,6 +93,24 @@ export default function ListFilterBar({
                 className="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm"
               />
             </div>
+          </div>
+        )}
+
+        {fields.includes('accountType') && (
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">{t('filterAccountType')}</label>
+            <select
+              value={value.accountType || ''}
+              onChange={(e) => handleUpdate('accountType', e.target.value || undefined)}
+              className="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm"
+            >
+              <option value="">{t('filterAccountTypeAll')}</option>
+              {accountTypeOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
         )}
 

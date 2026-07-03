@@ -1,73 +1,73 @@
-import React, { useEffect, useState } from 'react';
-import { useLang } from '../context/LangContext';
-import { useAuth } from '../context/AuthContext';
-import { getOdooAccounts, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway';
+import React, { useEffect, useState } from 'react'
+import { useLang } from '../context/LangContext'
+import { useAuth } from '../context/AuthContext'
+import { getOdooAccounts, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway'
+import ListFilterBar from '../components/ListFilterBar'
 
 export default function Accounts() {
-  const { t } = useLang();
-  const { currentUser, loading: authLoading } = useAuth();
-  const [accounts, setAccounts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [queryText, setQueryText] = useState('');
+  const { t } = useLang()
+  const { currentUser, loading: authLoading } = useAuth()
+  const [accounts, setAccounts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [filters, setFilters] = useState({ search: '', accountType: '', active: true })
 
   const normalizeErrorMessage = (err) => {
-    const raw = err?.response?.data?.error || err?.message || t('error');
-    return raw === BACKEND_WAKEUP_MESSAGE ? t('backendWakingUp') : raw;
-  };
+    const raw = err?.response?.data?.error || err?.message || t('error')
+    return raw === BACKEND_WAKEUP_MESSAGE ? t('backendWakingUp') : raw
+  }
 
   useEffect(() => {
-    let mounted = true;
+    let mounted = true
 
-    async function loadAccounts() {
-      setLoading(true);
-      setError('');
+    async function loadAccounts(nextFilters) {
+      setLoading(true)
+      setError('')
       try {
-        const result = await getOdooAccounts(100);
-        if (!mounted) return;
-        setAccounts(Array.isArray(result) ? result : []);
+        const result = await getOdooAccounts(100, {
+          search: nextFilters.search || undefined,
+          account_type: nextFilters.accountType || undefined,
+          active: nextFilters.active,
+        })
+        if (!mounted) return
+        setAccounts(Array.isArray(result) ? result : [])
       } catch (err) {
-        if (!mounted) return;
-        setError(normalizeErrorMessage(err));
+        if (!mounted) return
+        setError(normalizeErrorMessage(err))
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted) setLoading(false)
       }
     }
 
-    if (authLoading || !currentUser) return;
-    loadAccounts();
-    return () => { mounted = false; };
-  }, [authLoading, currentUser, t]);
-
-  const filtered = accounts.filter((account) => {
-    if (account.active === false) return false;
-    if (!queryText) return true;
-    const q = queryText.toLowerCase();
-    return (
-      (account.code || '').toLowerCase().includes(q) ||
-      (account.name || '').toLowerCase().includes(q) ||
-      (account.account_type || '').toLowerCase().includes(q)
-    );
-  });
+    if (authLoading || !currentUser) return
+    loadAccounts(filters)
+    return () => { mounted = false }
+  }, [currentUser, authLoading, filters, t])
 
   return (
     <div className="p-6">
       <h1 className="text-2xl font-semibold mb-4">{t('finance')}</h1>
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{t('financeDescription')}</p>
       <div className="bg-white dark:bg-gray-800 p-4 rounded shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <input
-              value={queryText}
-              onChange={(e) => setQueryText(e.target.value)}
-              placeholder={t('searchAccounts')}
-              className="px-3 py-1 rounded border dark:bg-gray-900 dark:border-gray-700"
-            />
-            <button type="button" onClick={() => setQueryText('')} className="text-xs text-gray-500">
-              {t('clear')}
-            </button>
-          </div>
-        </div>
+        <ListFilterBar
+          model="account.account"
+          value={filters}
+          onChange={setFilters}
+          onApply={() => setFilters((current) => ({ ...current }))}
+          onClear={() => setFilters({ search: '', accountType: '', active: true })}
+          fields={['search', 'accountType', 'active']}
+          accountTypeOptions={[
+            { value: 'asset_receivable', label: t('accountTypeReceivable') },
+            { value: 'asset_cash', label: t('accountTypeCash') },
+            { value: 'asset_current', label: t('accountTypeCurrentAsset') },
+            { value: 'liability_payable', label: t('accountTypePayable') },
+            { value: 'liability_credit_card', label: t('accountTypeCreditCard') },
+            { value: 'equity', label: t('accountTypeEquity') },
+            { value: 'income', label: t('accountTypeIncome') },
+            { value: 'expense', label: t('accountTypeExpense') },
+          ]}
+          loading={loading}
+        />
 
         {loading ? (
           <p className="text-gray-500">{t('loadingFinance')}</p>
@@ -77,19 +77,23 @@ export default function Accounts() {
             <button
               type="button"
               onClick={() => {
-                setLoading(true);
-                setError('');
-                getOdooAccounts(100)
+                setLoading(true)
+                setError('')
+                getOdooAccounts(100, {
+                  search: filters.search || undefined,
+                  account_type: filters.accountType || undefined,
+                  active: filters.active,
+                })
                   .then((result) => setAccounts(Array.isArray(result) ? result : []))
                   .catch((err) => setError(normalizeErrorMessage(err)))
-                  .finally(() => setLoading(false));
+                  .finally(() => setLoading(false))
               }}
               className="px-3 py-1 bg-violet-600 text-white rounded"
             >
               {t('retry')}
             </button>
           </div>
-        ) : filtered.length === 0 ? (
+        ) : accounts.length === 0 ? (
           <p className="text-gray-500">{t('noAccountsForTenant')}</p>
         ) : (
           <div className="overflow-x-auto">
@@ -102,11 +106,11 @@ export default function Accounts() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((account) => (
+                {accounts.map((account) => (
                   <tr key={account.id} className="border-b dark:border-gray-700">
-                    <td className="py-2">{account.code}</td>
-                    <td className="py-2">{account.name}</td>
-                    <td className="py-2">{account.account_type}</td>
+                    <td className="py-2">{account.code || '—'}</td>
+                    <td className="py-2">{account.name || '—'}</td>
+                    <td className="py-2">{account.account_type || '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -121,5 +125,5 @@ export default function Accounts() {
         )}
       </div>
     </div>
-  );
+  )
 }

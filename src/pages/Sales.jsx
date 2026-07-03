@@ -27,7 +27,7 @@ export default function Sales() {
       setError('')
 
       try {
-        const result = await getOdooSalesOrders(50, null, {
+        const result = await getOdooSalesOrders(50, {
           search: nextFilters.search || undefined,
           state: nextFilters.state || undefined,
           dateFrom: nextFilters.dateFrom || undefined,
@@ -93,7 +93,7 @@ export default function Sales() {
               onClick={() => {
                 setLoading(true)
                 setError('')
-                getOdooSalesOrders(50, null, {
+                getOdooSalesOrders(50, {
                   search: filters.search || undefined,
                   state: filters.state || undefined,
                   dateFrom: filters.dateFrom || undefined,
