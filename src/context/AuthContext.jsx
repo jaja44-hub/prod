@@ -5,6 +5,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { setActiveTenant } from '../services/ServiceGateway';
+import { fetchEnabledTenantModules } from '../lib/tenantSchema';
 
 const AuthContext = createContext(null);
 
@@ -53,6 +54,7 @@ async function loadUserProfile(user) {
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
+  const [enabledModules, setEnabledModules] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
   const navigate = useNavigate();
@@ -78,8 +80,17 @@ export function AuthProvider({ children }) {
       try {
         const profile = await loadUserProfile(user);
         setUserProfile(profile);
+        setEnabledModules(null);
         if (profile?.tenantId) {
           setActiveTenant(profile.tenantId);
+          fetchEnabledTenantModules(profile.tenantId)
+            .then((modules) => {
+              setEnabledModules(Array.isArray(modules) ? modules : null);
+            })
+            .catch((err) => {
+              console.warn('AuthContext: failed to load enabled tenant modules', err);
+              setEnabledModules(null);
+            });
         }
       } catch (err) {
         console.error('AuthContext: failed to load user profile', err);
@@ -116,9 +127,10 @@ export function AuthProvider({ children }) {
     await signOut(auth);
     setCurrentUser(null);
     setUserProfile(null);
+    setEnabledModules(null);
   };
 
-  const value = useMemo(() => ({ currentUser, userProfile, user: userProfile, loading, logout, authError }), [currentUser, userProfile, loading, authError]);
+  const value = useMemo(() => ({ currentUser, userProfile, user: userProfile, enabledModules, loading, logout, authError }), [currentUser, userProfile, enabledModules, loading, authError]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

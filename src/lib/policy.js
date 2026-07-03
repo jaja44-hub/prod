@@ -39,12 +39,22 @@ export function modulesForPlanTier(planTier) {
   return TIER_MODULES[planTier] || TIER_MODULES[3];
 }
 
-export function canViewModule(principal, moduleId) {
+export function canViewModule(principal, moduleId, enabledTenantModules = null) {
   if (!principal) return false;
   if (isCeo(principal)) return true;
   const fn = MODULE_ACCESS[moduleId];
   if (!fn || !fn(principal)) return false;
+  if (Array.isArray(enabledTenantModules)) {
+    return enabledTenantModules.includes(moduleId);
+  }
   return modulesForPlanTier(principal.planTier).includes(moduleId);
+}
+
+export function resolveEnabledModules(principal, tenantModulesFromFirestore) {
+  if (Array.isArray(tenantModulesFromFirestore)) {
+    return tenantModulesFromFirestore;
+  }
+  return modulesForPlanTier(principal.planTier);
 }
 
 export function canViewAnalytics(principal) {

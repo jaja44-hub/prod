@@ -30,7 +30,7 @@ function getModuleId(pathname) {
  * Route guard: CEO passes; others need route RBAC and module policy (incl. planTier).
  */
 export default function RoleGuard({ children }) {
-  const { userProfile, currentUser, loading } = useAuth();
+  const { userProfile, currentUser, enabledModules, loading } = useAuth();
   const location = useLocation();
 
   if (loading) return null;
@@ -50,7 +50,7 @@ export default function RoleGuard({ children }) {
   }
 
   const routeAllowed = canAccess(role, location.pathname);
-  const moduleAllowed = moduleId ? canViewModule(principal, moduleId) : true;
+  const moduleAllowed = moduleId ? canViewModule(principal, moduleId, enabledModules) : true;
 
   if (moduleId && !moduleAllowed) {
     return <Navigate replace to="/dashboard" />;

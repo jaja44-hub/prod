@@ -15,6 +15,7 @@
     "audit:odoo": "node ./scripts/audit_odoo_schema.mjs",
     "test:odoo-query": "node ./scripts/test_odoo_query.mjs",
     "test:tenant-domain": "node ./scripts/test_tenant_domain.mjs",
+    "test:module-registry": "node ./scripts/test_module_registry.mjs",
     "seed:tenants": "node ./scripts/seed_tenant_schema.mjs",
     "add:auth-domain": "node ./scripts/add-authorized-domain.mjs"
   },

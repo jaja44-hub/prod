@@ -5,30 +5,12 @@ import { useLang } from "../context/LangContext";
 import { useAuth } from "../context/AuthContext";
 import { getNavSections } from "../lib/rbac";
 import { getPrincipal, isCeo, canViewModule } from "../lib/policy";
-
-function getModuleId(pathname) {
-  if (pathname.startsWith('/finance') || pathname.startsWith('/invoices') || pathname.startsWith('/reports')) {
-    return 'finance';
-  }
-  if (pathname.startsWith('/inventory') || pathname.startsWith('/work-orders')) {
-    return 'inventory';
-  }
-  if (pathname.startsWith('/sales') || pathname.startsWith('/crm') || pathname.startsWith('/orders') || pathname.startsWith('/customers')) {
-    return 'sales';
-  }
-  if (pathname.startsWith('/purchases') || pathname.startsWith('/suppliers')) {
-    return 'purchase';
-  }
-  if (pathname === '/dashboard' || pathname.startsWith('/dashboard')) {
-    return 'dashboard';
-  }
-  return null;
-}
+import { getModuleIdForPath } from "../lib/moduleRegistry";
 
 function Sidebar() {
   const { sidebarOpen, toggle, sidebarExpanded, setSidebarExpanded, collapse, expand } = useSidebar();
   const { lang, setLang, t } = useLang();
-  const { userProfile } = useAuth();
+  const { userProfile, enabledModules } = useAuth();
   const principal = getPrincipal(userProfile);
   const allowedSections = getNavSections(userProfile?.role);
 
@@ -89,8 +71,8 @@ function Sidebar() {
     .map((section) => ({
       ...section,
       items: section.items.filter((item) => {
-        const moduleId = getModuleId(item.to);
-        return isCeo(principal) || !moduleId || canViewModule(principal, moduleId);
+        const moduleId = getModuleIdForPath(item.to);
+        return isCeo(principal) || !moduleId || canViewModule(principal, moduleId, enabledModules);
       }),
     }))
     .filter((section) => section.items.length > 0);
