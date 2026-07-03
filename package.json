@@ -14,6 +14,7 @@
     "seed:odoo": "node ./scripts/seed_odoo_demo_data.mjs",
     "audit:odoo": "node ./scripts/audit_odoo_schema.mjs",
     "test:odoo-query": "node ./scripts/test_odoo_query.mjs",
+    "test:tenant-domain": "node ./scripts/test_tenant_domain.mjs",
     "add:auth-domain": "node ./scripts/add-authorized-domain.mjs"
   },
   "dependencies": {

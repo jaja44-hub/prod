@@ -1,5 +1,9 @@
 import xmlrpc from 'xmlrpc';
 import { verifyBearerToken, logSkipAuthWarning } from './lib/firebaseAdmin.js';
+import {
+  getTenantDomainTerms,
+  mergeOdooDomains,
+} from './lib/tenantOdooDomain.js';
 import { authenticateOdooDb } from './lib/resolveOdooDb.js';
 
 const ALLOWED_MODELS = new Set([
@@ -99,8 +103,23 @@ export default async function handler(req, res) {
     const role = decoded?.role || 'viewer';
     const uid = decoded?.uid || null;
 
-    // TODO B8 phase 2: enforce tenant-level domain filters in Odoo queries once
-    // the server-side policy / tenant schema is available.
+    // B8 phase 2: enforce tenant-level domain filters in Odoo queries.
+    // For read/query methods, merge tenant domain terms from the server-side
+    // tenant map (TENANT_ODOO_DOMAIN_MAP) into the client's domain args.
+    let tenantDomainApplied = false;
+    const READ_METHODS = new Set(['search_read', 'search', 'read', 'name_search']);
+
+    if (READ_METHODS.has(method) && Array.isArray(args) && Array.isArray(args[0])) {
+      try {
+        const tenantTerms = getTenantDomainTerms(tenantId, model);
+        if (Array.isArray(tenantTerms) && tenantTerms.length > 0) {
+          args[0] = mergeOdooDomains(args[0], tenantTerms);
+          tenantDomainApplied = true;
+        }
+      } catch (e) {
+        console.warn('[odooProxy] tenant domain merge failed:', e?.message || e);
+      }
+    }
     if (kwargs?.tenantId && kwargs.tenantId !== tenantId) {
       return res.status(403).json({ error: 'Tenant mismatch' });
     }
@@ -130,6 +149,7 @@ export default async function handler(req, res) {
         tenantId,
         role,
         uid,
+        tenantDomainApplied: !!tenantDomainApplied,
       },
     });
   } catch (error) {
