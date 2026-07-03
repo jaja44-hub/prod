@@ -71,10 +71,22 @@ export function getModuleRoutes(moduleId) {
   return def?.routes || [];
 }
 
+const ODOO_MODEL_MODULE_MAP = {
+  'product.product': 'inventory',
+  'sale.order': 'sales',
+  'purchase.order': 'purchase',
+  'account.account': 'finance',
+};
+
+export function getModuleIdForOdooModel(modelName) {
+  return ODOO_MODEL_MODULE_MAP[modelName] || null;
+}
+
 export default {
   MODULE_REGISTRY,
   getModuleDef,
   listRegistryModuleIds,
   getModuleIdForPath,
   getModuleRoutes,
+  getModuleIdForOdooModel,
 };

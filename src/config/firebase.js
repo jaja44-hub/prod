@@ -5,8 +5,8 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 function resolveFirebaseConfig() {
-  const env = import.meta.env;
-  if (env.VITE_FIREBASE_API_KEY && env.VITE_FIREBASE_PROJECT_ID) {
+  const env = typeof import.meta !== 'undefined' ? import.meta.env : process.env;
+  if (env?.VITE_FIREBASE_API_KEY && env?.VITE_FIREBASE_PROJECT_ID) {
     return {
       apiKey: env.VITE_FIREBASE_API_KEY,
       authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -16,7 +16,7 @@ function resolveFirebaseConfig() {
       appId: env.VITE_FIREBASE_APP_ID,
     };
   }
-  if (env.VITE_FIREBASE_CONFIG) {
+  if (env?.VITE_FIREBASE_CONFIG) {
     try {
       return JSON.parse(env.VITE_FIREBASE_CONFIG);
     } catch {

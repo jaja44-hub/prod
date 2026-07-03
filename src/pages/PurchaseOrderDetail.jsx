@@ -7,7 +7,6 @@ import {
   createOdooPurchaseOrder,
   getOdooVendors,
   getOdooProducts,
-  logAuditEvent,
   BACKEND_WAKEUP_MESSAGE,
 } from '../services/ServiceGateway'
 
@@ -101,26 +100,10 @@ export default function PurchaseOrderDetail() {
               unitPrice: form.unitPrice,
             },
           ],
-        })
+        }, { actorUid: currentUser?.uid })
 
         if (!created?.id) {
           throw new Error(t('purchaseOrderCreateFailed'))
-        }
-
-        try {
-          await logAuditEvent({
-            type: 'purchase_order.create',
-            orderId: created.id,
-            orderName: created.name,
-            actor: userProfile?.name || userProfile?.email || currentUser?.uid || 'unknown',
-            tenant: currentUser?.uid,
-            details: {
-              partner_id: created.partner_id?.[0],
-              lineCount: created.order_lines?.length || 0,
-            },
-          })
-        } catch {
-          // Audit failures must not block save.
         }
 
         navigate(`/purchases/${created.id}`)

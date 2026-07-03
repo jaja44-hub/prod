@@ -153,6 +153,18 @@ service cloud.firestore {
       allow update, delete: if false;  // audit logs are immutable
     }
 
+    match /audit_log/{id} {
+      allow read:   if isManagerOrAbove() && sameTenant(resource.data);
+      allow create: if isAuthenticated() && validTenantWrite();
+      allow update, delete: if false;
+    }
+
+    match /module_events/{id} {
+      allow read:   if isManagerOrAbove() && sameTenant(resource.data);
+      allow create: if isAuthenticated() && validTenantWrite();
+      allow update, delete: if false;
+    }
+
     // ── SYSTEM CONFIG (module locks, branding) — tenant-scoped ───
     match /system_config/{doc} {
       allow read:  if isAuthenticated();

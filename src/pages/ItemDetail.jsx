@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useLang } from '../context/LangContext'
 import { useAuth } from '../context/AuthContext'
-import { getOdooProduct, updateOdooProduct, createOdooProduct, logAuditEvent, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway'
+import { getOdooProduct, updateOdooProduct, createOdooProduct, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway'
 
 export default function ItemDetail() {
   const { id } = useParams()
@@ -57,24 +57,9 @@ export default function ItemDetail() {
           default_code: form.default_code,
           name: form.name,
           list_price: Number(form.list_price || 0),
-        })
+        }, { actorUid: currentUser?.uid })
         if (!created?.id) {
           throw new Error('Failed to create product in Odoo.')
-        }
-        try {
-          await logAuditEvent({
-            type: 'product.create',
-            productId: created.id,
-            productName: created.name,
-            actor: userProfile?.name || userProfile?.email || currentUser?.uid || 'unknown',
-            tenant: currentUser?.uid,
-            details: {
-              default_code: created.default_code,
-              list_price: created.list_price,
-            },
-          })
-        } catch {
-          // Audit failures must not block user flow.
         }
         navigate(`/inventory/${created.id}`)
         return
@@ -84,28 +69,13 @@ export default function ItemDetail() {
         default_code: form.default_code,
         name: form.name,
         list_price: Number(form.list_price || 0),
-      })
+      }, { actorUid: currentUser?.uid })
       setItem(updated)
       setForm({
         default_code: updated?.default_code || '',
         name: updated?.name || '',
         list_price: updated?.list_price || 0,
       })
-      try {
-        await logAuditEvent({
-          type: 'product.update',
-          productId: updated.id,
-          productName: updated.name,
-          actor: userProfile?.name || userProfile?.email || currentUser?.uid || 'unknown',
-          tenant: currentUser?.uid,
-          details: {
-            default_code: updated.default_code,
-            list_price: updated.list_price,
-          },
-        })
-      } catch {
-        // Audit failures must not block user flow.
-      }
     } catch (err) {
       setError(normalizeErrorMessage(err))
     } finally {

@@ -3,7 +3,7 @@
  * Adopted modules (Dashboard analytics, HR, Finance) route through
  * EngineeringGateway for live cross-sector data from ethiobusiness-hub.
  */
-import { db } from '../config/firebase';
+import { db } from '../config/firebase.js';
 import {
   collection,
   query,
@@ -17,7 +17,8 @@ import {
   limit as fbLimit,
   startAfter as fbStartAfter,
 } from 'firebase/firestore';
-import { listDocuments, createDocument } from '../lib/firestoreUtils';
+import { listDocuments, createDocument } from '../lib/firestoreUtils.js';
+import { emitModuleEvent, buildOdooWriteEvent } from '../lib/eventBus.js';
 export { listDocuments, createDocument };
 
 // ── Engineering Sector Bridge (cross-sector live data) ────────────────────────
@@ -242,7 +243,7 @@ export async function getOdooPurchaseOrder(id) {
   return { ...order, order_lines: Array.isArray(lines) ? lines : [] };
 }
 
-export async function createOdooPurchaseOrder({ partner_id, origin, lines = [] }) {
+export async function createOdooPurchaseOrder({ partner_id, origin, lines = [] }, { actorUid } = {}) {
   if (!partner_id) throw new Error('Vendor is required');
   const newId = await executeOdoo('purchase.order', 'create', [{ partner_id: Number(partner_id), origin: origin || '' }]);
   for (const line of lines) {
@@ -253,7 +254,25 @@ export async function createOdooPurchaseOrder({ partner_id, origin, lines = [] }
       price_unit: Number(line.unitPrice || 0),
     }]);
   }
-  return getOdooPurchaseOrder(newId);
+  const created = await getOdooPurchaseOrder(newId);
+  if (actorUid) {
+    try {
+      await emitModuleEvent(buildOdooWriteEvent({
+        tenantId: getActiveTenant(),
+        action: 'purchase_order.create',
+        odooModel: 'purchase.order',
+        odooId: newId,
+        actorUid,
+        payload: {
+          partner_id: created?.partner_id?.[0] || null,
+          lineCount: created?.order_lines?.length || 0,
+        },
+      }))
+    } catch {
+      // non-critical event bus failures must not block the user
+    }
+  }
+  return created;
 }
 
 /**
@@ -287,18 +306,54 @@ export async function getOdooProduct(id) {
   return Array.isArray(products) && products.length ? products[0] : null;
 }
 
-export async function updateOdooProduct(id, changes) {
+export async function updateOdooProduct(id, changes, { actorUid } = {}) {
   if (!id) throw new Error('Product id is required');
   await executeOdoo('product.product', 'write', [[Number(id)], changes]);
-  return getOdooProduct(id);
+  const updated = await getOdooProduct(id);
+  if (actorUid) {
+    try {
+      await emitModuleEvent(buildOdooWriteEvent({
+        tenantId: getActiveTenant(),
+        action: 'product.update',
+        odooModel: 'product.product',
+        odooId: id,
+        actorUid,
+        payload: {
+          default_code: updated?.default_code || null,
+          list_price: updated?.list_price || null,
+        },
+      }))
+    } catch {
+      // non-critical event bus failures must not block the user
+    }
+  }
+  return updated;
 }
 
-export async function createOdooProduct(payload) {
+export async function createOdooProduct(payload, { actorUid } = {}) {
   if (!payload || !payload.name) {
     throw new Error('Product name is required');
   }
   const newId = await executeOdoo('product.product', 'create', [payload]);
-  return getOdooProduct(newId);
+  const created = await getOdooProduct(newId);
+  if (actorUid) {
+    try {
+      await emitModuleEvent(buildOdooWriteEvent({
+        tenantId: getActiveTenant(),
+        action: 'product.create',
+        odooModel: 'product.product',
+        odooId: newId,
+        actorUid,
+        payload: {
+          default_code: created?.default_code || null,
+          list_price: created?.list_price || null,
+        },
+      }))
+    } catch {
+      // non-critical event bus failures must not block the user
+    }
+  }
+  return created;
 }
 
 export async function getOdooManufacturingOrders(limit = 50, filters = {}) {
@@ -332,7 +387,7 @@ export async function getOdooSalesOrder(id) {
   return { ...order, order_lines: Array.isArray(lines) ? lines : [] };
 }
 
-export async function createOdooSalesOrder({ partner_id, origin, lines = [] }) {
+export async function createOdooSalesOrder({ partner_id, origin, lines = [] }, { actorUid } = {}) {
   if (!partner_id) throw new Error('Customer is required');
   const newId = await executeOdoo('sale.order', 'create', [{ partner_id: Number(partner_id), origin: origin || '' }]);
   for (const line of lines) {
@@ -343,7 +398,25 @@ export async function createOdooSalesOrder({ partner_id, origin, lines = [] }) {
       price_unit: Number(line.unitPrice || 0),
     }]);
   }
-  return getOdooSalesOrder(newId);
+  const created = await getOdooSalesOrder(newId);
+  if (actorUid) {
+    try {
+      await emitModuleEvent(buildOdooWriteEvent({
+        tenantId: getActiveTenant(),
+        action: 'sale_order.create',
+        odooModel: 'sale.order',
+        odooId: newId,
+        actorUid,
+        payload: {
+          partner_id: created?.partner_id?.[0] || null,
+          lineCount: created?.order_lines?.length || 0,
+        },
+      }))
+    } catch {
+      // non-critical event bus failures must not block the user
+    }
+  }
+  return created;
 }
 
 // ── Adopted module functions — live cross-sector data via EngineeringGateway ──
