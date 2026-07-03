@@ -1,7 +1,7 @@
 import xmlrpc from 'xmlrpc';
 import { verifyBearerToken, logSkipAuthWarning } from './lib/firebaseAdmin.js';
 import {
-  getTenantDomainTerms,
+  getTenantDomainTermsAsync,
   mergeOdooDomains,
 } from './lib/tenantOdooDomain.js';
 import { authenticateOdooDb } from './lib/resolveOdooDb.js';
@@ -111,7 +111,7 @@ export default async function handler(req, res) {
 
     if (READ_METHODS.has(method) && Array.isArray(args) && Array.isArray(args[0])) {
       try {
-        const tenantTerms = getTenantDomainTerms(tenantId, model);
+        const tenantTerms = await getTenantDomainTermsAsync(tenantId, model);
         if (Array.isArray(tenantTerms) && tenantTerms.length > 0) {
           args[0] = mergeOdooDomains(args[0], tenantTerms);
           tenantDomainApplied = true;

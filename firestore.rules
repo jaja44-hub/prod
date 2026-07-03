@@ -57,6 +57,18 @@ service cloud.firestore {
       allow write: if isCEO() && getUserTenantId() == 'default';
     }
 
+    // ── PACKAGES (read-only for authenticated users; seeded by Admin SDK) ─
+    match /packages/{id} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // ── TENANT MODULES (tenant-scoped flags)
+    match /tenant_modules/{id} {
+      allow read: if isAuthenticated() && sameTenant(resource.data);
+      allow write: if false;
+    }
+
     match /tenants/{tenantId}/system_config/{doc} {
       allow read:  if isAuthenticated() && getUserTenantId() == tenantId;
       allow write: if isCEO() && (getUserTenantId() == tenantId || getUserTenantId() == 'default');
