@@ -24,7 +24,15 @@ Verification performed
 - `npm run test:tenant-domain` — passes (env fallback tests)
 - `npm run test:odoo-query` — passes
 - `npm run build` — passes
-- `scripts/seed_tenant_schema.mjs` is idempotent and will run when `FIREBASE_SERVICE_ACCOUNT` is configured.
+- `scripts/seed_tenant_schema.mjs` ran successfully using local `service-account.json` and upserted the following documents:
+  - packages: `enterprise`, `pro`, `starter`
+  - tenant: `production` (status: `active`, planTier: 1, packageId: `enterprise`, odooDomain: `{}`)
+  - tenant_modules (ids): `production_dashboard`, `production_inventory`, `production_sales`, `production_purchase`, `production_finance`
+
+Post-seed checks
+
+- Re-ran `npm run test:tenant-domain` after seeding — all tests passed.
+- Verified proxy falls back to env map if Firestore is unavailable (covered by tests and code path).
 
 Notes
 
