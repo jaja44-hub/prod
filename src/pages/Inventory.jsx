@@ -2,16 +2,18 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LangContext';
-import { getOdooProducts, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway';
+import { getOdooProducts, getOdooProductsByLocation, getOdooProductCategories, getOdooStockLocations, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway';
 import ListFilterBar from '../components/ListFilterBar';
 
 export default function Inventory() {
   const { t } = useLang();
   const { currentUser, loading: authLoading } = useAuth();
   const [items, setItems] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [filters, setFilters] = useState({ search: '', active: true });
+  const [filters, setFilters] = useState({ search: '', active: true, categoryId: undefined, locationId: undefined });
   const [endReached, setEndReached] = useState(true);
 
   const normalizeErrorMessage = (err) => {
@@ -28,10 +30,19 @@ export default function Inventory() {
       setLoading(true);
       setError('');
       try {
-        const products = await getOdooProducts(50, ['id', 'name', 'default_code', 'qty_available', 'list_price', 'uom_id'], {
-          search: initialFilters.search || undefined,
-          active: initialFilters.active,
-        });
+        const productFetcher = initialFilters.locationId
+          ? getOdooProductsByLocation(initialFilters.locationId, {
+              search: initialFilters.search || undefined,
+              active: initialFilters.active,
+              categoryId: initialFilters.categoryId,
+            }, 50)
+          : getOdooProducts(50, ['id', 'name', 'default_code', 'qty_available', 'list_price', 'uom_id', 'categ_id'], {
+              search: initialFilters.search || undefined,
+              active: initialFilters.active,
+              categoryId: initialFilters.categoryId,
+            });
+
+        const products = await productFetcher;
         if (!mounted) return;
         const list = Array.isArray(products) ? products : [];
         setItems(list);
@@ -45,12 +56,36 @@ export default function Inventory() {
       }
     }
 
-      if (authLoading || !currentUser) return;
+    if (authLoading || !currentUser) return;
     loadProducts(filters);
     return () => {
       mounted = false;
     };
   }, [authLoading, currentUser, filters]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadOptions() {
+      try {
+        const [categoryResult, locationResult] = await Promise.all([
+          getOdooProductCategories(100, {}),
+          getOdooStockLocations(100, {}),
+        ]);
+        if (!mounted) return;
+        setCategories(Array.isArray(categoryResult) ? categoryResult : []);
+        setLocations(Array.isArray(locationResult) ? locationResult : []);
+      } catch {
+        // ignore option load failures; the page can still function without filter options
+      }
+    }
+
+    if (authLoading || !currentUser) return;
+    loadOptions();
+    return () => {
+      mounted = false;
+    };
+  }, [authLoading, currentUser]);
 
   const filtered = items;
 
@@ -72,8 +107,10 @@ export default function Inventory() {
           value={filters}
           onChange={setFilters}
           onApply={() => setFilters((current) => ({ ...current }))}
-          onClear={() => setFilters({ search: '', active: true })}
-          fields={['search', 'active']}
+          onClear={() => setFilters({ search: '', active: true, categoryId: undefined, locationId: undefined })}
+          fields={['search', 'active', 'category', 'location']}
+          categoryOptions={categories.map((category) => ({ value: category.id, label: category.name }))}
+          locationOptions={locations.map((location) => ({ value: location.id, label: location.complete_name || location.name }))}
           loading={loading}
         />
         <div className="flex items-center justify-between mb-4">
@@ -120,6 +157,7 @@ export default function Inventory() {
                 <tr className="text-left text-gray-600">
                   <th className="py-2">{t('sku')}</th>
                   <th className="py-2">{t('name')}</th>
+                  <th className="py-2">{t('category')}</th>
                   <th className="py-2">{t('quantity')}</th>
                   <th className="py-2">{t('unit')}</th>
                   <th className="py-2">{t('actions')}</th>
@@ -130,6 +168,7 @@ export default function Inventory() {
                   <tr key={it.id} className="border-t">
                     <td className="py-2">{it.default_code || '—'}</td>
                     <td className="py-2">{it.name || '—'}</td>
+                    <td className="py-2">{it.categ_id?.[1] || '—'}</td>
                     <td className="py-2">{typeof it.qty_available === 'number' ? it.qty_available : '—'}</td>
                     <td className="py-2">{it.uom_id?.[1] || t('unit')}</td>
                     <td className="py-2">

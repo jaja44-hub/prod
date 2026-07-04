@@ -301,7 +301,7 @@ export async function getOdooProduct(id) {
   if (!id) throw new Error('Product id is required');
   const products = await executeOdoo('product.product', 'search_read',
     [[['id', '=', Number(id)]]],
-    { fields: ['id', 'name', 'default_code', 'list_price'], limit: 1 }
+    { fields: ['id', 'name', 'default_code', 'list_price', 'categ_id'], limit: 1 }
   );
   return Array.isArray(products) && products.length ? products[0] : null;
 }
@@ -321,6 +321,7 @@ export async function updateOdooProduct(id, changes, { actorUid } = {}) {
         payload: {
           default_code: updated?.default_code || null,
           list_price: updated?.list_price || null,
+          categ_id: updated?.categ_id?.[1] || null,
         },
       }))
     } catch {
@@ -347,6 +348,7 @@ export async function createOdooProduct(payload, { actorUid } = {}) {
         payload: {
           default_code: created?.default_code || null,
           list_price: created?.list_price || null,
+          categ_id: created?.categ_id?.[1] || null,
         },
       }))
     } catch {
@@ -354,6 +356,71 @@ export async function createOdooProduct(payload, { actorUid } = {}) {
     }
   }
   return created;
+}
+
+export async function getOdooProductCategories(limit = 100, filters = {}) {
+  const domain = buildOdooDomain('product.category', filters);
+  const kwargs = buildSearchReadKwargs({
+    fields: FIELD_ALLOWLIST['product.category'],
+    limit,
+    offset: filters.offset,
+    order: filters.order || 'name asc',
+    model: 'product.category',
+  });
+  return executeOdoo('product.category', 'search_read', [domain], kwargs);
+}
+
+export async function getOdooStockLocations(limit = 100, filters = {}) {
+  const domain = buildOdooDomain('stock.location', filters);
+  const kwargs = buildSearchReadKwargs({
+    fields: FIELD_ALLOWLIST['stock.location'],
+    limit,
+    offset: filters.offset,
+    order: filters.order || 'complete_name asc',
+    model: 'stock.location',
+  });
+  return executeOdoo('stock.location', 'search_read', [domain], kwargs);
+}
+
+export async function getOdooStockQuants(limit = 100, filters = {}) {
+  const domain = buildOdooDomain('stock.quant', filters);
+  const kwargs = buildSearchReadKwargs({
+    fields: FIELD_ALLOWLIST['stock.quant'],
+    limit,
+    offset: filters.offset,
+    order: filters.order || 'location_id asc',
+    model: 'stock.quant',
+  });
+  return executeOdoo('stock.quant', 'search_read', [domain], kwargs);
+}
+
+export async function getOdooProductsByLocation(locationId, filters = {}, limit = 50) {
+  if (!locationId) {
+    return getOdooProducts(limit, null, filters);
+  }
+
+  const quantResults = await getOdooStockQuants(500, { locationId: Number(locationId) });
+  const productIds = Array.isArray(quantResults)
+    ? Array.from(new Set(quantResults.map((quant) => Number(quant.product_id?.[0])).filter(Boolean)))
+    : [];
+
+  if (productIds.length === 0) {
+    return [];
+  }
+
+  const productFilters = { ...filters, active: filters.active, categoryId: filters.categoryId };
+  const domain = buildOdooDomain('product.product', productFilters);
+  domain.push(['id', 'in', productIds]);
+
+  const safeFields = FIELD_ALLOWLIST['product.product'];
+  const kwargs = buildSearchReadKwargs({
+    fields: safeFields,
+    limit,
+    offset: filters.offset,
+    order: filters.order,
+    model: 'product.product',
+  });
+  return executeOdoo('product.product', 'search_read', [domain], kwargs);
 }
 
 export async function getOdooManufacturingOrders(limit = 50, filters = {}) {

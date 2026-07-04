@@ -8,6 +8,9 @@ import { authenticateOdooDb } from './lib/resolveOdooDb.js';
 
 const ALLOWED_MODELS = new Set([
   'product.product',
+  'product.category',
+  'stock.location',
+  'stock.quant',
   'sale.order',
   'sale.order.line',
   'purchase.order',

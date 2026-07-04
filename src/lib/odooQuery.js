@@ -16,7 +16,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const FIELD_ALLOWLIST = {
-  'product.product': ['id', 'name', 'default_code', 'list_price', 'qty_available', 'active', 'uom_id'],
+  'product.product': ['id', 'name', 'default_code', 'list_price', 'qty_available', 'active', 'uom_id', 'categ_id'],
+  'product.category': ['id', 'name', 'complete_name', 'parent_id'],
+  'stock.location': ['id', 'name', 'complete_name', 'usage'],
+  'stock.quant': ['id', 'product_id', 'location_id', 'quantity', 'reserved_quantity'],
   'sale.order': ['id', 'name', 'partner_id', 'amount_total', 'state', 'date_order', 'origin'],
   'sale.order.line': ['id', 'product_id', 'product_uom_qty', 'price_unit', 'order_id'],
   'purchase.order': ['id', 'name', 'partner_id', 'date_order', 'amount_total', 'state', 'origin'],
@@ -34,6 +37,9 @@ export const FIELD_ALLOWLIST = {
 
 export const DEFAULT_DOMAINS = {
   'product.product': [['active', '=', true]],
+  'product.category': [],
+  'stock.location': [['usage', '=', 'internal']],
+  'stock.quant': [],
   'account.account': [['active', '=', true]],
   'sale.order': [],
   'purchase.order': [],
@@ -74,7 +80,10 @@ export function buildOdooDomain(model, filters = {}) {
 
   // Per-model supported filters
   const supportedFilters = {
-    'product.product': ['active', 'search'],
+    'product.product': ['active', 'search', 'categoryId', 'locationId'],
+    'product.category': ['search'],
+    'stock.location': ['search'],
+    'stock.quant': ['productId', 'locationId'],
     'sale.order': ['state', 'dateFrom', 'dateTo', 'search'],
     'purchase.order': ['state', 'dateFrom', 'dateTo', 'search'],
     'account.account': ['active', 'account_type', 'search'],
@@ -111,7 +120,7 @@ export function buildOdooDomain(model, filters = {}) {
         break;
 
       case 'search':
-        // Generic text search on name/code/partner fields
+        // Generic text search on name/code/partner/category/location fields
         if (typeof value === 'string' && value.trim()) {
           const searchTerm = value.trim();
           if (model === 'product.product') {
@@ -130,7 +139,33 @@ export function buildOdooDomain(model, filters = {}) {
             domain.push(['name', 'ilike', searchTerm]);
           } else if (model === 'hr.employee') {
             domain.push(['name', 'ilike', searchTerm]);
+          } else if (model === 'product.category' || model === 'stock.location') {
+            domain.push('|');
+            domain.push(['name', 'ilike', searchTerm]);
+            domain.push(['complete_name', 'ilike', searchTerm]);
           }
+        }
+        break;
+
+      case 'categoryId':
+        // product.product category filter
+        if (value) {
+          domain.push(['categ_id', '=', Number(value)]);
+        }
+        break;
+
+      case 'locationId':
+        // product.product or stock.quant location filter
+        if (value) {
+          const locationKey = model === 'stock.quant' ? 'location_id' : 'location_id';
+          domain.push([locationKey, '=', Number(value)]);
+        }
+        break;
+
+      case 'productId':
+        // stock.quant product filter
+        if (value) {
+          domain.push(['product_id', '=', Number(value)]);
         }
         break;
 

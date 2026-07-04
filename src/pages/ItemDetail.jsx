@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useLang } from '../context/LangContext'
 import { useAuth } from '../context/AuthContext'
-import { getOdooProduct, updateOdooProduct, createOdooProduct, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway'
+import { getOdooProduct, getOdooProductCategories, updateOdooProduct, createOdooProduct, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway'
 
 export default function ItemDetail() {
   const { id } = useParams()
@@ -12,7 +12,8 @@ export default function ItemDetail() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [item, setItem] = useState(null)
-  const [form, setForm] = useState({ default_code: '', name: '', list_price: 0 })
+  const [categories, setCategories] = useState([])
+  const [form, setForm] = useState({ default_code: '', name: '', list_price: 0, categ_id: undefined })
 
   const normalizeErrorMessage = (err) => {
     const raw = err?.response?.data?.error || err?.message || t('error')
@@ -22,18 +23,24 @@ export default function ItemDetail() {
   useEffect(() => {
     let mounted = true
     async function load() {
-      if (!id || id === 'new') return
       setLoading(true)
       setError('')
       try {
-        const data = await getOdooProduct(id)
+        const [categoryResult, productResult] = await Promise.all([
+          getOdooProductCategories(100, {}),
+          id && id !== 'new' ? getOdooProduct(id) : Promise.resolve(null),
+        ])
         if (mounted) {
-          setItem(data)
-          setForm({
-            default_code: data?.default_code || '',
-            name: data?.name || '',
-            list_price: data?.list_price || 0,
-          })
+          setCategories(Array.isArray(categoryResult) ? categoryResult : [])
+          if (productResult) {
+            setItem(productResult)
+            setForm({
+              default_code: productResult?.default_code || '',
+              name: productResult?.name || '',
+              list_price: productResult?.list_price || 0,
+              categ_id: productResult?.categ_id?.[0],
+            })
+          }
         }
       } catch (err) {
         if (mounted) setError(normalizeErrorMessage(err))
@@ -57,6 +64,7 @@ export default function ItemDetail() {
           default_code: form.default_code,
           name: form.name,
           list_price: Number(form.list_price || 0),
+          categ_id: form.categ_id ? Number(form.categ_id) : undefined,
         }, { actorUid: currentUser?.uid })
         if (!created?.id) {
           throw new Error('Failed to create product in Odoo.')
@@ -69,6 +77,7 @@ export default function ItemDetail() {
         default_code: form.default_code,
         name: form.name,
         list_price: Number(form.list_price || 0),
+        categ_id: form.categ_id ? Number(form.categ_id) : undefined,
       }, { actorUid: currentUser?.uid })
       setItem(updated)
       setForm({
@@ -118,6 +127,21 @@ export default function ItemDetail() {
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 className="w-full p-2 border rounded"
               />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">{t('category')}</label>
+              <select
+                value={form.categ_id || ''}
+                onChange={(e) => setForm({ ...form, categ_id: e.target.value ? Number(e.target.value) : undefined })}
+                className="w-full p-2 border rounded"
+              >
+                <option value="">{t('selectCategory')}</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.complete_name || category.name}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-xs text-gray-600 mb-1">{t('price')}</label>

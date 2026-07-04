@@ -10,6 +10,8 @@ export default function ListFilterBar({
   fields = [],
   stateOptions = [],
   accountTypeOptions = [],
+  categoryOptions = [],
+  locationOptions = [],
   loading = false,
 }) {
   const { t } = useLang();
@@ -106,6 +108,42 @@ export default function ListFilterBar({
             >
               <option value="">{t('filterAccountTypeAll')}</option>
               {accountTypeOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {fields.includes('category') && (
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">{t('category')}</label>
+            <select
+              value={value.categoryId || ''}
+              onChange={(e) => handleUpdate('categoryId', e.target.value ? Number(e.target.value) : undefined)}
+              className="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm"
+            >
+              <option value="">{t('filterCategoryAll')}</option>
+              {categoryOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {fields.includes('location') && (
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">{t('location')}</label>
+            <select
+              value={value.locationId || ''}
+              onChange={(e) => handleUpdate('locationId', e.target.value ? Number(e.target.value) : undefined)}
+              className="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm"
+            >
+              <option value="">{t('filterLocationAll')}</option>
+              {locationOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
