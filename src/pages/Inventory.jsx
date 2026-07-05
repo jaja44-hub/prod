@@ -15,6 +15,7 @@ export default function Inventory() {
   const [error, setError] = useState('');
   const [filters, setFilters] = useState({ search: '', active: true, categoryId: undefined, locationId: undefined });
   const [endReached, setEndReached] = useState(true);
+  const [showValue, setShowValue] = useState(false);
 
   const normalizeErrorMessage = (err) => {
     const raw = err?.response?.data?.error || err?.message || t('error')
@@ -30,13 +31,17 @@ export default function Inventory() {
       setLoading(true);
       setError('');
       try {
+        const fields = showValue
+          ? ['id', 'name', 'default_code', 'qty_available', 'list_price', 'uom_id', 'categ_id', 'total_value']
+          : ['id', 'name', 'default_code', 'qty_available', 'list_price', 'uom_id', 'categ_id'];
+
         const productFetcher = initialFilters.locationId
           ? getOdooProductsByLocation(initialFilters.locationId, {
               search: initialFilters.search || undefined,
               active: initialFilters.active,
               categoryId: initialFilters.categoryId,
             }, 50)
-          : getOdooProducts(50, ['id', 'name', 'default_code', 'qty_available', 'list_price', 'uom_id', 'categ_id'], {
+          : getOdooProducts(50, fields, {
               search: initialFilters.search || undefined,
               active: initialFilters.active,
               categoryId: initialFilters.categoryId,
@@ -61,7 +66,7 @@ export default function Inventory() {
     return () => {
       mounted = false;
     };
-  }, [authLoading, currentUser, filters]);
+  }, [authLoading, currentUser, filters, showValue]);
 
   useEffect(() => {
     let mounted = true;
@@ -114,7 +119,18 @@ export default function Inventory() {
           loading={loading}
         />
         <div className="flex items-center justify-between mb-4">
-          <div />
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="showValueToggle"
+              checked={showValue}
+              onChange={(e) => setShowValue(e.target.checked)}
+              className="rounded text-violet-600 focus:ring-violet-500 h-4 w-4"
+            />
+            <label htmlFor="showValueToggle" className="text-sm text-gray-700 dark:text-gray-300 select-none cursor-pointer">
+              {t('showValue')}
+            </label>
+          </div>
           <div>
             <button onClick={openCreate} className="bg-violet-600 text-white px-3 py-1 rounded">
               {t('addItem')}
@@ -131,7 +147,10 @@ export default function Inventory() {
               onClick={() => {
                 setLoading(true);
                 setError('');
-                getOdooProducts(50, ['id', 'name', 'default_code', 'qty_available', 'list_price', 'uom_id'], {
+                const fields = showValue
+                  ? ['id', 'name', 'default_code', 'qty_available', 'list_price', 'uom_id', 'categ_id', 'total_value']
+                  : ['id', 'name', 'default_code', 'qty_available', 'list_price', 'uom_id', 'categ_id'];
+                getOdooProducts(50, fields, {
                   search: filters.search || undefined,
                   active: filters.active,
                 })
@@ -160,6 +179,7 @@ export default function Inventory() {
                   <th className="py-2">{t('category')}</th>
                   <th className="py-2">{t('quantity')}</th>
                   <th className="py-2">{t('unit')}</th>
+                  {showValue && <th className="py-2">{t('value')}</th>}
                   <th className="py-2">{t('actions')}</th>
                 </tr>
               </thead>
@@ -171,6 +191,13 @@ export default function Inventory() {
                     <td className="py-2">{it.categ_id?.[1] || '—'}</td>
                     <td className="py-2">{typeof it.qty_available === 'number' ? it.qty_available : '—'}</td>
                     <td className="py-2">{it.uom_id?.[1] || t('unit')}</td>
+                    {showValue && (
+                      <td className="py-2">
+                        {typeof it.total_value === 'number'
+                          ? `$${it.total_value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                          : '—'}
+                      </td>
+                    )}
                     <td className="py-2">
                       <button onClick={() => openEdit(it)} className="text-xs text-violet-600">
                         {t('viewEdit')}

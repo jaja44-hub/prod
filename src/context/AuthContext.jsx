@@ -55,10 +55,12 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [enabledModules, setEnabledModules] = useState(null);
+  const [tenantConfig, setTenantConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+
 
   useEffect(() => {
     if (!auth) {
@@ -81,8 +83,25 @@ export function AuthProvider({ children }) {
         const profile = await loadUserProfile(user);
         setUserProfile(profile);
         setEnabledModules(null);
+        setTenantConfig(null);
         if (profile?.tenantId) {
           setActiveTenant(profile.tenantId);
+          
+          if (db) {
+            getDoc(doc(db, 'tenants', profile.tenantId))
+              .then((snap) => {
+                if (snap.exists()) {
+                  setTenantConfig(snap.data());
+                } else {
+                  setTenantConfig({ complianceProfile: 'global_flat' }); // safe fallback
+                }
+              })
+              .catch((err) => {
+                console.warn('AuthContext: failed to load tenant config', err);
+                setTenantConfig({ complianceProfile: 'global_flat' });
+              });
+          }
+
           fetchEnabledTenantModules(profile.tenantId)
             .then((modules) => {
               setEnabledModules(Array.isArray(modules) ? modules : null);
@@ -128,9 +147,22 @@ export function AuthProvider({ children }) {
     setCurrentUser(null);
     setUserProfile(null);
     setEnabledModules(null);
+    setTenantConfig(null);
   };
 
-  const value = useMemo(() => ({ currentUser, userProfile, user: userProfile, enabledModules, loading, logout, authError }), [currentUser, userProfile, enabledModules, loading, authError]);
+  const value = useMemo(
+    () => ({
+      currentUser,
+      userProfile,
+      user: userProfile,
+      enabledModules,
+      tenantConfig,
+      loading,
+      authError,
+      logout,
+    }),
+    [currentUser, userProfile, enabledModules, tenantConfig, loading, authError]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

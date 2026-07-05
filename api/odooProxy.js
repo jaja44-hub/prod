@@ -11,6 +11,7 @@ const ALLOWED_MODELS = new Set([
   'product.category',
   'stock.location',
   'stock.quant',
+  'stock.valuation.layer',
   'sale.order',
   'sale.order.line',
   'purchase.order',
@@ -18,6 +19,9 @@ const ALLOWED_MODELS = new Set([
   'res.partner',
   'hr.employee',
   'account.account',
+  'account.move',
+  'account.payment',
+  'account.journal',
   'mrp.production',
 ]);
 

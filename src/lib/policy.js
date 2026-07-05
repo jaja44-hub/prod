@@ -41,13 +41,21 @@ export function modulesForPlanTier(planTier) {
 
 export function canViewModule(principal, moduleId, enabledTenantModules = null) {
   if (!principal) return false;
+  if (moduleId === 'dashboard') return true;
+
+  if (Array.isArray(enabledTenantModules)) {
+    if (!enabledTenantModules.includes(moduleId)) {
+      return false;
+    }
+  } else {
+    if (!modulesForPlanTier(principal.planTier).includes(moduleId)) {
+      return false;
+    }
+  }
+
   if (isCeo(principal)) return true;
   const fn = MODULE_ACCESS[moduleId];
-  if (!fn || !fn(principal)) return false;
-  if (Array.isArray(enabledTenantModules)) {
-    return enabledTenantModules.includes(moduleId);
-  }
-  return modulesForPlanTier(principal.planTier).includes(moduleId);
+  return fn ? fn(principal) : false;
 }
 
 export function resolveEnabledModules(principal, tenantModulesFromFirestore) {
@@ -61,4 +69,9 @@ export function canViewAnalytics(principal) {
   if (!principal) return false;
   if (isCeo(principal)) return true;
   return principal.planTier <= 2;
+}
+
+export function isPlatformAdmin(userProfile) {
+  if (!userProfile) return false;
+  return userProfile.role === 'platform_admin' || (typeof userProfile.email === 'string' && userProfile.email.startsWith('platform_admin@'));
 }

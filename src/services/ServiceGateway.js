@@ -275,6 +275,16 @@ export async function createOdooPurchaseOrder({ partner_id, origin, lines = [] }
   return created;
 }
 
+export async function confirmOdooPurchaseOrder(id) {
+  if (!id) throw new Error('Purchase order id is required');
+  return executeOdoo('purchase.order', 'button_confirm', [[Number(id)]]);
+}
+
+export async function cancelOdooPurchaseOrder(id) {
+  if (!id) throw new Error('Purchase order id is required');
+  return executeOdoo('purchase.order', 'button_cancel', [[Number(id)]]);
+}
+
 /**
  * Fetch HR employees from Odoo.
  * TICKET-014: Uses buildOdooDomain and schema-safe fields
@@ -392,6 +402,49 @@ export async function getOdooStockQuants(limit = 100, filters = {}) {
     model: 'stock.quant',
   });
   return executeOdoo('stock.quant', 'search_read', [domain], kwargs);
+}
+
+export async function getOdooValuationLayers(productId, limit = 50) {
+  const domain = buildOdooDomain('stock.valuation.layer', { productId: Number(productId) });
+  const kwargs = buildSearchReadKwargs({
+    fields: FIELD_ALLOWLIST['stock.valuation.layer'],
+    limit,
+    order: 'create_date desc',
+    model: 'stock.valuation.layer',
+  });
+  return executeOdoo('stock.valuation.layer', 'search_read', [domain], kwargs);
+}
+
+export async function getOdooAccountMoves(filters = {}, limit = 100) {
+  const domain = buildOdooDomain('account.move', filters);
+  const kwargs = buildSearchReadKwargs({
+    fields: FIELD_ALLOWLIST['account.move'],
+    limit,
+    order: 'date desc',
+    model: 'account.move',
+  });
+  return executeOdoo('account.move', 'search_read', [domain], kwargs);
+}
+
+export async function getOdooPayments(filters = {}, limit = 100) {
+  const domain = buildOdooDomain('account.payment', filters);
+  const kwargs = buildSearchReadKwargs({
+    fields: FIELD_ALLOWLIST['account.payment'],
+    limit,
+    order: 'date desc',
+    model: 'account.payment',
+  });
+  return executeOdoo('account.payment', 'search_read', [domain], kwargs);
+}
+
+export async function getOdooJournals(filters = {}) {
+  const domain = buildOdooDomain('account.journal', filters);
+  const kwargs = buildSearchReadKwargs({
+    fields: FIELD_ALLOWLIST['account.journal'],
+    limit: 50,
+    model: 'account.journal',
+  });
+  return executeOdoo('account.journal', 'search_read', [domain], kwargs);
 }
 
 export async function getOdooProductsByLocation(locationId, filters = {}, limit = 50) {
@@ -550,6 +603,18 @@ export async function updateEmployee(id, changes) {
   return updateTenantDoc('employees', id, changes);
 }
 
+export async function getApprovals() {
+  return listTenantCollection('admin_approvals');
+}
+
+export async function createApproval(data) {
+  return saveTenantDoc('admin_approvals', { ...data, status: 'pending', createdAt: new Date().toISOString() });
+}
+
+export async function updateApproval(id, changes) {
+  return updateTenantDoc('admin_approvals', id, changes);
+}
+
 export async function savePayrollRun(data) {
   return saveTenantDoc('payroll_runs', { ...data, runAt: new Date().toISOString() });
 }
@@ -570,13 +635,16 @@ export default {
   updateTenantDoc,
   setActiveTenant,
   getActiveTenant,
-  // Odoo ERP layer
   getOdooProducts,
   getOdooVendors,
   getOdooCustomers,
   getOdooPurchaseOrders,
   getOdooEmployees,
   getOdooAccounts,
+  getOdooAccountMoves,
+  getOdooPayments,
+  getOdooJournals,
+  getOdooValuationLayers,
   getOdooProduct,
   updateOdooProduct,
   createOdooProduct,
@@ -586,4 +654,6 @@ export default {
   createOdooSalesOrder,
   getOdooPurchaseOrder,
   createOdooPurchaseOrder,
+  confirmOdooPurchaseOrder,
+  cancelOdooPurchaseOrder,
 };

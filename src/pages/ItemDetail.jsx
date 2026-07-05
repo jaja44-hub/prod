@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useLang } from '../context/LangContext'
 import { useAuth } from '../context/AuthContext'
-import { getOdooProduct, getOdooProductCategories, updateOdooProduct, createOdooProduct, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway'
+import { getOdooProduct, getOdooProductCategories, getOdooStockQuants, getOdooValuationLayers, updateOdooProduct, createOdooProduct, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway'
 
 export default function ItemDetail() {
   const { id } = useParams()
@@ -13,6 +13,8 @@ export default function ItemDetail() {
   const [error, setError] = useState('')
   const [item, setItem] = useState(null)
   const [categories, setCategories] = useState([])
+  const [quants, setQuants] = useState([])
+  const [valuationLayers, setValuationLayers] = useState([])
   const [form, setForm] = useState({ default_code: '', name: '', list_price: 0, categ_id: undefined })
 
   const normalizeErrorMessage = (err) => {
@@ -50,6 +52,44 @@ export default function ItemDetail() {
     }
     if (authLoading || !currentUser) return
     load()
+    return () => (mounted = false)
+  }, [id, authLoading, currentUser])
+
+  // TICKET-021 Task 6.5: Load stock quants for existing products
+  useEffect(() => {
+    let mounted = true
+    async function loadQuants() {
+      try {
+        if (!id || id === 'new') return
+        const quantResult = await getOdooStockQuants(50, { productId: Number(id) })
+        if (mounted) {
+          setQuants(Array.isArray(quantResult) ? quantResult : [])
+        }
+      } catch {
+        // ignore quant load failures; panel can show empty
+      }
+    }
+    if (authLoading || !currentUser) return
+    loadQuants()
+    return () => (mounted = false)
+  }, [id, authLoading, currentUser])
+
+  // TICKET-022 Task 6: Load stock valuation layers
+  useEffect(() => {
+    let mounted = true
+    async function loadValuation() {
+      try {
+        if (!id || id === 'new') return
+        const valResult = await getOdooValuationLayers(Number(id))
+        if (mounted) {
+          setValuationLayers(Array.isArray(valResult) ? valResult : [])
+        }
+      } catch {
+        // ignore valuation load failures; panel can show empty
+      }
+    }
+    if (authLoading || !currentUser) return
+    loadValuation()
     return () => (mounted = false)
   }, [id, authLoading, currentUser])
 
@@ -161,6 +201,86 @@ export default function ItemDetail() {
               </button>
             </div>
           </form>
+        )}
+
+        {/* TICKET-021 Task 6.5: Stock by location panel (read-only) */}
+        {id && id !== 'new' && (
+          <div className="mt-6 bg-white dark:bg-gray-800 p-4 rounded shadow-sm">
+            <h3 className="text-sm font-semibold mb-3">{t('stockByLocation')}</h3>
+            {quants.length === 0 ? (
+              <p className="text-xs text-gray-500">{t('noStockData')}</p>
+            ) : (
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-left text-gray-600">
+                    <th className="py-2">{t('location')}</th>
+                    <th className="py-2">{t('onHand')}</th>
+                    <th className="py-2">{t('reserved')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {quants.map((quant) => (
+                    <tr key={quant.id} className="border-t">
+                      <td className="py-2">{quant.location_id?.[1] || '—'}</td>
+                      <td className="py-2">{typeof quant.quantity === 'number' ? quant.quantity : '—'}</td>
+                      <td className="py-2">{typeof quant.reserved_quantity === 'number' ? quant.reserved_quantity : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
+        {/* TICKET-022 Task 6: FIFO Valuation Layers panel (read-only) */}
+        {id && id !== 'new' && (
+          <div className="mt-6 bg-white dark:bg-gray-800 p-4 rounded shadow-sm">
+            <h3 className="text-sm font-semibold mb-3">{t('valuationLayers')}</h3>
+            {valuationLayers.length === 0 ? (
+              <p className="text-xs text-gray-500">{t('noValuationData')}</p>
+            ) : (
+              <>
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="text-left text-gray-600">
+                      <th className="py-2">{t('date')}</th>
+                      <th className="py-2">{t('quantity')}</th>
+                      <th className="py-2">{t('unitCost')}</th>
+                      <th className="py-2">{t('totalValue')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {valuationLayers.map((layer) => (
+                      <tr key={layer.id} className="border-t">
+                        <td className="py-2">
+                          {layer.create_date
+                            ? new Date(layer.create_date.replace(' ', 'T') + 'Z').toLocaleDateString()
+                            : '—'}
+                        </td>
+                        <td className="py-2">{typeof layer.quantity === 'number' ? layer.quantity : '—'}</td>
+                        <td className="py-2">
+                          {typeof layer.unit_cost === 'number'
+                            ? `$${layer.unit_cost.toFixed(2)}`
+                            : '—'}
+                        </td>
+                        <td className="py-2">
+                          {typeof layer.value === 'number'
+                            ? `$${layer.value.toFixed(2)}`
+                            : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="mt-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300">
+                  {t('valuation')}: $
+                  {valuationLayers
+                    .reduce((sum, layer) => sum + (layer.value || 0), 0)
+                    .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+              </>
+            )}
+          </div>
         )}
       </div>
     </div>

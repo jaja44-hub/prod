@@ -118,6 +118,67 @@ assert(
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
+// TICKET-021 Wave B inventory model checks
+// ─────────────────────────────────────────────────────────────────────────────
+
+const waveBModels = ['product.category', 'stock.location', 'stock.quant'];
+for (const model of waveBModels) {
+  assert(
+    FIELD_ALLOWLIST[model] && FIELD_ALLOWLIST[model].length > 0,
+    `${model} has FIELD_ALLOWLIST defined (TICKET-021)`
+  );
+
+  assert(
+    DEFAULT_DOMAINS[model] !== undefined,
+    `${model} has DEFAULT_DOMAINS defined (TICKET-021)`
+  );
+}
+
+// TICKET-021: product.product extended with categ_id
+const productFields = FIELD_ALLOWLIST['product.product'];
+assert(
+  productFields.includes('categ_id'),
+  'product.product FIELD_ALLOWLIST includes categ_id (TICKET-021)'
+);
+
+// TICKET-021: categoryId filter works
+const categoryDomain = buildOdooDomain('product.product', { categoryId: 5 });
+const categoryDomainStr = JSON.stringify(categoryDomain);
+assert(
+  categoryDomainStr.includes('categ_id') && categoryDomainStr.includes('5'),
+  'product.product categoryId filter generates categ_id domain (TICKET-021)'
+);
+
+// TICKET-021: stock.quant productId and locationId filters work
+const quantDomain = buildOdooDomain('stock.quant', { productId: 1, locationId: 2 });
+const quantDomainStr = JSON.stringify(quantDomain);
+assert(
+  quantDomainStr.includes('product_id') && quantDomainStr.includes('1'),
+  'stock.quant productId filter generates product_id domain (TICKET-021)'
+);
+assert(
+  quantDomainStr.includes('location_id') && quantDomainStr.includes('2'),
+  'stock.quant locationId filter generates location_id domain (TICKET-021)'
+);
+
+// TICKET-021: sanitizeFields strips unknown fields on new models
+const categorySanitized = sanitizeFields('product.category', ['id', 'name', 'unknown_field']);
+assert(
+  !categorySanitized.includes('unknown_field'),
+  'sanitizeFields strips unknown_field from product.category (TICKET-021)'
+);
+
+// TICKET-021: reject unknown filter keys on new models
+let rejectCategoryUnknown = false;
+try {
+  buildOdooDomain('product.category', { unknown_filter: 'value' });
+  rejectCategoryUnknown = false;
+} catch (e) {
+  rejectCategoryUnknown = true;
+}
+assert(rejectCategoryUnknown, 'buildOdooDomain rejects unknown filter keys for product.category (TICKET-021)');
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Summary
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -129,6 +190,6 @@ console.log(`${'─'.repeat(60)}\n`);
 if (failed > 0) {
   process.exit(1);
 } else {
-  console.log('✅ All TICKET-014 contract checks passed.');
+  console.log('✅ All TICKET-014 + TICKET-021 contract checks passed.');
   process.exit(0);
 }

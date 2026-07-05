@@ -4,7 +4,7 @@ import { useSidebar } from "../context/SidebarContext";
 import { useLang } from "../context/LangContext";
 import { useAuth } from "../context/AuthContext";
 import { getNavSections } from "../lib/rbac";
-import { getPrincipal, isCeo, canViewModule } from "../lib/policy";
+import { getPrincipal, isCeo, canViewModule, isPlatformAdmin } from "../lib/policy";
 import { getModuleIdForPath } from "../lib/moduleRegistry";
 
 function Sidebar() {
@@ -63,16 +63,31 @@ function Sidebar() {
     },
   ];
 
+  const adminItems = [];
+  if (isPlatformAdmin(userProfile)) {
+    adminItems.push({ to: "/platform-admin", label: t('platformAdmin') });
+  }
+  if (isCeo(principal)) {
+    adminItems.push({ to: "/admin/setup", label: t('tenantSetup') });
+  }
+  if (adminItems.length > 0) {
+    adminItems.push({ to: "/approvals", label: "Approvals" });
+    sections.push({
+      title: "System Admin",
+      items: adminItems,
+    });
+  }
+
   const roleVisibleSections = allowedSections.length === 0
     ? sections
-    : sections.filter(s => allowedSections.includes(s.title));
+    : sections.filter(s => allowedSections.includes(s.title) || s.title === "System Admin");
 
   const visibleSections = roleVisibleSections
     .map((section) => ({
       ...section,
       items: section.items.filter((item) => {
         const moduleId = getModuleIdForPath(item.to);
-        return isCeo(principal) || !moduleId || canViewModule(principal, moduleId, enabledModules);
+        return !moduleId || canViewModule(principal, moduleId, enabledModules);
       }),
     }))
     .filter((section) => section.items.length > 0);
@@ -109,6 +124,11 @@ function Sidebar() {
       <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M3 3v18h18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         <path d="M21 7l-6 6-4-4-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+    "System Admin": (
+      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84a.48.48 0 00-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.488.488 0 00-.59.22L3.99 8.87a.49.49 0 00.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47.01.59-.22l1.92-3.32a.49.49 0 00-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="currentColor"/>
       </svg>
     ),
   };

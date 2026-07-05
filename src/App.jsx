@@ -25,8 +25,11 @@ import Employees from './pages/Employees';
 import Accounts from './pages/Accounts';
 import MainLayout from './layouts/MainLayout';
 import OdooTest from './components/OdooTest';
-import RoleGuard from './components/RoleGuard';
+import RoleGuard, { PlatformAdminGuard } from './components/RoleGuard';
 import ComingSoon from './pages/ComingSoon';
+import PlatformAdmin from './pages/PlatformAdmin';
+import TenantSetup from './pages/TenantSetup'
+import Approvals from './pages/Approvals';
 
 function App() {
   const location = useLocation();
@@ -81,6 +84,11 @@ function App() {
         <Route path='/finance' element={<RoleGuard><Accounts /></RoleGuard>} />
         <Route path='/invoices' element={<RoleGuard><Accounts /></RoleGuard>} />
         <Route path='/reports' element={<RoleGuard><Accounts /></RoleGuard>} />
+
+        {/* Platform & Tenant Admin Plane */}
+        <Route path='/platform-admin' element={<PlatformAdminGuard><PlatformAdmin /></PlatformAdminGuard>} />
+        <Route path='/platform-admin/tenants' element={<PlatformAdminGuard><PlatformAdmin /></PlatformAdminGuard>} />
+        <Route path='/admin/setup' element={<RoleGuard><TenantSetup /></RoleGuard>} />
 
         {/* Dev/test */}
         <Route path='/test' element={<OdooTest />} />

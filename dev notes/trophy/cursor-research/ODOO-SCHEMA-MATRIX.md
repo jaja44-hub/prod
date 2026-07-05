@@ -212,15 +212,142 @@ Per TICKET-014 commit (ODOO query contract), the following are coded in `src/lib
 
 ---
 
-## Future proxy models (Wave B — propose only in 013)
+## Wave B Inventory Models (TICKET-021 — Inventory v2)
+
+### product.category
+
+| Field | search_read | domain filter | Status | Notes |
+|-------|-------------|---------------|--------|-------|
+| id | ✅ | — | OK | |
+| name | ✅ | — | OK | |
+| complete_name | ✅ | — | OK | |
+| parent_id | ✅ | — | OK | |
+
+**Recommended domain (021):** `[]`
+
+---
+
+### stock.location
+
+| Field | search_read | domain filter | Status | Notes |
+|-------|-------------|---------------|--------|-------|
+| id | ✅ | — | OK | |
+| name | ✅ | — | OK | |
+| complete_name | ✅ | — | OK | |
+| usage | ✅ | `[('usage','=','internal')]` | OK | |
+
+**Recommended domain (021):** `[['usage', '=', 'internal']]` (internal locations only)
+
+---
+
+### stock.quant
+
+| Field | search_read | domain filter | Status | Notes |
+|-------|-------------|---------------|--------|-------|
+| id | ✅ | — | OK | |
+| product_id | ✅ | — | OK | |
+| location_id | ✅ | — | OK | |
+| quantity | ✅ | `[('quantity','>',0)]` | OK | |
+| reserved_quantity | ✅ | — | OK | |
+
+**Recommended domain (021):** `[['quantity', '>', 0]]` (only items with stock)
+
+---
+
+### product.product (extended for Wave B)
+
+| Field | search_read | domain filter | Status | Notes |
+|-------|-------------|---------------|--------|-------|
+| id | ✅ | — | OK | |
+| name | ✅ | — | OK | |
+| default_code | ✅ | — | OK | |
+| list_price | ✅ | — | OK | |
+| qty_available | ✅ | — | OK | |
+| active | ✅ | `[('active','=',true)]` | OK | |
+| uom_id | ✅ | — | OK | |
+| categ_id | ✅ | — | OK | **NEW for Wave B** |
+
+**Recommended domain (021):** `[['active', '=', true]]` + optional `categ_id` filter
+
+---
+
+## Wave B Valuation Models (TICKET-022)
+
+### stock.valuation.layer
+
+| Field | search_read | domain filter | Status | Notes |
+|-------|-------------|---------------|--------|-------|
+| id | ✅ | — | OK | |
+| product_id | ✅ | `product_id = productId` | OK | |
+| quantity | ✅ | `quantity != 0` | OK | |
+| value | ✅ | — | OK | |
+| unit_cost | ✅ | — | OK | |
+| create_date | ✅ | — | OK | |
+
+**Recommended domain:** `[['quantity', '!=', 0]]`
+
+### product.product (extended with total_value)
+
+| Field | search_read | domain filter | Status | Notes |
+|-------|-------------|---------------|--------|-------|
+| total_value | ✅ | — | OK | Computed field representing total inventory value of product |
+
+---
+
+## Wave B Finance Models (TICKET-022)
+
+### account.move
+
+| Field | search_read | domain filter | Status | Notes |
+|-------|-------------|---------------|--------|-------|
+| id | ✅ | — | OK | |
+| name | ✅ | — | OK | |
+| date | ✅ | `dateFrom`, `dateTo` | OK | |
+| move_type | ✅ | `move_type in [...]` | OK | |
+| state | ✅ | `state = state` | OK | |
+| amount_total | ✅ | — | OK | |
+| journal_id | ✅ | — | OK | |
+
+**Recommended domain:** `[['move_type', 'in', ['out_invoice', 'in_invoice']]]`
+
+### account.payment
+
+| Field | search_read | domain filter | Status | Notes |
+|-------|-------------|---------------|--------|-------|
+| id | ✅ | — | OK | |
+| name | ✅ | — | OK | |
+| date | ✅ | `dateFrom`, `dateTo` | OK | |
+| payment_type | ✅ | `payment_type = paymentType` | OK | |
+| state | ✅ | `state = state` | OK | |
+| amount | ✅ | — | OK | |
+| journal_id | ✅ | — | OK | |
+
+**Recommended domain:** `[]`
+
+### account.journal
+
+| Field | search_read | domain filter | Status | Notes |
+|-------|-------------|---------------|--------|-------|
+| id | ✅ | — | OK | |
+| name | ✅ | — | OK | |
+| type | ✅ | `type = type` | OK | |
+| company_id | ✅ | — | OK | |
+
+**Recommended domain:** `[['type', 'in', ['bank', 'cash']]]`
+
+---
+
+## Future proxy models (Wave B — completed in 022)
 
 | Model | Wave | Ticket | In ALLOWED_MODELS today? |
 |-------|------|--------|--------------------------|
-| product.category | B | 021 | No |
-| stock.quant | B | 021 | No |
-| stock.location | B | 021 | No |
-| account.move | B | 025 | No |
-| account.payment | B | 026 | No |
+| product.category | B | 021 | ✅ **ADDED** |
+| stock.quant | B | 021 | ✅ **ADDED** |
+| stock.location | B | 021 | ✅ **ADDED** |
+| account.move | B | 022 | ✅ **ADDED** |
+| account.payment | B | 022 | ✅ **ADDED** |
+| account.journal | B | 022 | ✅ **ADDED** |
+| stock.valuation.layer | B | 022 | ✅ **ADDED** |
 
 ---
 
@@ -228,5 +355,6 @@ Per TICKET-014 commit (ODOO query contract), the following are coded in `src/lib
 
 | Role | Date | Status |
 |------|------|--------|
-| Copilot audit | 2026-07-02 | [x] |
-| Cursor PM verify | 2026-07-02 | [x] |
+| Copilot audit | 2026-07-05 | [x] |
+| Cursor PM verify | 2026-07-05 | [ ] |
+

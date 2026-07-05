@@ -122,6 +122,73 @@ const rows = [
     critical: false,
     requiredFor: 'MRP',
   },
+  // TICKET-021 Wave B inventory models
+  {
+    model: 'product.category',
+    fields: ['id', 'name', 'complete_name', 'parent_id'],
+    domain: [],
+    domainLabel: '[]',
+    critical: true,
+    requiredFor: 'Inventory v2',
+  },
+  {
+    model: 'stock.location',
+    fields: ['id', 'name', 'complete_name', 'usage'],
+    domain: [['usage', '=', 'internal']],
+    domainLabel: "[['usage','=','internal']]",
+    critical: true,
+    requiredFor: 'Inventory v2',
+  },
+  {
+    model: 'stock.quant',
+    fields: ['id', 'product_id', 'location_id', 'quantity', 'reserved_quantity'],
+    domain: [['quantity', '>', 0]],
+    domainLabel: "[['quantity','>',0]]",
+    critical: true,
+    requiredFor: 'Inventory v2',
+  },
+  // TICKET-021: extend product.product with categ_id
+  {
+    model: 'product.product',
+    fields: ['id', 'name', 'default_code', 'list_price', 'qty_available', 'active', 'uom_id', 'categ_id', 'total_value'],
+    domain: [['active', '=', true]],
+    domainLabel: "[['active','=',true]]",
+    critical: true,
+    requiredFor: 'Inventory v2 (extended)',
+  },
+  // TICKET-022 Wave B valuation + finance models
+  {
+    model: 'stock.valuation.layer',
+    fields: ['id', 'product_id', 'quantity', 'value', 'unit_cost', 'create_date'],
+    domain: [['quantity', '!=', 0]],
+    domainLabel: "[['quantity','!=',0]]",
+    critical: true,
+    requiredFor: 'Valuation',
+  },
+  {
+    model: 'account.move',
+    fields: ['id', 'name', 'date', 'move_type', 'state', 'amount_total', 'journal_id'],
+    domain: [['move_type', 'in', ['out_invoice', 'in_invoice']]],
+    domainLabel: "[['move_type','in',['out_invoice','in_invoice']]]",
+    critical: true,
+    requiredFor: 'Finance v2',
+  },
+  {
+    model: 'account.payment',
+    fields: ['id', 'name', 'date', 'payment_type', 'state', 'amount', 'journal_id'],
+    domain: [],
+    domainLabel: "[]",
+    critical: true,
+    requiredFor: 'Finance v2',
+  },
+  {
+    model: 'account.journal',
+    fields: ['id', 'name', 'type', 'company_id'],
+    domain: [['type', 'in', ['bank', 'cash']]],
+    domainLabel: "[['type','in',['bank','cash']]]",
+    critical: true,
+    requiredFor: 'Finance v2',
+  },
 ];
 
 const renderFieldStatus = (field, status, note = '') => {

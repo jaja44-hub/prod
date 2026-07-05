@@ -16,17 +16,21 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const FIELD_ALLOWLIST = {
-  'product.product': ['id', 'name', 'default_code', 'list_price', 'qty_available', 'active', 'uom_id', 'categ_id'],
+  'product.product': ['id', 'name', 'default_code', 'list_price', 'qty_available', 'active', 'uom_id', 'categ_id', 'total_value'],
   'product.category': ['id', 'name', 'complete_name', 'parent_id'],
   'stock.location': ['id', 'name', 'complete_name', 'usage'],
   'stock.quant': ['id', 'product_id', 'location_id', 'quantity', 'reserved_quantity'],
+  'stock.valuation.layer': ['id', 'product_id', 'quantity', 'value', 'unit_cost', 'create_date'],
   'sale.order': ['id', 'name', 'partner_id', 'amount_total', 'state', 'date_order', 'origin'],
   'sale.order.line': ['id', 'product_id', 'product_uom_qty', 'price_unit', 'order_id'],
   'purchase.order': ['id', 'name', 'partner_id', 'date_order', 'amount_total', 'state', 'origin'],
   'purchase.order.line': ['id', 'product_id', 'product_qty', 'price_unit', 'order_id'],
   'res.partner': ['id', 'name', 'email', 'phone', 'city', 'customer_rank', 'supplier_rank'],
   'account.account': ['id', 'name', 'code', 'account_type', 'active'],
-  'hr.employee': ['id', 'name', 'job_title', 'department_id', 'work_email'],
+  'account.move': ['id', 'name', 'date', 'move_type', 'state', 'amount_total', 'journal_id'],
+  'account.payment': ['id', 'name', 'date', 'payment_type', 'state', 'amount', 'journal_id'],
+  'account.journal': ['id', 'name', 'type', 'company_id'],
+  'hr.employee': ['id', 'name', 'job_title', 'department_id', 'work_email', 'identification_id', 'passport_id', 'pin'],
   // mrp.production: date_planned_start is MISSING on HF, so we exclude it
   'mrp.production': ['id', 'name', 'product_id', 'product_qty', 'state'],
 };
@@ -40,7 +44,11 @@ export const DEFAULT_DOMAINS = {
   'product.category': [],
   'stock.location': [['usage', '=', 'internal']],
   'stock.quant': [],
+  'stock.valuation.layer': [['quantity', '!=', 0]],
   'account.account': [['active', '=', true]],
+  'account.move': [['move_type', 'in', ['out_invoice', 'in_invoice']]],
+  'account.payment': [],
+  'account.journal': [['type', 'in', ['bank', 'cash']]],
   'sale.order': [],
   'purchase.order': [],
   'res.partner': [], // caller decides customer vs vendor via buildOdooDomain
@@ -84,9 +92,13 @@ export function buildOdooDomain(model, filters = {}) {
     'product.category': ['search'],
     'stock.location': ['search'],
     'stock.quant': ['productId', 'locationId'],
+    'stock.valuation.layer': ['productId'],
     'sale.order': ['state', 'dateFrom', 'dateTo', 'search'],
     'purchase.order': ['state', 'dateFrom', 'dateTo', 'search'],
     'account.account': ['active', 'account_type', 'search'],
+    'account.move': ['moveType', 'state', 'dateFrom', 'dateTo', 'search'],
+    'account.payment': ['paymentType', 'state', 'dateFrom', 'dateTo', 'search'],
+    'account.journal': ['type', 'search'],
     'res.partner': ['customer', 'supplier', 'search'],
     'mrp.production': ['state'],
     'hr.employee': ['search'],
@@ -143,6 +155,8 @@ export function buildOdooDomain(model, filters = {}) {
             domain.push('|');
             domain.push(['name', 'ilike', searchTerm]);
             domain.push(['complete_name', 'ilike', searchTerm]);
+          } else if (model === 'account.move' || model === 'account.payment' || model === 'account.journal') {
+            domain.push(['name', 'ilike', searchTerm]);
           }
         }
         break;
@@ -170,23 +184,39 @@ export function buildOdooDomain(model, filters = {}) {
         break;
 
       case 'state':
-        // sale.order, purchase.order, mrp.production
+        // sale.order, purchase.order, mrp.production, account.move, account.payment
         if (value) {
           domain.push(['state', '=', value]);
         }
         break;
 
-      case 'dateFrom':
-        // sale.order, purchase.order
+      case 'moveType':
+        // account.move filter
         if (value) {
-          domain.push(['date_order', '>=', value]);
+          domain.push(['move_type', '=', value]);
+        }
+        break;
+
+      case 'paymentType':
+        // account.payment filter
+        if (value) {
+          domain.push(['payment_type', '=', value]);
+        }
+        break;
+
+      case 'dateFrom':
+        // sale.order, purchase.order, account.move, account.payment
+        if (value) {
+          const dateField = (model === 'account.move' || model === 'account.payment') ? 'date' : 'date_order';
+          domain.push([dateField, '>=', value]);
         }
         break;
 
       case 'dateTo':
-        // sale.order, purchase.order
+        // sale.order, purchase.order, account.move, account.payment
         if (value) {
-          domain.push(['date_order', '<=', value]);
+          const dateField = (model === 'account.move' || model === 'account.payment') ? 'date' : 'date_order';
+          domain.push([dateField, '<=', value]);
         }
         break;
 

@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { canAccess } from '../lib/rbac';
-import { getPrincipal, isCeo, canViewModule } from '../lib/policy';
+import { getPrincipal, isCeo, canViewModule, isPlatformAdmin } from '../lib/policy';
 import { getModuleIdForPath } from '../lib/moduleRegistry';
 
 /**
@@ -40,4 +40,12 @@ export default function RoleGuard({ children }) {
   }
 
   return children;
+}
+
+export function PlatformAdminGuard({ children }) {
+  const { userProfile, currentUser, loading } = useAuth();
+  if (loading) return null;
+  if (!currentUser) return <Navigate replace to="/login" />;
+  if (isPlatformAdmin(userProfile)) return children;
+  return <Navigate replace to="/dashboard" />;
 }
