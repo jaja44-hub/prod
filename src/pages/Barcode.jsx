@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLang } from '../context/LangContext';
+import { getOdooProducts } from '../services/ServiceGateway';
 
 export default function BarcodeMVP() {
   const { t } = useLang();
   const [scannedCode, setScannedCode] = useState('');
   const [scanHistory, setScanHistory] = useState([]);
   const [mode, setMode] = useState('inventory'); // inventory, delivery, receipt
+  const [loading, setLoading] = useState(false);
   const inputRef = useRef(null);
 
   // Auto-focus the hidden input for USB scanner guns
@@ -13,28 +15,53 @@ export default function BarcodeMVP() {
     inputRef.current?.focus();
   }, []);
 
-  const handleScan = (e) => {
+  const handleScan = async (e) => {
     e.preventDefault();
-    if (!scannedCode.trim()) return;
+    const code = scannedCode.trim();
+    if (!code) return;
 
-    const newScan = {
-      id: Date.now(),
-      code: scannedCode,
-      timestamp: new Date().toLocaleTimeString(),
-      mode,
-      status: 'success', // simulated
-      product: `Product \${scannedCode.substring(0, 4)}` // Simulated lookup
-    };
+    setLoading(true);
+    try {
+      // Look up product by default_code or SKU in Odoo
+      const products = await getOdooProducts(1, ['id', 'name', 'default_code', 'qty_available'], {
+        search: code
+      });
 
-    setScanHistory(prev => [newScan, ...prev].slice(0, 10)); // Keep last 10
-    setScannedCode('');
-    inputRef.current?.focus();
+      const matchedProduct = Array.isArray(products) && products.length > 0 ? products[0] : null;
+
+      const newScan = {
+        id: Date.now(),
+        code,
+        timestamp: new Date().toLocaleTimeString(),
+        mode,
+        status: matchedProduct ? 'success' : 'warning',
+        product: matchedProduct 
+          ? `${matchedProduct.name} (${matchedProduct.qty_available} units in stock)`
+          : 'Unknown Product / SKU'
+      };
+
+      setScanHistory(prev => [newScan, ...prev].slice(0, 10)); // Keep last 10
+    } catch (err) {
+      const newScan = {
+        id: Date.now(),
+        code,
+        timestamp: new Date().toLocaleTimeString(),
+        mode,
+        status: 'error',
+        product: 'Lookup failed (ERP Offline)'
+      };
+      setScanHistory(prev => [newScan, ...prev].slice(0, 10));
+    } finally {
+      setScannedCode('');
+      setLoading(false);
+      inputRef.current?.focus();
+    }
   };
 
   return (
     <div className="p-6">
       <h1 className="text-2xl font-semibold mb-2">Barcode Operations</h1>
-      <p className="text-sm text-gray-600 mb-6">Scan barcodes to process stock moves or inventory counts.</p>
+      <p className="text-sm text-gray-600 mb-6">Scan barcodes or enter SKUs to retrieve Odoo stock metadata.</p>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-1">
@@ -64,15 +91,20 @@ export default function BarcodeMVP() {
                 type="text"
                 value={scannedCode}
                 onChange={(e) => setScannedCode(e.target.value)}
-                placeholder="Scan barcode here..."
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded mb-3 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-violet-500"
+                placeholder="Scan barcode/SKU here..."
+                disabled={loading}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded mb-3 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-violet-500 disabled:opacity-50"
                 autoComplete="off"
               />
-              <button type="submit" className="w-full py-2 bg-violet-600 text-white rounded font-semibold hover:bg-violet-700 transition-colors">
-                Process Scan
+              <button 
+                type="submit" 
+                disabled={loading}
+                className="w-full py-2 bg-violet-600 text-white rounded font-semibold hover:bg-violet-700 transition-colors disabled:bg-gray-400"
+              >
+                {loading ? 'Processing...' : 'Process Scan'}
               </button>
             </form>
-            <p className="text-xs text-gray-500 mt-3 text-center">Ready for USB scanner gun.</p>
+            <p className="text-xs text-gray-500 mt-3 text-center">Ready for USB scanner gun emulation.</p>
           </div>
         </div>
 
@@ -93,8 +125,12 @@ export default function BarcodeMVP() {
                     </div>
                     <div className="text-right">
                       <span className="text-xs text-gray-500 block mb-1">{scan.timestamp}</span>
-                      <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded uppercase font-bold tracking-wide">
-                        {scan.mode} OK
+                      <span className={`px-2 py-0.5 text-xs rounded uppercase font-bold tracking-wide ${
+                        scan.status === 'success' ? 'bg-green-100 text-green-800' :
+                        scan.status === 'warning' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {scan.mode}: {scan.status}
                       </span>
                     </div>
                   </div>

@@ -26,8 +26,8 @@ const ALLOWED_MODELS = new Set([
 ]);
 
 // Helper to create an XML-RPC client pointed at the right Odoo path
-const getClient = (path) => {
-  const odooUrl = process.env.ODOO_URL || '';
+const getClient = (path, customUrl = null) => {
+  const odooUrl = customUrl || process.env.ODOO_URL || '';
   if (!odooUrl) throw new Error('ODOO_URL environment variable is missing.');
 
   const url = new URL(odooUrl);
@@ -42,13 +42,13 @@ const getClient = (path) => {
     : xmlrpc.createClient(options);
 };
 
-const authenticate = (db, user, apiKey) => {
-  const client = getClient('/xmlrpc/2/common');
+const authenticate = (db, user, apiKey, customUrl = null) => {
+  const client = getClient('/xmlrpc/2/common', customUrl);
   return authenticateOdooDb(client, db, user, apiKey);
 };
 
-const executeKw = (db, uid, apiKey, model, method, args, kwargs) => new Promise((resolve, reject) => {
-  const client = getClient('/xmlrpc/2/object');
+const executeKw = (db, uid, apiKey, model, method, args, kwargs, customUrl = null) => new Promise((resolve, reject) => {
+  const client = getClient('/xmlrpc/2/object', customUrl);
   client.methodCall('execute_kw', [db, uid, apiKey, model, method, args, kwargs], (error, value) => {
     if (error) reject(error);
     else resolve(value);
@@ -131,15 +131,30 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'Tenant mismatch' });
     }
 
-    const db = process.env.ODOO_DB;
-    const user = process.env.ODOO_USER;
-    const apiKey = process.env.ODOO_APIKEY;
+    let db = process.env.ODOO_DB;
+    let user = process.env.ODOO_USER;
+    let apiKey = process.env.ODOO_APIKEY;
+    let customUrl = null;
+
+    // Multi-Entity Odoo (Ticket 051/Phase 6 stub): resolve database and URL dynamically from tenant config if set
+    try {
+      const { getTenantDoc: getTenantFirestoreDoc } = await import('./lib/tenantFirestore.js');
+      const tenantDoc = await getTenantFirestoreDoc(tenantId);
+      if (tenantDoc?.odooConfig) {
+        if (tenantDoc.odooConfig.db) db = tenantDoc.odooConfig.db;
+        if (tenantDoc.odooConfig.url) customUrl = tenantDoc.odooConfig.url;
+        if (tenantDoc.odooConfig.user) user = tenantDoc.odooConfig.user;
+        if (tenantDoc.odooConfig.apiKey) apiKey = tenantDoc.odooConfig.apiKey;
+      }
+    } catch (err) {
+      console.warn('[Odoo Proxy] Dynamic tenant database resolution bypassed:', err.message);
+    }
 
     if (!db || !user || !apiKey) {
       throw new Error('Missing Odoo credentials in environment variables (ODOO_DB, ODOO_USER, ODOO_APIKEY).');
     }
 
-    const session = await authenticate(db, user, apiKey);
+    const session = await authenticate(db, user, apiKey, customUrl);
 
     if (!session) {
       return res.status(401).json({
@@ -147,7 +162,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const data = await executeKw(session.db, session.uid, apiKey, model, method, args, kwargs);
+    const data = await executeKw(session.db, session.uid, apiKey, model, method, args, kwargs, customUrl);
 
     return res.status(200).json({
       success: true,
