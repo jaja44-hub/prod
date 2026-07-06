@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useLang } from '../context/LangContext';
 import { getOdooManufacturingOrders, getOdooPurchaseOrders } from '../services/ServiceGateway';
+import PageHeader from '../components/PageHeader';
+import PageCard from '../components/PageCard';
+import DataTable from '../components/DataTable';
+import StateBadge from '../components/StateBadge';
 
 export default function QCModule() {
   const { t } = useLang();
@@ -21,7 +25,6 @@ export default function QCModule() {
 
         if (!active) return;
 
-        // Merge MO and PO items into quality control inspection checks
         const mappedMOs = (Array.isArray(moList) ? moList : []).map(mo => ({
           id: `QC-MO-${mo.id}`,
           reference: mo.name || `MO #${mo.id}`,
@@ -62,67 +65,57 @@ export default function QCModule() {
     setInspections(prev => prev.map(ins => ins.id === id ? { ...ins, status: newStatus } : ins));
   };
 
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-2">Quality Control</h1>
-      <p className="text-sm text-gray-600 mb-6">Manage inspection points for manufacturing and inventory receipts.</p>
+  const columns = [
+    { key: 'id', header: 'Inspection ID', className: 'font-semibold text-violet-700 dark:text-violet-400' },
+    { key: 'type', header: 'Type', className: 'text-xs text-gray-500' },
+    { key: 'reference', header: 'Reference' },
+    { key: 'product', header: 'Product / Check' },
+    { key: 'date', header: 'Date' },
+    { key: 'status', header: 'Status', render: (r) => {
+      const stateMap = {
+        passed: 'posted',
+        failed: 'danger',
+        pending: 'waiting'
+      };
+      return <StateBadge state={stateMap[r.status] || 'neutral'} label={r.status} />;
+    }},
+    { key: 'actions', header: '', className: 'text-right', render: (r) => (
+      <div className="flex justify-end gap-2">
+        {r.status === 'pending' ? (
+          <>
+            <button onClick={() => handleAction(r.id, 'passed')} className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded transition duration-150">Pass</button>
+            <button onClick={() => handleAction(r.id, 'failed')} className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded transition duration-150">Fail</button>
+          </>
+        ) : (
+          <span className="text-gray-400 text-xs italic py-1">Completed</span>
+        )}
+      </div>
+    )},
+  ];
 
-      {loading ? (
-        <p className="text-gray-500">Loading quality control endpoints...</p>
-      ) : error ? (
-        <p className="text-red-500">{error}</p>
-      ) : inspections.length === 0 ? (
-        <p className="text-gray-500">No pending quality inspections found.</p>
-      ) : (
-        <div className="bg-white dark:bg-gray-800 p-4 rounded shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm table-auto">
-              <thead>
-                <tr className="text-left text-gray-600 border-b dark:border-gray-700">
-                  <th className="py-2">Inspection ID</th>
-                  <th className="py-2">Type</th>
-                  <th className="py-2">Reference</th>
-                  <th className="py-2">Product / Check</th>
-                  <th className="py-2">Date</th>
-                  <th className="py-2">Status</th>
-                  <th className="py-2 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {inspections.map((ins) => (
-                  <tr key={ins.id} className="border-b last:border-b-0 dark:border-gray-700">
-                    <td className="py-3 font-semibold text-violet-700 dark:text-violet-400">{ins.id}</td>
-                    <td className="py-3 text-xs text-gray-500">{ins.type}</td>
-                    <td className="py-3">{ins.reference}</td>
-                    <td className="py-3">{ins.product}</td>
-                    <td className="py-3">{ins.date}</td>
-                    <td className="py-3">
-                      <span className={`px-2 py-1 rounded text-xs uppercase font-bold ${
-                        ins.status === 'passed' ? 'bg-green-100 text-green-800' :
-                        ins.status === 'failed' ? 'bg-red-100 text-red-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {ins.status}
-                      </span>
-                    </td>
-                    <td className="py-3 text-right space-x-2">
-                      {ins.status === 'pending' && (
-                        <>
-                          <button onClick={() => handleAction(ins.id, 'passed')} className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700">Pass</button>
-                          <button onClick={() => handleAction(ins.id, 'failed')} className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700">Fail</button>
-                        </>
-                      )}
-                      {ins.status !== 'pending' && (
-                        <span className="text-gray-400 text-xs italic">Completed</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+  return (
+    <section>
+      <PageHeader
+        title="Quality Control"
+        subtitle="Manage inspection points for manufacturing and inventory receipts."
+      />
+
+      <PageCard>
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-4 dark:bg-red-900/30 dark:border-red-800 dark:text-red-400">
+            {error}
           </div>
-        </div>
-      )}
-    </div>
+        )}
+
+        <DataTable
+          columns={columns}
+          rows={inspections}
+          rowKey="id"
+          loading={loading}
+          emptyTitle="No pending quality inspections found"
+          emptyIcon="✅"
+        />
+      </PageCard>
+    </section>
   );
 }
