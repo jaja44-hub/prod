@@ -1,55 +1,46 @@
 import React, { useState } from 'react';
-import {
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Container,
-  Grid,
-  Paper,
-  Alert,
-} from '@mui/material';
-import KeyIcon from '@mui/icons-material/VpnKey';
 import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../config/firebase';
+import { useLang } from '../context/LangContext';
+import PageCard from '../components/PageCard';
+
+function normalizeError(err) {
+  if (!err || !err.code) return err?.message || 'Login failed. Please try again.';
+  switch (err.code) {
+    case 'auth/wrong-password':
+    case 'auth/invalid-credential':
+      return 'Incorrect email or password. Please try again.';
+    case 'auth/user-not-found':
+      return 'No account found with that email.';
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address.';
+    case 'auth/user-disabled':
+      return 'This account has been disabled. Contact support.';
+    default:
+      return err.message || 'Login failed. Please try again.';
+  }
+}
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const { lang, setLang, t } = useLang();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const normalizeError = (err) => {
-    if (!err || !err.code) return err?.message || 'Login failed. Please try again.';
-    switch (err.code) {
-      case 'auth/wrong-password':
-        return 'Incorrect password. Please try again.';
-      case 'auth/user-not-found':
-        return 'No account found with that email.';
-      case 'auth/invalid-email':
-        return 'Please enter a valid email address.';
-      case 'auth/user-disabled':
-        return 'This account has been disabled. Contact support.';
-      default:
-        return err.message || 'Login failed. Please try again.';
-    }
-  };
-
-  const handleLogin = async (event) => {
-    event.preventDefault();
+  const handleLogin = async (e) => {
+    e.preventDefault();
     setError('');
     setStatus('');
     setSubmitting(true);
-
     if (!email || !password) {
       setError('Email and password are required.');
       setSubmitting(false);
       return;
     }
-
     try {
       await signInWithEmailAndPassword(auth, email, password);
       navigate('/dashboard');
@@ -67,7 +58,6 @@ const LoginPage = () => {
       setError('Enter your email address to reset password.');
       return;
     }
-
     try {
       await sendPasswordResetEmail(auth, email);
       setStatus('Password reset email sent. Check your inbox.');
@@ -77,131 +67,104 @@ const LoginPage = () => {
   };
 
   return (
-    <Box
-      sx={{
-        backgroundColor: '#222D32',
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontFamily: 'Roboto, sans-serif',
-      }}
-    >
-      <Container maxWidth="sm">
-        <Paper
-          elevation={3}
-          sx={{
-            backgroundColor: '#1A2226',
-            padding: 4,
-            textAlign: 'center',
-            boxShadow: '0px 3px 6px rgba(0, 0, 0, 0.16), 0px 3px 6px rgba(0, 0, 0, 0.23)',
-          }}
-        >
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              mb: 2,
-              color: '#27EF9F',
-            }}
-          >
-            <KeyIcon sx={{ fontSize: 80 }} />
-          </Box>
-          <Typography variant="h5" sx={{ color: '#ECF0F5', fontWeight: 'bold', mb: 3 }}>
-            ADMIN PANEL
-          </Typography>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-4">
+      {/* Language toggle top-right */}
+      <button
+        type="button"
+        onClick={() => setLang(lang === 'en' ? 'am' : 'en')}
+        className="fixed top-4 right-4 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+        aria-label="Switch language"
+      >
+        {lang === 'en' ? 'አማርኛ' : 'English'}
+      </button>
 
+      <div className="w-full max-w-md">
+        {/* Brand mark */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-violet-600 text-white text-2xl font-bold mb-4 shadow-lg">
+            AC
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            Addis Crown Production ERP
+          </h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Sign in to your account</p>
+        </div>
+
+        <PageCard>
           {error && (
-            <Alert severity="error" sx={{ mb: 2, textAlign: 'left' }}>
+            <div role="alert" className="mb-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/40 px-4 py-3 text-sm text-red-700 dark:text-red-300">
               {error}
-            </Alert>
+            </div>
           )}
           {status && (
-            <Alert severity="success" sx={{ mb: 2, textAlign: 'left' }}>
+            <div role="status" className="mb-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700/40 px-4 py-3 text-sm text-green-700 dark:text-green-300">
               {status}
-            </Alert>
+            </div>
           )}
 
-          <Box component="form" onSubmit={handleLogin}>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  variant="standard"
-                  label="Email"
+          <form onSubmit={handleLogin} noValidate>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="login-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Email
+                </label>
+                <input
+                  id="login-email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  className="form-input w-full"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  InputLabelProps={{ style: { color: '#6C6C6C', fontWeight: 'bold' } }}
-                  InputProps={{
-                    style: {
-                      color: '#ECF0F5',
-                      borderBottom: '2px solid #0DB8DE',
-                    },
-                  }}
-                  sx={{ input: { backgroundColor: '#1A2226' } }}
+                  placeholder="you@example.com"
                 />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  variant="standard"
-                  label="Password"
+              </div>
+              <div>
+                <label htmlFor="login-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Password
+                </label>
+                <input
+                  id="login-password"
                   type="password"
+                  autoComplete="current-password"
+                  required
+                  className="form-input w-full"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  InputLabelProps={{ style: { color: '#6C6C6C', fontWeight: 'bold' } }}
-                  InputProps={{
-                    style: {
-                      color: '#ECF0F5',
-                      borderBottom: '2px solid #0DB8DE',
-                    },
-                  }}
-                  sx={{ input: { backgroundColor: '#1A2226' } }}
+                  placeholder="••••••••"
                 />
-              </Grid>
-            </Grid>
-            <Grid container justifyContent="space-between" alignItems="center" mt={3}>
-              <Grid item>
-                <Button
-                  type="button"
-                  variant="text"
-                  sx={{
-                    color: '#0DB8DE',
-                    fontWeight: 'bold',
-                    letterSpacing: 1,
-                    textTransform: 'none',
-                  }}
-                  onClick={handleForgotPassword}
-                >
-                  Forgot Password?
-                </Button>
-              </Grid>
-              <Grid item>
-                <Button
-                  type="submit"
-                  disabled={submitting}
-                  variant="outlined"
-                  sx={{
-                    color: '#0DB8DE',
-                    borderColor: '#0DB8DE',
-                    fontWeight: 'bold',
-                    letterSpacing: 1,
-                    textTransform: 'none',
-                    '&:hover': {
-                      backgroundColor: '#0DB8DE',
-                      color: '#fff',
-                    },
-                  }}
-                >
-                  {submitting ? 'Signing in…' : 'LOGIN'}
-                </Button>
-              </Grid>
-            </Grid>
-          </Box>
-        </Paper>
-      </Container>
-    </Box>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                className="text-sm text-violet-600 dark:text-violet-400 hover:underline"
+              >
+                Forgot password?
+              </button>
+              <button
+                id="login-submit"
+                type="submit"
+                disabled={submitting}
+                className="btn-primary min-w-[100px]"
+              >
+                {submitting ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                    </svg>
+                    Signing in…
+                  </span>
+                ) : 'Sign In'}
+              </button>
+            </div>
+          </form>
+        </PageCard>
+      </div>
+    </div>
   );
 };
 

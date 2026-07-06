@@ -9,8 +9,10 @@ function LayoutContent() {
   return (
     <>
       <Header />
-      <main className={`w-full transition-all duration-200 p-4 pt-6 ${sidebarExpanded ? 'lg:ml-64' : 'lg:ml-20'}`}>
-        <Outlet />
+      <main className={`w-full transition-all duration-200 ${sidebarExpanded ? 'lg:ml-64' : 'lg:ml-20'}`}>
+        <div className="mx-auto w-full max-w-[var(--page-max-width)] px-[var(--page-padding-x)] py-6">
+          <Outlet />
+        </div>
       </main>
     </>
   )

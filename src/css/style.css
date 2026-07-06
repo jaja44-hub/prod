@@ -7,3 +7,138 @@
 @import 'additional-styles/utility-patterns.css';
 
 @import 'tailwindcss/utilities';
+
+/* ─── ERP Design Tokens ─────────────────────────────────────────────────── */
+:root {
+  --page-max-width: 80rem;
+  --page-padding-x: 1.5rem;
+  --section-gap: 1.5rem;
+  --card-gap: 1rem;
+  --card-radius: 0.75rem;
+  --card-shadow: 0 1px 3px rgb(0 0 0 / 0.08);
+  --transition-fast: 150ms ease;
+  --table-header-bg: rgb(249 250 251);
+  --table-row-hover: rgb(243 244 246);
+}
+
+.dark {
+  --card-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
+  --table-header-bg: rgb(31 41 55);
+  --table-row-hover: rgb(55 65 81);
+}
+
+/* ─── ERP Table ─────────────────────────────────────────────────────────── */
+.erp-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.erp-table th {
+  padding: 0.625rem 1rem;
+  font-weight: 600;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgb(107 114 128);
+  background-color: var(--table-header-bg);
+}
+
+.erp-table td {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid rgb(243 244 246);
+}
+
+.dark .erp-table td {
+  border-top-color: rgb(55 65 81);
+}
+
+.erp-table-sticky thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.erp-table tbody tr:hover {
+  background-color: var(--table-row-hover);
+  transition: background-color var(--transition-fast);
+}
+
+/* ─── ERP Utilities ─────────────────────────────────────────────────────── */
+.erp-skeleton {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  border-radius: 0.25rem;
+  background-color: rgb(229 231 235);
+}
+
+.dark .erp-skeleton {
+  background-color: rgb(55 65 81);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.erp-num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── State Badges ──────────────────────────────────────────────────────── */
+.erp-state-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.erp-state-neutral {
+  background-color: rgb(243 244 246);
+  color: rgb(55 65 81);
+}
+.dark .erp-state-neutral {
+  background-color: rgb(55 65 81);
+  color: rgb(209 213 219);
+}
+
+.erp-state-info {
+  background-color: rgb(219 234 254);
+  color: rgb(29 78 216);
+}
+.dark .erp-state-info {
+  background-color: rgb(30 58 138 / 0.3);
+  color: rgb(147 197 253);
+}
+
+.erp-state-success {
+  background-color: rgb(220 252 231);
+  color: rgb(21 128 61);
+}
+.dark .erp-state-success {
+  background-color: rgb(20 83 45 / 0.3);
+  color: rgb(134 239 172);
+}
+
+.erp-state-danger {
+  background-color: rgb(254 226 226);
+  color: rgb(185 28 28);
+}
+.dark .erp-state-danger {
+  background-color: rgb(127 29 29 / 0.3);
+  color: rgb(252 165 165);
+}
+
+.erp-state-warning {
+  background-color: rgb(254 249 195);
+  color: rgb(161 98 7);
+}
+.dark .erp-state-warning {
+  background-color: rgb(113 63 18 / 0.3);
+  color: rgb(253 224 71);
+}

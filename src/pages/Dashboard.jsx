@@ -1,6 +1,11 @@
 import React from 'react';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
+import PageHeader from '../components/PageHeader';
+import PageCard from '../components/PageCard';
+import WidgetCard from '../components/WidgetCard';
+import ModuleActivityFeed from '../components/ModuleActivityFeed';
+import Skeleton from '../components/Skeleton';
 import ErpSummaryPanel from '../components/ErpSummaryPanel';
 import RecentSalesOrdersWidget from '../components/RecentSalesOrdersWidget';
 import LowStockAlertWidget from '../components/LowStockAlertWidget';
@@ -11,31 +16,38 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <p className="text-gray-500">{t('loading')}</p>
+      <div>
+        <div className="mb-6 h-8 w-48 erp-skeleton rounded" />
+        <Skeleton lines={6} />
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <header className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-          {t('dashboard')}
-        </h1>
-        {userProfile?.name && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {t('dashboardWelcome')}, {userProfile.name}
-          </p>
-        )}
-      </header>
+    <section>
+      <PageHeader
+        title={t('dashboard')}
+        subtitle={userProfile?.name ? `${t('dashboardWelcome')}, ${userProfile.name}` : undefined}
+      />
 
-      <ErpSummaryPanel />
+      <div className="space-y-[var(--section-gap)]">
+        {/* KPI Summary */}
+        <ErpSummaryPanel />
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        <RecentSalesOrdersWidget />
-        <LowStockAlertWidget />
+        {/* Widget grid */}
+        <div className="grid gap-[var(--card-gap)] lg:grid-cols-2">
+          <RecentSalesOrdersWidget />
+          <LowStockAlertWidget />
+        </div>
+
+        {/* Live activity feed */}
+        <PageCard padding="sm">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-base mb-4">
+            Module Activity
+          </h3>
+          <ModuleActivityFeed />
+        </PageCard>
       </div>
-    </div>
+    </section>
   );
 }

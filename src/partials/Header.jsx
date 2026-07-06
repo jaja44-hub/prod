@@ -4,6 +4,7 @@ import Notifications from '../components/DropdownNotifications';
 import Help from '../components/DropdownHelp';
 import UserMenu from '../components/DropdownProfile';
 import ThemeToggle from '../components/ThemeToggle';
+import TenantChip from '../components/TenantChip';
 import { useSidebar } from '../context/SidebarContext';
 import { useAuth } from '../context/AuthContext';
 import { ROLE_LABELS } from '../lib/rbac';
@@ -15,7 +16,7 @@ function Header({ variant = 'default' }) {
   const [searchModalOpen, setSearchModalOpen] = useState(false)
 
   return (
-    <header className={`sticky top-0 z-40 ${variant === 'v2' || variant === 'v3' ? 'bg-white dark:bg-gray-900' : ''} ${variant === 'v2' ? 'dark:before:bg-gray-800' : ''} ${variant === 'v3' ? 'dark:before:bg-gray-900' : ''}`}>
+    <header className={`sticky top-0 z-40 backdrop-blur-sm bg-white/90 dark:bg-gray-900/90 ${variant === 'v2' || variant === 'v3' ? '' : ''}`}>
       <div className="px-0 sm:px-4 lg:px-6">
         <div className={`flex items-center justify-between h-16 ${variant === 'v2' || variant === 'v3' ? '' : 'lg:border-b border-gray-200 dark:border-gray-700/60'}`}> 
 
@@ -72,6 +73,7 @@ function Header({ variant = 'default' }) {
             <Notifications align="right" />
             <Help align="right" />
             <ThemeToggle />
+            <TenantChip />
             {roleLabel && (
               <span className="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300 whitespace-nowrap">
                 {roleLabel}

@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
-import { useLang } from '../context/LangContext'
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useLang } from '../context/LangContext';
 import {
   getOdooPurchaseOrders,
   getOdooPurchaseOrder,
@@ -9,117 +9,116 @@ import {
   cancelOdooPurchaseOrder,
   getOdooVendors,
   BACKEND_WAKEUP_MESSAGE
-} from '../services/ServiceGateway'
-import ListFilterBar from '../components/ListFilterBar'
+} from '../services/ServiceGateway';
+import ListFilterBar from '../components/ListFilterBar';
+import PageHeader from '../components/PageHeader';
+import PageCard from '../components/PageCard';
+import DataTable from '../components/DataTable';
+import StateBadge from '../components/StateBadge';
+import BackendStatusBanner from '../components/BackendStatusBanner';
+import { formatEtb } from '../lib/formatEtb';
 
 export default function PurchaseOrders() {
-  const { t } = useLang()
-  const { currentUser, loading: authLoading } = useAuth()
-  const navigate = useNavigate()
-  const [orders, setOrders] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [filters, setFilters] = useState({ search: '', state: '', dateFrom: '', dateTo: '' })
-  const [vendors, setVendors] = useState([])
-  const [selectedVendorId, setSelectedVendorId] = useState('')
-  const [selectedOrder, setSelectedOrder] = useState(null)
-  const [detailLoading, setDetailLoading] = useState(false)
+  const { t } = useLang();
+  const { currentUser, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [filters, setFilters] = useState({ search: '', state: '', dateFrom: '', dateTo: '' });
+  const [vendors, setVendors] = useState([]);
+  const [selectedVendorId, setSelectedVendorId] = useState('');
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   const normalizeErrorMessage = (err) => {
-    const raw = err?.response?.data?.error || err?.message || t('error')
-    return raw === BACKEND_WAKEUP_MESSAGE ? t('backendWakingUp') : raw
-  }
+    const raw = err?.response?.data?.error || err?.message || t('error');
+    return raw === BACKEND_WAKEUP_MESSAGE ? t('backendWakingUp') : raw;
+  };
 
   useEffect(() => {
-    let mounted = true
-
+    let mounted = true;
     async function loadOrders(nextFilters) {
-      setLoading(true)
-      setError('')
-
+      setLoading(true);
+      setError('');
       try {
         const result = await getOdooPurchaseOrders(50, {
           search: nextFilters.search || undefined,
           state: nextFilters.state || undefined,
           dateFrom: nextFilters.dateFrom || undefined,
           dateTo: nextFilters.dateTo || undefined,
-        })
-        if (!mounted) return
-        setOrders(Array.isArray(result) ? result : [])
+        });
+        if (!mounted) return;
+        setOrders(Array.isArray(result) ? result : []);
       } catch (err) {
-        if (!mounted) return
-        setError(normalizeErrorMessage(err))
+        if (!mounted) return;
+        setError(normalizeErrorMessage(err));
       } finally {
-        if (mounted) setLoading(false)
+        if (mounted) setLoading(false);
       }
     }
-
-    if (authLoading || !currentUser) return
-    loadOrders(filters)
-    return () => { mounted = false }
-  }, [currentUser, authLoading, filters, t])
+    if (authLoading || !currentUser) return;
+    loadOrders(filters);
+    return () => { mounted = false; };
+  }, [currentUser, authLoading, filters, t]);
 
   useEffect(() => {
-    let mounted = true
+    let mounted = true;
     async function loadVendors() {
       try {
-        const res = await getOdooVendors(100)
+        const res = await getOdooVendors(100);
         if (mounted) {
-          setVendors(Array.isArray(res) ? res : [])
+          setVendors(Array.isArray(res) ? res : []);
         }
-      } catch {
-        // ignore
-      }
+      } catch { /* option load failures are non-fatal */ }
     }
-    if (authLoading || !currentUser) return
-    loadVendors()
-    return () => { mounted = false }
-  }, [currentUser, authLoading])
+    if (authLoading || !currentUser) return;
+    loadVendors();
+    return () => { mounted = false; };
+  }, [currentUser, authLoading]);
 
   async function handleViewOrder(orderItem) {
-    if (detailLoading) return
-    setDetailLoading(true)
+    if (detailLoading) return;
+    setDetailLoading(true);
     try {
-      const detail = await getOdooPurchaseOrder(orderItem.id)
-      setSelectedOrder(detail)
+      const detail = await getOdooPurchaseOrder(orderItem.id);
+      setSelectedOrder(detail);
     } catch (err) {
-      setError(normalizeErrorMessage(err))
+      setError(normalizeErrorMessage(err));
     } finally {
-      setDetailLoading(false)
+      setDetailLoading(false);
     }
   }
 
   async function handleConfirmOrder(orderId) {
-    if (detailLoading) return
-    setDetailLoading(true)
+    if (detailLoading) return;
+    setDetailLoading(true);
     try {
-      await confirmOdooPurchaseOrder(orderId)
-      const detail = await getOdooPurchaseOrder(orderId)
-      setSelectedOrder(detail)
-      // refresh order list
-      const result = await getOdooPurchaseOrders(50, filters)
-      setOrders(Array.isArray(result) ? result : [])
+      await confirmOdooPurchaseOrder(orderId);
+      const detail = await getOdooPurchaseOrder(orderId);
+      setSelectedOrder(detail);
+      const result = await getOdooPurchaseOrders(50, filters);
+      setOrders(Array.isArray(result) ? result : []);
     } catch (err) {
-      setError(normalizeErrorMessage(err))
+      setError(normalizeErrorMessage(err));
     } finally {
-      setDetailLoading(false)
+      setDetailLoading(false);
     }
   }
 
   async function handleCancelOrder(orderId) {
-    if (detailLoading) return
-    setDetailLoading(true)
+    if (detailLoading) return;
+    setDetailLoading(true);
     try {
-      await cancelOdooPurchaseOrder(orderId)
-      const detail = await getOdooPurchaseOrder(orderId)
-      setSelectedOrder(detail)
-      // refresh order list
-      const result = await getOdooPurchaseOrders(50, filters)
-      setOrders(Array.isArray(result) ? result : [])
+      await cancelOdooPurchaseOrder(orderId);
+      const detail = await getOdooPurchaseOrder(orderId);
+      setSelectedOrder(detail);
+      const result = await getOdooPurchaseOrders(50, filters);
+      setOrders(Array.isArray(result) ? result : []);
     } catch (err) {
-      setError(normalizeErrorMessage(err))
+      setError(normalizeErrorMessage(err));
     } finally {
-      setDetailLoading(false)
+      setDetailLoading(false);
     }
   }
 
@@ -127,11 +126,36 @@ export default function PurchaseOrders() {
     ? orders.filter((o) => o.partner_id?.[0] === Number(selectedVendorId))
     : orders;
 
+  const columns = [
+    { key: 'name', header: t('order'), render: (r) => r.name || '—' },
+    { key: 'partner_id', header: t('partner'), render: (r) => r.partner_id?.[1] || '—' },
+    { key: 'date_order', header: t('dateOrder'), render: (r) => r.date_order || '—' },
+    { key: 'amount_total', header: t('amount'), className: 'erp-num', render: (r) => r.amount_total != null ? formatEtb(r.amount_total) : '—' },
+    { key: 'state', header: t('state'), render: (r) => <StateBadge state={r.state} label={r.state ? t(`state${r.state.charAt(0).toUpperCase() + r.state.slice(1)}`) || r.state : '—'} /> },
+    { key: 'actions', header: '', render: (r) => (
+      <button
+        onClick={() => handleViewOrder(r)}
+        disabled={detailLoading}
+        className="text-xs text-violet-600 dark:text-violet-400 font-semibold hover:underline disabled:opacity-50"
+      >
+        {detailLoading ? t('loading') : t('viewOrder')}
+      </button>
+    )},
+  ];
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">{t('purchaseOrders')}</h1>
-      <p className="text-sm text-gray-600 mb-4">{t('purchaseOrdersDescription')}</p>
-      <div className="bg-white dark:bg-gray-800 p-4 rounded shadow-sm">
+    <section>
+      <PageHeader
+        title={t('purchaseOrders')}
+        subtitle={t('purchaseOrdersDescription')}
+        actions={
+          <button onClick={() => navigate('/purchases/new')} className="btn-primary">
+            + {t('createPurchaseOrder')}
+          </button>
+        }
+      />
+
+      <PageCard>
         <ListFilterBar
           model="purchase.order"
           value={filters}
@@ -150,7 +174,7 @@ export default function PurchaseOrders() {
           loading={loading}
         />
 
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between my-3 gap-3">
           <div className="flex items-center space-x-2">
             <label htmlFor="vendorFilter" className="text-xs font-semibold text-gray-500">
               {t('vendor')}:
@@ -159,7 +183,7 @@ export default function PurchaseOrders() {
               id="vendorFilter"
               value={selectedVendorId}
               onChange={(e) => setSelectedVendorId(e.target.value)}
-              className="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200"
+              className="form-select text-xs py-1 px-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200"
             >
               <option value="">{t('selectVendor')}</option>
               {vendors.map((vendor) => (
@@ -169,83 +193,30 @@ export default function PurchaseOrders() {
               ))}
             </select>
           </div>
-          <button
-            onClick={() => navigate('/purchases/new')}
-            className="px-3 py-1 bg-violet-600 text-white rounded"
-          >
-            {t('createPurchaseOrder')}
-          </button>
         </div>
 
-        {loading ? (
-          <p className="text-gray-500">{t('loading')}</p>
-        ) : error ? (
-          <div className="space-y-3">
-            <p className="text-red-500">{error}</p>
-            <button
-              onClick={() => {
-                setLoading(true)
-                setError('')
-                getOdooPurchaseOrders(50, {
-                  search: filters.search || undefined,
-                  state: filters.state || undefined,
-                  dateFrom: filters.dateFrom || undefined,
-                  dateTo: filters.dateTo || undefined,
-                })
-                  .then((result) => setOrders(Array.isArray(result) ? result : []))
-                  .catch((err) => setError(normalizeErrorMessage(err)))
-                  .finally(() => setLoading(false))
-              }}
-              className="px-3 py-1 bg-violet-600 text-white rounded"
-            >
-              {t('retry')}
-            </button>
-          </div>
-        ) : filteredOrders.length === 0 ? (
-          <p className="text-gray-500">{t('noPurchaseOrdersForTenant')}</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm table-auto">
-              <thead>
-                <tr className="text-left text-gray-600 border-b">
-                  <th className="py-2">{t('order')}</th>
-                  <th className="py-2">{t('partner')}</th>
-                  <th className="py-2">{t('dateOrder')}</th>
-                  <th className="py-2">{t('amount')}</th>
-                  <th className="py-2">{t('state')}</th>
-                  <th className="py-2">{t('actions')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredOrders.map((order) => (
-                  <tr key={order.id} className="border-b last:border-b-0">
-                    <td className="py-2">{order.name || '—'}</td>
-                    <td className="py-2">{order.partner_id?.[1] || '—'}</td>
-                    <td className="py-2">{order.date_order || '—'}</td>
-                    <td className="py-2">{order.amount_total != null ? order.amount_total : '—'}</td>
-                    <td className="py-2">{order.state || '—'}</td>
-                    <td className="py-2">
-                      <button
-                        onClick={() => handleViewOrder(order)}
-                        disabled={detailLoading}
-                        className="text-xs text-violet-600 font-semibold disabled:opacity-50"
-                      >
-                        {detailLoading ? t('loading') : t('viewOrder')}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div className="flex items-center justify-between mt-4">
-              <div className="text-xs text-gray-500">{t('loadedPurchaseOrders', { count: filteredOrders.length })}</div>
-              <div>
-                <span className="text-xs text-gray-500">{t('endOfResults')}</span>
-              </div>
-            </div>
+        {error && (
+          <div className="my-4">
+            <BackendStatusBanner message={error} onRetry={() => setFilters((current) => ({ ...current }))} />
           </div>
         )}
-      </div>
+
+        <DataTable
+          columns={columns}
+          rows={filteredOrders}
+          rowKey="id"
+          loading={loading}
+          emptyTitle={t('noPurchaseOrdersForTenant')}
+          emptyIcon="🛒"
+        />
+
+        {!loading && !error && filteredOrders.length > 0 && (
+          <div className="mt-4 flex justify-between items-center text-xs text-gray-400">
+            <span>{t('loadedPurchaseOrders', { count: filteredOrders.length })}</span>
+            <span>{t('endOfResults')}</span>
+          </div>
+        )}
+      </PageCard>
 
       {selectedOrder && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -274,14 +245,14 @@ export default function PurchaseOrders() {
               </div>
               <div>
                 <span className="text-xs text-gray-500 block">{t('state')}</span>
-                <span className="text-sm font-semibold capitalize text-gray-900 dark:text-white">
-                  {selectedOrder.state || '—'}
+                <span className="text-sm block">
+                  <StateBadge state={selectedOrder.state} label={selectedOrder.state} />
                 </span>
               </div>
               <div>
                 <span className="text-xs text-gray-500 block">{t('amount')}</span>
                 <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                  ${typeof selectedOrder.amount_total === 'number' ? selectedOrder.amount_total.toFixed(2) : '—'}
+                  {formatEtb(selectedOrder.amount_total)}
                 </span>
               </div>
             </div>
@@ -308,8 +279,8 @@ export default function PurchaseOrders() {
                       <tr key={line.id} className="border-b border-gray-200 dark:border-gray-700 last:border-b-0 text-gray-900 dark:text-gray-100">
                         <td className="p-3">{line.product_id?.[1] || '—'}</td>
                         <td className="p-3 text-right">{qty}</td>
-                        <td className="p-3 text-right">${price.toFixed(2)}</td>
-                        <td className="p-3 text-right font-semibold">${subtotal.toFixed(2)}</td>
+                        <td className="p-3 text-right">{formatEtb(price)}</td>
+                        <td className="p-3 text-right font-semibold">{formatEtb(subtotal)}</td>
                       </tr>
                     );
                   })}
@@ -355,6 +326,6 @@ export default function PurchaseOrders() {
           </div>
         </div>
       )}
-    </div>
-  )
+    </section>
+  );
 }

@@ -4,6 +4,11 @@ import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LangContext';
 import { getOdooProducts, getOdooProductsByLocation, getOdooProductCategories, getOdooStockLocations, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway';
 import ListFilterBar from '../components/ListFilterBar';
+import PageHeader from '../components/PageHeader';
+import PageCard from '../components/PageCard';
+import DataTable from '../components/DataTable';
+import BackendStatusBanner from '../components/BackendStatusBanner';
+import { formatEtb } from '../lib/formatEtb';
 
 export default function Inventory() {
   const { t } = useLang();
@@ -18,15 +23,14 @@ export default function Inventory() {
   const [showValue, setShowValue] = useState(false);
 
   const normalizeErrorMessage = (err) => {
-    const raw = err?.response?.data?.error || err?.message || t('error')
-    return raw === BACKEND_WAKEUP_MESSAGE ? t('backendWakingUp') : raw
-  }
+    const raw = err?.response?.data?.error || err?.message || t('error');
+    return raw === BACKEND_WAKEUP_MESSAGE ? t('backendWakingUp') : raw;
+  };
 
   const navigate = useNavigate();
 
   useEffect(() => {
     let mounted = true;
-
     async function loadProducts(initialFilters) {
       setLoading(true);
       setError('');
@@ -34,19 +38,9 @@ export default function Inventory() {
         const fields = showValue
           ? ['id', 'name', 'default_code', 'qty_available', 'list_price', 'uom_id', 'categ_id', 'total_value']
           : ['id', 'name', 'default_code', 'qty_available', 'list_price', 'uom_id', 'categ_id'];
-
         const productFetcher = initialFilters.locationId
-          ? getOdooProductsByLocation(initialFilters.locationId, {
-              search: initialFilters.search || undefined,
-              active: initialFilters.active,
-              categoryId: initialFilters.categoryId,
-            }, 50)
-          : getOdooProducts(50, fields, {
-              search: initialFilters.search || undefined,
-              active: initialFilters.active,
-              categoryId: initialFilters.categoryId,
-            });
-
+          ? getOdooProductsByLocation(initialFilters.locationId, { search: initialFilters.search || undefined, active: initialFilters.active, categoryId: initialFilters.categoryId }, 50)
+          : getOdooProducts(50, fields, { search: initialFilters.search || undefined, active: initialFilters.active, categoryId: initialFilters.categoryId });
         const products = await productFetcher;
         if (!mounted) return;
         const list = Array.isArray(products) ? products : [];
@@ -60,17 +54,13 @@ export default function Inventory() {
         setLoading(false);
       }
     }
-
     if (authLoading || !currentUser) return;
     loadProducts(filters);
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, [authLoading, currentUser, filters, showValue]);
 
   useEffect(() => {
     let mounted = true;
-
     async function loadOptions() {
       try {
         const [categoryResult, locationResult] = await Promise.all([
@@ -80,143 +70,87 @@ export default function Inventory() {
         if (!mounted) return;
         setCategories(Array.isArray(categoryResult) ? categoryResult : []);
         setLocations(Array.isArray(locationResult) ? locationResult : []);
-      } catch {
-        // ignore option load failures; the page can still function without filter options
-      }
+      } catch { /* option load failures are non-fatal */ }
     }
-
     if (authLoading || !currentUser) return;
     loadOptions();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, [authLoading, currentUser]);
 
-  const filtered = items;
-
-  function openCreate() {
-    navigate('/inventory/new');
-  }
-
-  function openEdit(it) {
-    if (it && it.id) navigate(`/inventory/${it.id}`);
-  }
+  const columns = [
+    { key: 'default_code', header: t('sku'), render: (r) => r.default_code || '—' },
+    { key: 'name', header: t('name') },
+    { key: 'categ_id', header: t('category'), render: (r) => r.categ_id?.[1] || '—' },
+    { key: 'qty_available', header: t('quantity'), className: 'erp-num', render: (r) => typeof r.qty_available === 'number' ? r.qty_available : '—' },
+    { key: 'uom_id', header: t('unit'), render: (r) => r.uom_id?.[1] || t('unit') },
+    ...(showValue ? [{ key: 'total_value', header: t('value'), className: 'erp-num', render: (r) => typeof r.total_value === 'number' ? formatEtb(r.total_value) : '—' }] : []),
+    { key: 'actions', header: '', render: (r) => (
+      <button onClick={() => r.id && navigate(`/inventory/${r.id}`)} className="text-xs text-violet-600 dark:text-violet-400 hover:underline">
+        {t('viewEdit')}
+      </button>
+    )},
+  ];
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">{t('inventory')}</h1>
-      <p className="text-sm text-gray-600 mb-4">{t('inventoryDescription')}</p>
-      <div className="bg-white dark:bg-gray-800 p-4 rounded shadow-sm">
+    <section>
+      <PageHeader
+        title={t('inventory')}
+        subtitle={t('inventoryDescription')}
+        actions={
+          <button onClick={() => navigate('/inventory/new')} className="btn-primary">
+            + {t('addItem')}
+          </button>
+        }
+      />
+
+      <PageCard>
         <ListFilterBar
           model="product.product"
           value={filters}
           onChange={setFilters}
-          onApply={() => setFilters((current) => ({ ...current }))}
+          onApply={() => setFilters((c) => ({ ...c }))}
           onClear={() => setFilters({ search: '', active: true, categoryId: undefined, locationId: undefined })}
           fields={['search', 'active', 'category', 'location']}
-          categoryOptions={categories.map((category) => ({ value: category.id, label: category.name }))}
-          locationOptions={locations.map((location) => ({ value: location.id, label: location.complete_name || location.name }))}
+          categoryOptions={categories.map((c) => ({ value: c.id, label: c.name }))}
+          locationOptions={locations.map((l) => ({ value: l.id, label: l.complete_name || l.name }))}
           loading={loading}
         />
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="showValueToggle"
-              checked={showValue}
-              onChange={(e) => setShowValue(e.target.checked)}
-              className="rounded text-violet-600 focus:ring-violet-500 h-4 w-4"
-            />
-            <label htmlFor="showValueToggle" className="text-sm text-gray-700 dark:text-gray-300 select-none cursor-pointer">
-              {t('showValue')}
-            </label>
-          </div>
-          <div>
-            <button onClick={openCreate} className="bg-violet-600 text-white px-3 py-1 rounded">
-              {t('addItem')}
-            </button>
-          </div>
+
+        <div className="flex items-center gap-3 my-3">
+          <input
+            type="checkbox"
+            id="showValueToggle"
+            checked={showValue}
+            onChange={(e) => setShowValue(e.target.checked)}
+            className="form-checkbox"
+          />
+          <label htmlFor="showValueToggle" className="text-sm text-gray-700 dark:text-gray-300 select-none cursor-pointer">
+            {t('showValue')}
+          </label>
         </div>
 
-        {loading ? (
-          <p className="text-gray-500">{t('loadingInventory')}</p>
-        ) : error ? (
-          <div className="space-y-3">
-            <p className="text-red-500">{error}</p>
-            <button
-              onClick={() => {
-                setLoading(true);
-                setError('');
-                const fields = showValue
-                  ? ['id', 'name', 'default_code', 'qty_available', 'list_price', 'uom_id', 'categ_id', 'total_value']
-                  : ['id', 'name', 'default_code', 'qty_available', 'list_price', 'uom_id', 'categ_id'];
-                getOdooProducts(50, fields, {
-                  search: filters.search || undefined,
-                  active: filters.active,
-                })
-                  .then((products) => {
-                    const list = Array.isArray(products) ? products : [];
-                    setItems(list);
-                    setEndReached(list.length < 50);
-                  })
-                  .catch((err) => setError(normalizeErrorMessage(err)))
-                  .finally(() => setLoading(false));
-              }}
-              className="px-3 py-1 bg-violet-600 text-white rounded"
-            >
-              {t('retry')}
-            </button>
+        {error && (
+          <div className="mb-4">
+            <BackendStatusBanner message={error} onRetry={() => setFilters((c) => ({ ...c }))} />
           </div>
-        ) : filtered.length === 0 ? (
-          <p className="text-gray-500">{t('noItemsForTenant')}</p>
-        ) : (
-          <>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-gray-600">
-                  <th className="py-2">{t('sku')}</th>
-                  <th className="py-2">{t('name')}</th>
-                  <th className="py-2">{t('category')}</th>
-                  <th className="py-2">{t('quantity')}</th>
-                  <th className="py-2">{t('unit')}</th>
-                  {showValue && <th className="py-2">{t('value')}</th>}
-                  <th className="py-2">{t('actions')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((it) => (
-                  <tr key={it.id} className="border-t">
-                    <td className="py-2">{it.default_code || '—'}</td>
-                    <td className="py-2">{it.name || '—'}</td>
-                    <td className="py-2">{it.categ_id?.[1] || '—'}</td>
-                    <td className="py-2">{typeof it.qty_available === 'number' ? it.qty_available : '—'}</td>
-                    <td className="py-2">{it.uom_id?.[1] || t('unit')}</td>
-                    {showValue && (
-                      <td className="py-2">
-                        {typeof it.total_value === 'number'
-                          ? `$${it.total_value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                          : '—'}
-                      </td>
-                    )}
-                    <td className="py-2">
-                      <button onClick={() => openEdit(it)} className="text-xs text-violet-600">
-                        {t('viewEdit')}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            <div className="flex items-center justify-between mt-4">
-              <div className="text-xs text-gray-500">{t('loadedItems', { count: items.length })}</div>
-              <div>
-                <span className="text-xs text-gray-500">{t('endOfResults')}</span>
-              </div>
-            </div>
-          </>
         )}
-      </div>
-    </div>
+
+        <DataTable
+          columns={columns}
+          rows={items}
+          rowKey="id"
+          loading={loading}
+          emptyTitle={t('noItemsForTenant')}
+          emptyIcon="📦"
+        />
+
+        {!loading && !error && items.length > 0 && (
+          <div className="mt-4 flex justify-between items-center text-xs text-gray-400">
+            <span>{t('loadedItems', { count: items.length })}</span>
+            {endReached && <span>{t('endOfResults')}</span>}
+          </div>
+        )}
+      </PageCard>
+    </section>
   );
 }

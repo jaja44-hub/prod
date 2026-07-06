@@ -219,18 +219,35 @@ function Sidebar() {
                   </div>
                   <div id={`sec-${section.title.replace(/\s+/g, '-')}`} className={`overflow-hidden transition-[max-height] duration-300`} style={{ maxHeight: open ? 600 : 0 }}>
                     <ul className="mt-2">
-                      {section.items.map((item) => (
-                        <li key={item.to} className="mb-1">
-                          <NavLink
-                            to={item.to}
-                            className={({ isActive }) =>
-                              `block text-sm px-2 py-1 rounded whitespace-nowrap overflow-hidden truncate ${isActive ? 'text-violet-600' : 'text-gray-700 hover:text-gray-900'}`
-                            }
-                          >
-                            <span className="text-sm truncate">{item.label}</span>
-                          </NavLink>
-                        </li>
-                      ))}
+                      {section.items.map((item) => {
+                        const moduleId = getModuleIdForPath(item.to);
+                        const allowed = !moduleId || isCeo(principal) || canViewModule(principal, moduleId, enabledModules);
+                        if (allowed) {
+                          return (
+                            <li key={item.to} className="mb-1">
+                              <NavLink
+                                to={item.to}
+                                className={({ isActive }) =>
+                                  `flex items-center text-sm px-2 py-1.5 rounded whitespace-nowrap overflow-hidden truncate transition-colors duration-150 ${isActive ? 'bg-violet-50 dark:bg-violet-900/20 border-l-2 border-violet-500 text-violet-700 dark:text-violet-300 font-medium pl-[6px]' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100'}`
+                                }
+                              >
+                                <span className="text-sm truncate">{item.label}</span>
+                              </NavLink>
+                            </li>
+                          );
+                        }
+                        return (
+                          <li key={item.to} className="mb-1">
+                            <span
+                              className="flex items-center text-sm px-2 py-1.5 rounded opacity-40 cursor-not-allowed select-none text-gray-500 dark:text-gray-500"
+                              title="Not included in your plan"
+                            >
+                              <span className="text-xs mr-1">🔒</span>
+                              <span className="text-sm truncate">{item.label}</span>
+                            </span>
+                          </li>
+                        );
+                      })}
                     </ul>
                   </div>
                 </div>
