@@ -19,7 +19,9 @@ function Sidebar() {
       title: "Operations",
       items: [
         { to: "/dashboard", label: t('dashboard') },
+        { to: "/analytics", label: "Analytics" },
         { to: "/inventory", label: t('inventory') },
+        { to: "/barcode", label: "Barcode" },
         { to: "/work-orders", label: t('workOrders') },
         { to: "/orders", label: t('orders') },
       ],

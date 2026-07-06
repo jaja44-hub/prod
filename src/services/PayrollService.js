@@ -52,14 +52,24 @@ export class PayrollService {
   /**
    * Full payslip calculation for one employee
    * @param {object} employee - { name, grossSalary, allowances, deductions }
+   * @param {string} complianceProfile - tenantConfig.complianceProfile
    * @returns {object} - Full payslip breakdown
    */
-  static calculatePayslip(employee) {
+  static calculatePayslip(employee, complianceProfile = 'ethiopia_primary') {
     const gross = (employee.grossSalary ?? 0) + (employee.allowances ?? 0);
-    const incomeTax = this.calculateIncomeTax(gross);
-    const employeePension = this.calculateEmployeePension(gross);
-    const employerPension = this.calculateEmployerPension(gross);
     const otherDeductions = employee.deductions ?? 0;
+    let incomeTax = 0;
+    let employeePension = 0;
+    let employerPension = 0;
+
+    if (complianceProfile === 'ethiopia_primary') {
+      incomeTax = this.calculateIncomeTax(gross);
+      employeePension = this.calculateEmployeePension(gross);
+      employerPension = this.calculateEmployerPension(gross);
+    } else {
+      // global_flat fallback
+      incomeTax = gross * 0.15; // flat 15%
+    }
 
     const totalDeductions = incomeTax + employeePension + otherDeductions;
     const netSalary = gross - totalDeductions;
@@ -83,8 +93,8 @@ export class PayrollService {
   /**
    * Run payroll for an array of employees
    */
-  static runPayroll(employees) {
-    return employees.map(emp => this.calculatePayslip(emp));
+  static runPayroll(employees, complianceProfile = 'ethiopia_primary') {
+    return employees.map(emp => this.calculatePayslip(emp, complianceProfile));
   }
 
   /**

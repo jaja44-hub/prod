@@ -1,14 +1,14 @@
 export const MODULE_REGISTRY = {
   dashboard: {
     id: 'dashboard',
-    routes: ['/dashboard'],
+    routes: ['/dashboard', '/analytics'],
     minPlanTier: 3,
     status: 'active',
     roleAccess: ['all'],
   },
   inventory: {
     id: 'inventory',
-    routes: ['/inventory', '/work-orders'],
+    routes: ['/inventory', '/work-orders', '/barcode', '/qc', '/logistics'],
     minPlanTier: 3,
     status: 'active',
     roleAccess: ['warehouse_head', 'ceo'],

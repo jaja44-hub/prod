@@ -167,7 +167,7 @@ export default function HRFortress() {
   const handleRunPayroll = async () => {
     setRunning(true);
     try {
-      const results = PayrollService.runPayroll(activeEmployees);
+      const results = PayrollService.runPayroll(activeEmployees, tenantConfig?.complianceProfile);
       const period = new Date().toISOString().slice(0, 7);
       await GW.savePayrollRun({
         period,
@@ -199,7 +199,7 @@ export default function HRFortress() {
     const slip = PayrollService.calculatePayslip({
       ...emp,
       grossSalary: gross,
-    });
+    }, tenantConfig?.complianceProfile);
     const [year, month] = psMonth.split("-");
     const monthName = new Date(
       parseInt(year),
@@ -901,7 +901,7 @@ export default function HRFortress() {
             {/* ── Individual Payslip Preview ── */}
             {selectedEmp &&
               (() => {
-                const slip = PayrollService.calculatePayslip(selectedEmp);
+                const slip = PayrollService.calculatePayslip(selectedEmp, tenantConfig?.complianceProfile);
                 return (
                   <div className="hr-card">
                     <div className="hr-card-header">
@@ -1140,7 +1140,7 @@ export default function HRFortress() {
                       const preview = PayrollService.calculatePayslip({
                         ...emp,
                         grossSalary: parseFloat(psGross) || 0,
-                      });
+                      }, tenantConfig?.complianceProfile);
                       return (
                         <div
                           style={{

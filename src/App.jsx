@@ -30,6 +30,9 @@ import ComingSoon from './pages/ComingSoon';
 import PlatformAdmin from './pages/PlatformAdmin';
 import TenantSetup from './pages/TenantSetup'
 import Approvals from './pages/Approvals';
+import BarcodeMVP from './pages/Barcode';
+import QCModule from './pages/QC';
+import Analytics from './pages/Analytics';
 
 function App() {
   const location = useLocation();
@@ -89,6 +92,12 @@ function App() {
         <Route path='/platform-admin' element={<PlatformAdminGuard><PlatformAdmin /></PlatformAdminGuard>} />
         <Route path='/platform-admin/tenants' element={<PlatformAdminGuard><PlatformAdmin /></PlatformAdminGuard>} />
         <Route path='/admin/setup' element={<RoleGuard><TenantSetup /></RoleGuard>} />
+        <Route path='/approvals' element={<RoleGuard><Approvals /></RoleGuard>} />
+
+        {/* Operations & Analytics */}
+        <Route path='/barcode' element={<RoleGuard><BarcodeMVP /></RoleGuard>} />
+        <Route path='/qc' element={<RoleGuard><QCModule /></RoleGuard>} />
+        <Route path='/analytics' element={<RoleGuard><Analytics /></RoleGuard>} />
 
         {/* Dev/test */}
         <Route path='/test' element={<OdooTest />} />
