@@ -17,6 +17,8 @@ import DataTable from '../components/DataTable';
 import StateBadge from '../components/StateBadge';
 import BackendStatusBanner from '../components/BackendStatusBanner';
 import { formatEtb } from '../lib/formatEtb';
+import { buildPurchaseLifecycle } from '../lib/salesPurchaseDepth';
+import { buildProcurementPosture } from '../lib/procurementDepth';
 
 export default function PurchaseOrders() {
   const { t } = useLang();
@@ -30,6 +32,8 @@ export default function PurchaseOrders() {
   const [selectedVendorId, setSelectedVendorId] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [purchaseLifecycle, setPurchaseLifecycle] = useState(null);
+  const [procurementPosture, setProcurementPosture] = useState(null);
 
   const normalizeErrorMessage = (err) => {
     const raw = err?.response?.data?.error || err?.message || t('error');
@@ -83,6 +87,8 @@ export default function PurchaseOrders() {
     try {
       const detail = await getOdooPurchaseOrder(orderItem.id);
       setSelectedOrder(detail);
+      setPurchaseLifecycle(buildPurchaseLifecycle(detail));
+      setProcurementPosture(buildProcurementPosture(detail));
     } catch (err) {
       setError(normalizeErrorMessage(err));
     } finally {
@@ -230,7 +236,7 @@ export default function PurchaseOrders() {
             <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
               {selectedOrder.name} - {t('purchaseOrderState') || 'Purchase Order Detail'}
             </h2>
-            <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
                 <span className="text-xs text-gray-500 block">{t('vendor')}</span>
                 <span className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -256,6 +262,31 @@ export default function PurchaseOrders() {
                 </span>
               </div>
             </div>
+
+            {(purchaseLifecycle || procurementPosture) && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {purchaseLifecycle && (
+                  <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-950/40 dark:text-violet-300">
+                    Lifecycle: {purchaseLifecycle.status}
+                  </span>
+                )}
+                {procurementPosture && (
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                    Procurement stage: {procurementPosture.stage}
+                  </span>
+                )}
+                {procurementPosture && (
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                    Approval pending: {procurementPosture.approvalPending ? 'Yes' : 'No'}
+                  </span>
+                )}
+                {procurementPosture && (
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                    Receipt pending: {procurementPosture.receiptPending ? 'Yes' : 'No'}
+                  </span>
+                )}
+              </div>
+            )}
 
             <h3 className="text-md font-bold mb-2 text-gray-950 dark:text-white">
               {t('orderLines')}

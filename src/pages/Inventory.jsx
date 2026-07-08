@@ -9,6 +9,7 @@ import PageCard from '../components/PageCard';
 import DataTable from '../components/DataTable';
 import BackendStatusBanner from '../components/BackendStatusBanner';
 import { formatEtb } from '../lib/formatEtb';
+import { buildInventoryInsights } from '../lib/inventoryDepth';
 
 export default function Inventory() {
   const { t } = useLang();
@@ -21,6 +22,7 @@ export default function Inventory() {
   const [filters, setFilters] = useState({ search: '', active: true, categoryId: undefined, locationId: undefined });
   const [endReached, setEndReached] = useState(true);
   const [showValue, setShowValue] = useState(false);
+  const [inventorySummary, setInventorySummary] = useState(null);
 
   const normalizeErrorMessage = (err) => {
     const raw = err?.response?.data?.error || err?.message || t('error');
@@ -46,6 +48,8 @@ export default function Inventory() {
         const list = Array.isArray(products) ? products : [];
         setItems(list);
         setEndReached(list.length < 50);
+        const summary = list.length > 0 ? buildInventoryInsights(list[0], { quantity: list[0].qty_available || 0, reserved_quantity: 0 }) : null;
+        setInventorySummary(summary);
       } catch (err) {
         if (!mounted) return;
         setError(normalizeErrorMessage(err));
@@ -128,6 +132,20 @@ export default function Inventory() {
             {t('showValue')}
           </label>
         </div>
+
+        {inventorySummary && (
+          <div className="mb-4 flex flex-wrap gap-2">
+            <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-950/40 dark:text-violet-300">
+              Status: {inventorySummary.status}
+            </span>
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+              Reorder required: {inventorySummary.reorderRequired ? 'Yes' : 'No'}
+            </span>
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+              Transfer review: {inventorySummary.transferSuggested ? 'Suggested' : 'Not needed'}
+            </span>
+          </div>
+        )}
 
         {error && (
           <div className="mb-4">

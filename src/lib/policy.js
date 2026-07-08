@@ -6,6 +6,8 @@
  * planTier: 1 = enterprise, 2 = pro, 3 = starter
  */
 
+import { buildPolicyContext, canAccessModuleByContext } from '../../api/lib/tenantPolicy.js';
+
 export function getPrincipal(userProfile) {
   if (!userProfile) return null;
   return {
@@ -43,6 +45,12 @@ export function canViewModule(principal, moduleId, enabledTenantModules = null) 
   if (!principal) return false;
   if (moduleId === 'dashboard') return true;
 
+  const context = buildPolicyContext({
+    role: principal.role,
+    tier: principal.planTier,
+    tenantId: principal.tenantId,
+  }, enabledTenantModules);
+
   if (Array.isArray(enabledTenantModules)) {
     if (!enabledTenantModules.includes(moduleId)) {
       return false;
@@ -55,13 +63,24 @@ export function canViewModule(principal, moduleId, enabledTenantModules = null) 
 
   if (isCeo(principal)) return true;
   const fn = MODULE_ACCESS[moduleId];
-  return fn ? fn(principal) : false;
+  return fn ? fn(principal) : canAccessModuleByContext(context, moduleId);
 }
 
-export function resolveEnabledModules(principal, tenantModulesFromFirestore) {
+export function resolveEnabledModules(principal, tenantModulesFromFirestore, policyContext = null) {
   if (Array.isArray(tenantModulesFromFirestore)) {
     return tenantModulesFromFirestore;
   }
+
+  const packageModules = Array.isArray(policyContext?.modules)
+    ? policyContext.modules
+    : Array.isArray(policyContext?.enabledModules)
+      ? policyContext.enabledModules
+      : null;
+
+  if (Array.isArray(packageModules) && packageModules.length > 0) {
+    return packageModules;
+  }
+
   return modulesForPlanTier(principal.planTier);
 }
 

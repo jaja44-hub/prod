@@ -5,6 +5,7 @@ import {
   mergeOdooDomains,
 } from './lib/tenantOdooDomain.js';
 import { authenticateOdooDb } from './lib/resolveOdooDb.js';
+import { getModuleForModel, canAccessModuleByContext } from './lib/tenantPolicy.js';
 
 const ALLOWED_MODELS = new Set([
   'product.product',
@@ -109,6 +110,19 @@ export default async function handler(req, res) {
     const tenantId = decoded?.tenantId || decoded?.tenant_id || 'production';
     const role = decoded?.role || 'viewer';
     const uid = decoded?.uid || null;
+    const moduleId = getModuleForModel(model);
+
+    if (moduleId) {
+      const policyContext = {
+        role,
+        tier: decoded?.tier ?? decoded?.planTier ?? 3,
+        tenantId,
+        enabledModules: decoded?.enabledModules || null,
+      };
+      if (!canAccessModuleByContext(policyContext, moduleId)) {
+        return res.status(403).json({ error: `Module access denied for ${moduleId}` });
+      }
+    }
 
     // B8 phase 2: enforce tenant-level domain filters in Odoo queries.
     // For read/query methods, merge tenant domain terms from the server-side

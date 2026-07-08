@@ -10,6 +10,7 @@ import DataTable from '../components/DataTable';
 import StateBadge from '../components/StateBadge';
 import BackendStatusBanner from '../components/BackendStatusBanner';
 import { formatEtb } from '../lib/formatEtb';
+import { buildSalesLifecycle } from '../lib/salesPurchaseDepth';
 
 export default function Sales() {
   const { t } = useLang();
@@ -21,6 +22,7 @@ export default function Sales() {
   const [filters, setFilters] = useState({ search: '', state: '', dateFrom: '', dateTo: '' });
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [salesLifecycle, setSalesLifecycle] = useState(null);
 
   const normalizeErrorMessage = (err) => {
     const raw = err?.response?.data?.error || err?.message || t('error');
@@ -59,6 +61,7 @@ export default function Sales() {
     try {
       const detail = await getOdooSalesOrder(orderItem.id);
       setSelectedOrder(detail);
+      setSalesLifecycle(buildSalesLifecycle(detail));
     } catch (err) {
       setError(normalizeErrorMessage(err));
     } finally {
@@ -148,7 +151,7 @@ export default function Sales() {
             <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
               {selectedOrder.name} - {t('salesOrderState') || 'Order Detail'}
             </h2>
-            <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
                 <span className="text-xs text-gray-500 block">{t('customer')}</span>
                 <span className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -174,6 +177,20 @@ export default function Sales() {
                 </span>
               </div>
             </div>
+
+            {salesLifecycle && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-950/40 dark:text-violet-300">
+                  Lifecycle: {salesLifecycle.status}
+                </span>
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                  Follow-up needed: {salesLifecycle.followUpNeeded ? 'Yes' : 'No'}
+                </span>
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                  Revenue ready: {salesLifecycle.revenueReady ? 'Yes' : 'No'}
+                </span>
+              </div>
+            )}
 
             <h3 className="text-md font-bold mb-2 text-gray-950 dark:text-white">
               {t('orderLines')}

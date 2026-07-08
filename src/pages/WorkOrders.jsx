@@ -8,6 +8,7 @@ import PageCard from '../components/PageCard';
 import DataTable from '../components/DataTable';
 import StateBadge from '../components/StateBadge';
 import BackendStatusBanner from '../components/BackendStatusBanner';
+import { buildWarehousePosture } from '../lib/warehouseDepth';
 
 export default function WorkOrders() {
   const { t } = useLang();
@@ -17,6 +18,8 @@ export default function WorkOrders() {
   const [error, setError] = useState('');
   const [filters, setFilters] = useState({ state: '' });
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'kanban'
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [warehousePosture, setWarehousePosture] = useState(null);
 
   const normalizeErrorMessage = (err) => {
     const raw = err?.response?.data?.error || err?.message || t('error');
@@ -108,6 +111,17 @@ export default function WorkOrders() {
           </div>
         )}
 
+        {selectedOrder && warehousePosture && (
+          <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
+            <div className="text-sm font-semibold text-amber-700 dark:text-amber-300">Warehouse posture</div>
+            <div className="mt-2 flex flex-wrap gap-2 text-xs">
+              <span className="rounded-full bg-white px-3 py-1 text-slate-700 dark:bg-slate-900 dark:text-slate-200">State: {warehousePosture.state}</span>
+              <span className="rounded-full bg-white px-3 py-1 text-slate-700 dark:bg-slate-900 dark:text-slate-200">Needs attention: {warehousePosture.needsAttention ? 'Yes' : 'No'}</span>
+              <span className="rounded-full bg-white px-3 py-1 text-slate-700 dark:bg-slate-900 dark:text-slate-200">Dispatch ready: {warehousePosture.dispatchReady ? 'Yes' : 'No'}</span>
+            </div>
+          </div>
+        )}
+
         {viewMode === 'list' ? (
           <DataTable
             columns={columns}
@@ -131,7 +145,7 @@ export default function WorkOrders() {
                     {colOrders.map(order => (
                       <div
                         key={order.id}
-                        onClick={() => navigate(`/work-orders/${order.id}`)}
+                        onClick={() => { setSelectedOrder(order); setWarehousePosture(buildWarehousePosture(order)); }}
                         className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:border-violet-500 dark:hover:border-violet-400 transition-colors cursor-pointer"
                       >
                         <div className="font-bold text-xs text-violet-700 dark:text-violet-400">{order.name}</div>

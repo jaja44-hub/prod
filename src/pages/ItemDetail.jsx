@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { getOdooProduct, getOdooProductCategories, getOdooStockQuants, getOdooValuationLayers, updateOdooProduct, createOdooProduct, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway';
 import PageHeader from '../components/PageHeader';
 import PageCard from '../components/PageCard';
+import { buildInventoryInsights } from '../lib/inventoryDepth';
 
 export default function ItemDetail() {
   const { id } = useParams();
@@ -17,6 +18,7 @@ export default function ItemDetail() {
   const [categories, setCategories] = useState([]);
   const [quants, setQuants] = useState([]);
   const [valuationLayers, setValuationLayers] = useState([]);
+  const [inventoryInsights, setInventoryInsights] = useState(null);
   const [form, setForm] = useState({ default_code: '', name: '', list_price: 0, categ_id: undefined });
 
   const normalizeErrorMessage = (err) => {
@@ -44,6 +46,10 @@ export default function ItemDetail() {
               list_price: productResult?.list_price || 0,
               categ_id: productResult?.categ_id?.[0],
             });
+            const primaryQuant = Array.isArray(productResult?.quants) && productResult.quants.length > 0
+              ? productResult.quants[0]
+              : null;
+            setInventoryInsights(buildInventoryInsights(productResult, primaryQuant || quants[0]));
           }
         }
       } catch (err) {
@@ -64,7 +70,9 @@ export default function ItemDetail() {
         if (!id || id === 'new') return;
         const quantResult = await getOdooStockQuants(50, { productId: Number(id) });
         if (mounted) {
-          setQuants(Array.isArray(quantResult) ? quantResult : []);
+          const nextQuants = Array.isArray(quantResult) ? quantResult : [];
+          setQuants(nextQuants);
+          setInventoryInsights((current) => current || buildInventoryInsights(item, nextQuants[0]));
         }
       } catch {
         // ignore quant load failures; panel can show empty
@@ -205,6 +213,29 @@ export default function ItemDetail() {
           </form>
         )}
       </PageCard>
+
+      {id && id !== 'new' && inventoryInsights && (
+        <PageCard>
+          <div className="flex flex-wrap gap-3 mb-4">
+            <div className="rounded-lg border border-gray-200 dark:border-gray-800 px-3 py-2 text-sm">
+              <div className="text-[11px] uppercase tracking-wide text-gray-500">Status</div>
+              <div className="font-semibold text-gray-900 dark:text-white">{inventoryInsights.status}</div>
+            </div>
+            <div className="rounded-lg border border-gray-200 dark:border-gray-800 px-3 py-2 text-sm">
+              <div className="text-[11px] uppercase tracking-wide text-gray-500">Available after reserve</div>
+              <div className="font-semibold text-gray-900 dark:text-white">{inventoryInsights.availableAfterReserve}</div>
+            </div>
+            <div className="rounded-lg border border-gray-200 dark:border-gray-800 px-3 py-2 text-sm">
+              <div className="text-[11px] uppercase tracking-wide text-gray-500">Reorder required</div>
+              <div className="font-semibold text-gray-900 dark:text-white">{inventoryInsights.reorderRequired ? 'Yes' : 'No'}</div>
+            </div>
+            <div className="rounded-lg border border-gray-200 dark:border-gray-800 px-3 py-2 text-sm">
+              <div className="text-[11px] uppercase tracking-wide text-gray-500">Transfer review</div>
+              <div className="font-semibold text-gray-900 dark:text-white">{inventoryInsights.transferSuggested ? 'Suggested' : 'Not needed'}</div>
+            </div>
+          </div>
+        </PageCard>
+      )}
 
       {/* Stock by location panel */}
       {id && id !== 'new' && (

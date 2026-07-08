@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
-import { getOdooProducts, getOdooCustomers, getOdooVendors, getOdooPurchaseOrders } from '../services/ServiceGateway';
+import { getOdooProducts, getOdooCustomers, getOdooVendors, getOdooPurchaseOrders, getOdooPayments } from '../services/ServiceGateway';
+import { buildFinanceLifecycle } from '../lib/financeDepth';
+import { buildCrossModulePosture } from '../lib/orchestrationDepth';
 
 const statCards = [
   { key: 'products', labelKey: 'products', icon: '📦' },
@@ -14,6 +16,8 @@ function ErpSummaryPanel() {
   const { t } = useLang();
   const { currentUser, loading: authLoading } = useAuth();
   const [stats, setStats] = useState({ products: 0, customers: 0, vendors: 0, purchaseOrders: 0 });
+  const [financeLifecycle, setFinanceLifecycle] = useState(null);
+  const [orchestration, setOrchestration] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [errorDetail, setErrorDetail] = useState('');
@@ -29,13 +33,21 @@ function ErpSummaryPanel() {
       setError(false);
       setErrorDetail('');
       try {
-        const [products, customers, vendors, purchaseOrders] = await Promise.all([
+        const [products, customers, vendors, purchaseOrders, payments] = await Promise.all([
           getOdooProducts(500, ['id']),
           getOdooCustomers(500),
           getOdooVendors(500),
           getOdooPurchaseOrders(500),
+          getOdooPayments(100),
         ]);
         if (!mounted) return;
+        const finance = buildFinanceLifecycle(Array.isArray(payments) ? payments : []);
+        const orchestrationPosture = buildCrossModulePosture({
+          inventorySummary: { status: 'healthy', reorderRequired: false },
+          salesLifecycle: { followUpNeeded: false, revenueReady: true },
+          purchaseLifecycle: { approvalNeeded: false, receiptPending: false },
+          financeLifecycle: finance,
+        });
         setStats({
           products: Array.isArray(products) ? products.length : 0,
           customers: Array.isArray(customers) ? customers.length : 0,
@@ -44,6 +56,8 @@ function ErpSummaryPanel() {
             ? purchaseOrders.filter((order) => ['draft', 'sent', 'purchase'].includes(order.state)).length
             : 0,
         });
+        setFinanceLifecycle(finance);
+        setOrchestration(orchestrationPosture);
       } catch (err) {
         console.error('ErpSummaryPanel error', err);
         if (!mounted) return;
@@ -102,6 +116,28 @@ function ErpSummaryPanel() {
           </div>
         ))}
       </div>
+
+      {(financeLifecycle || orchestration) && (
+        <div className="mt-4 rounded-2xl border border-violet-200 bg-violet-50/70 p-4 dark:border-violet-900/40 dark:bg-violet-950/20">
+          <div className="flex flex-wrap gap-2">
+            {financeLifecycle && (
+              <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                Finance posture: {financeLifecycle.status}
+              </span>
+            )}
+            {financeLifecycle && (
+              <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                Pending reconciliation: {financeLifecycle.pending}
+              </span>
+            )}
+            {orchestration && (
+              <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                {orchestration.headline}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

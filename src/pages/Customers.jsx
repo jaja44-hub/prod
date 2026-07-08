@@ -7,6 +7,7 @@ import PageCard from '../components/PageCard';
 import DataTable from '../components/DataTable';
 import StateBadge from '../components/StateBadge';
 import BackendStatusBanner from '../components/BackendStatusBanner';
+import { buildCustomerPosture } from '../lib/crmDepth';
 
 export default function Customers() {
   const { t } = useLang();
@@ -16,6 +17,8 @@ export default function Customers() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filters, setFilters] = useState({ search: '' });
+  const [selectedPartner, setSelectedPartner] = useState(null);
+  const [customerPosture, setCustomerPosture] = useState(null);
 
   // Mock Logistics Delivery Terms Config
   const [deliveryTerms] = useState([
@@ -58,6 +61,11 @@ export default function Customers() {
     { key: 'email', header: t('email'), className: 'text-gray-600 dark:text-gray-400' },
     { key: 'phone', header: t('phone'), className: 'text-gray-600 dark:text-gray-400' },
     { key: 'city', header: t('city'), className: 'text-gray-600 dark:text-gray-400' },
+    { key: 'actions', header: '', render: (r) => (
+      <button onClick={() => { setSelectedPartner(r); setCustomerPosture(buildCustomerPosture(r)); }} className="text-xs text-violet-600 dark:text-violet-400 hover:underline">
+        View posture
+      </button>
+    ) },
   ];
 
   const deliveryColumns = [
@@ -135,14 +143,26 @@ export default function Customers() {
             emptyIcon="🚚"
           />
         ) : (
-          <DataTable
-            columns={partnerColumns}
-            rows={activeTab === 'customers' ? customers : vendors}
-            rowKey="id"
-            loading={loading}
-            emptyTitle={t('noResults')}
-            emptyIcon="👥"
-          />
+          <>
+            <DataTable
+              columns={partnerColumns}
+              rows={activeTab === 'customers' ? customers : vendors}
+              rowKey="id"
+              loading={loading}
+              emptyTitle={t('noResults')}
+              emptyIcon="👥"
+            />
+            {selectedPartner && customerPosture && (
+              <div className="mt-4 rounded-2xl border border-violet-200 bg-violet-50/70 p-4 dark:border-violet-900/40 dark:bg-violet-950/20">
+                <div className="text-sm font-semibold text-violet-700 dark:text-violet-300">CRM posture</div>
+                <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                  <span className="rounded-full bg-white px-3 py-1 text-slate-700 dark:bg-slate-900 dark:text-slate-200">Follow-up needed: {customerPosture.followUpNeeded ? 'Yes' : 'No'}</span>
+                  <span className="rounded-full bg-white px-3 py-1 text-slate-700 dark:bg-slate-900 dark:text-slate-200">Email present: {customerPosture.hasEmail ? 'Yes' : 'No'}</span>
+                  <span className="rounded-full bg-white px-3 py-1 text-slate-700 dark:bg-slate-900 dark:text-slate-200">Phone present: {customerPosture.hasPhone ? 'Yes' : 'No'}</span>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </PageCard>
     </section>
