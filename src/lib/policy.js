@@ -6,7 +6,7 @@
  * planTier: 1 = enterprise, 2 = pro, 3 = starter
  */
 
-import { buildPolicyContext, canAccessModuleByContext } from '../../api/lib/tenantPolicy.js';
+import { buildPolicyContext, canAccessModuleByContext } from '../../server/api/lib/tenantPolicy.js';
 
 export function getPrincipal(userProfile) {
   if (!userProfile) return null;

@@ -1,4 +1,4 @@
-import { matchPaymentsToInvoices } from '../api/finance/reconciliation.js';
+import { matchPaymentsToInvoices } from '../server/api/finance/reconciliation.js';
 
 (async () => {
   try {

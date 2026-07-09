@@ -1,12 +1,12 @@
 import xmlrpc from 'xmlrpc';
-import { verifyBearerToken, logSkipAuthWarning } from './lib/firebaseAdmin.js';
+import { verifyBearerToken, logSkipAuthWarning } from '../server/api/lib/firebaseAdmin.js';
 import {
   getTenantDomainTermsAsync,
   mergeOdooDomains,
-} from './lib/tenantOdooDomain.js';
-import { authenticateOdooDb } from './lib/resolveOdooDb.js';
-import { getModuleForModel } from './lib/tenantPolicy.js';
-import { enforceModuleAccess } from './lib/policyOrchestrator.js';
+} from '../server/api/lib/tenantOdooDomain.js';
+import { authenticateOdooDb } from '../server/api/lib/resolveOdooDb.js';
+import { getModuleForModel } from '../server/api/lib/tenantPolicy.js';
+import { enforceModuleAccess } from '../server/api/lib/policyOrchestrator.js';
 
 const ALLOWED_MODELS = new Set([
   'product.product',

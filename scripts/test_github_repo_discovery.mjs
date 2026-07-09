@@ -1,4 +1,4 @@
-import { getRepoTree } from '../api/lib/githubAppClient.mjs';
+import { getRepoTree } from '../server/api/lib/githubAppClient.mjs';
 
 const owner = 'jaja44-hub';
 const repos = ['gibi-sales', 'legal-commerce'];

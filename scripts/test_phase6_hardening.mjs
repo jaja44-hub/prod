@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { getPrincipal, canViewModule, resolveEnabledModules } from '../src/lib/policy.js';
-import { canAccessModuleByContext, getModuleForModel } from '../api/lib/tenantPolicy.js';
+import { canAccessModuleByContext, getModuleForModel } from '../server/api/lib/tenantPolicy.js';
 
 const principal = getPrincipal({ role: 'warehouse_head', tier: 2, tenantId: 'production' });
 assert.equal(canViewModule(principal, 'inventory', ['inventory', 'sales']), true, 'warehouse head should access inventory when entitled');

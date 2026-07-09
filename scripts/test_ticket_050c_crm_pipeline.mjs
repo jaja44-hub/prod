@@ -1,4 +1,4 @@
-import { buildSamplePipeline, buildPipelineSummary, createLeadRecord } from '../api/crm/pipeline.js';
+import { buildSamplePipeline, buildPipelineSummary, createLeadRecord } from '../server/api/crm/pipeline.js';
 
 (async () => {
   try {

@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { mergeOdooDomains, getTenantDomainTerms } from '../api/lib/tenantOdooDomain.js';
+import { mergeOdooDomains, getTenantDomainTerms } from '../server/api/lib/tenantOdooDomain.js';
 
 console.log('Running tenant domain tests...');
 

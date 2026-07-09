@@ -1,4 +1,4 @@
-import { buildActivityTimeline, buildActivitySummary, createActivityRecord, normalizeActivityEntry } from '../api/crm/activity.js';
+import { buildActivityTimeline, buildActivitySummary, createActivityRecord, normalizeActivityEntry } from '../server/api/crm/activity.js';
 
 (async () => {
   try {

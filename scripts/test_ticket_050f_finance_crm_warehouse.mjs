@@ -1,8 +1,8 @@
-import { computeAgingReport } from '../api/finance/aging.js';
-import { matchPaymentsToInvoices } from '../api/finance/reconciliation.js';
-import { buildSamplePipeline, buildPipelineSummary, createLeadRecord } from '../api/crm/pipeline.js';
-import { buildActivityTimeline, buildActivitySummary, createActivityRecord, normalizeActivityEntry } from '../api/crm/activity.js';
-import { buildPickPackShipWorkflow, buildWarehouseSummary, createShipmentRecord, normalizeWarehouseAction } from '../api/inventory/warehouse.js';
+import { computeAgingReport } from '../server/api/finance/aging.js';
+import { matchPaymentsToInvoices } from '../server/api/finance/reconciliation.js';
+import { buildSamplePipeline, buildPipelineSummary, createLeadRecord } from '../server/api/crm/pipeline.js';
+import { buildActivityTimeline, buildActivitySummary, createActivityRecord, normalizeActivityEntry } from '../server/api/crm/activity.js';
+import { buildPickPackShipWorkflow, buildWarehouseSummary, createShipmentRecord, normalizeWarehouseAction } from '../server/api/inventory/warehouse.js';
 
 (async () => {
   try {

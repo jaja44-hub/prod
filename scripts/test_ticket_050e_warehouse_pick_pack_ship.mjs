@@ -1,4 +1,4 @@
-import { buildPickPackShipWorkflow, buildWarehouseSummary, createShipmentRecord, normalizeWarehouseAction } from '../api/inventory/warehouse.js';
+import { buildPickPackShipWorkflow, buildWarehouseSummary, createShipmentRecord, normalizeWarehouseAction } from '../server/api/inventory/warehouse.js';
 
 (async () => {
   try {

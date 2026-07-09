@@ -1,5 +1,5 @@
 import xmlrpc from 'xmlrpc';
-import { authenticateOdooDb } from '../api/lib/resolveOdooDb.js';
+import { authenticateOdooDb } from '../server/api/lib/resolveOdooDb.js';
 
 const { ODOO_URL, ODOO_DB, ODOO_USER, ODOO_APIKEY } = process.env;
 let activeDb = ODOO_DB;

@@ -1,4 +1,4 @@
-import { computeAgingReport } from '../api/finance/aging.js';
+import { computeAgingReport } from '../server/api/finance/aging.js';
 
 (async () => {
   try {

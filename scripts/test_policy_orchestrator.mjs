@@ -1,4 +1,4 @@
-import { checkModuleAccess, enforceModuleAccess } from '../api/lib/policyOrchestrator.js';
+import { checkModuleAccess, enforceModuleAccess } from '../server/api/lib/policyOrchestrator.js';
 
 (async () => {
   try {

@@ -1,4 +1,4 @@
-import { getFirebaseAdmin } from '../api/lib/firebaseAdmin.js';
+import { getFirebaseAdmin } from '../server/api/lib/firebaseAdmin.js';
 import { modulesForPlanTier } from '../src/lib/policy.js';
 
 async function upsertPackages(db) {

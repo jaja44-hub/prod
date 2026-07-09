@@ -1,5 +1,5 @@
-import { getMovements } from '../api/inventory/movements.js';
-import { computeReorderSuggestion } from '../api/inventory/reorder-suggestion.js';
+import { getMovements } from '../server/api/inventory/movements.js';
+import { computeReorderSuggestion } from '../server/api/inventory/reorder-suggestion.js';
 
 (async () => {
   try {
