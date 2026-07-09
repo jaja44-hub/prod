@@ -6,6 +6,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { setActiveTenant } from '../services/ServiceGateway';
 import { fetchEnabledTenantModules } from '../lib/tenantSchema';
+import { initApiClient, getApiClient } from '../lib/apiClient';
 
 const AuthContext = createContext(null);
 
@@ -80,7 +81,17 @@ export function AuthProvider({ children }) {
 
       setCurrentUser(user);
       try {
+        // Get ID token and initialize API client with Bearer token
+        const idToken = await user.getIdToken();
         const profile = await loadUserProfile(user);
+        
+        // Initialize API client with token and tenant
+        initApiClient({
+          baseUrl: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000',
+          authToken: idToken,
+          tenantId: profile?.tenantId || 'production',
+        });
+        
         setUserProfile(profile);
         setEnabledModules(null);
         setTenantConfig(null);
@@ -138,6 +149,26 @@ export function AuthProvider({ children }) {
       }
     }
   }, [loading, currentUser, location.pathname, navigate]);
+
+  // Refresh ID token every 50 minutes (tokens expire in 60 minutes)
+  useEffect(() => {
+    if (!currentUser || !auth) return;
+    
+    const interval = setInterval(async () => {
+      try {
+        const idToken = await currentUser.getIdToken(true);
+        const client = getApiClient();
+        if (client) {
+          client.setAuthToken(idToken);
+        }
+        console.debug('AuthContext: ID token refreshed');
+      } catch (err) {
+        console.warn('AuthContext: token refresh failed', err);
+      }
+    }, 50 * 60 * 1000); // 50 minutes
+    
+    return () => clearInterval(interval);
+  }, [currentUser]);
 
   const logout = async () => {
     if (!auth) {
