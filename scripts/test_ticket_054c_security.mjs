@@ -4,10 +4,10 @@
  * Validates CORS, rate limiting, CSRF, JWT, input sanitization, SQL injection prevention
  */
 
-import { corsMiddleware, verifyCORSRequest } from '../api/middleware/cors.js';
-import { RateLimiter, rateLimitMiddleware } from '../api/middleware/rateLimit.js';
-import { generateCSRFToken, validateCSRFToken, verifyCSRFRequest, consumeCSRFToken } from '../api/middleware/csrf.js';
-import { sanitizeInput, validateSQL, validateJWT, securityHeaders } from '../api/middleware/security.js';
+import { corsMiddleware, verifyCORSRequest } from '../server/api/lib/middleware/cors.js';
+import { RateLimiter, rateLimitMiddleware } from '../server/api/lib/middleware/rateLimit.js';
+import { generateCSRFToken, validateCSRFToken, verifyCSRFRequest, consumeCSRFToken } from '../server/api/lib/middleware/csrf.js';
+import { sanitizeInput, validateSQL, validateJWT, securityHeaders } from '../server/api/lib/middleware/security.js';
 
 function testCORSConfiguration() {
   console.log('\n--- CORS Configuration Tests ---');

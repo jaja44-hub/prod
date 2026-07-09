@@ -3,9 +3,9 @@
  * TICKET-054d: Monitoring & Observability Setup
  */
 
-import { ErrorTracker, globalErrorTracker } from '../api/monitoring/errorHandler.js';
-import { MetricsCollector, globalMetricsCollector } from '../api/monitoring/metrics.js';
-import { AlertManager, globalAlertManager } from '../api/monitoring/alerts.js';
+import { ErrorTracker, globalErrorTracker } from '../server/api/lib/monitoring/errorHandler.js';
+import { MetricsCollector, globalMetricsCollector } from '../server/api/lib/monitoring/metrics.js';
+import { AlertManager, globalAlertManager } from '../server/api/lib/monitoring/alerts.js';
 
 function testErrorTracking() {
   console.log('\n--- Error Tracking & Observability ---');
