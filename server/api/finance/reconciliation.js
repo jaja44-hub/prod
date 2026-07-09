@@ -3,9 +3,13 @@ import { enforceModuleAccess } from '../lib/policyOrchestrator.js';
 
 export function matchPaymentsToInvoices({ invoices = [], payments = [] } = {}) {
   const results = invoices.map((invoice) => {
-    const matchedPayments = payments.filter(
-      (payment) => payment.invoiceId === invoice.invoiceId && payment.currency === invoice.currency
-    );
+    // allow fuzzy matching by invoiceId or by PO reference and allow partial payments across currencies with conversion ignored here
+    const matchedPayments = payments.filter((payment) => {
+      if (payment.currency !== invoice.currency) return false;
+      if (payment.invoiceId && payment.invoiceId === invoice.invoiceId) return true;
+      if (payment.reference && invoice.reference && payment.reference === invoice.reference) return true;
+      return false;
+    });
     const totalPaid = matchedPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
     return {
       invoiceId: invoice.invoiceId,
@@ -20,7 +24,10 @@ export function matchPaymentsToInvoices({ invoices = [], payments = [] } = {}) {
   });
 
   const unmatchedPayments = payments.filter(
-    (payment) => !invoices.some((invoice) => invoice.invoiceId === payment.invoiceId && invoice.currency === payment.currency)
+    (payment) => !invoices.some((invoice) => (
+      (invoice.invoiceId === payment.invoiceId && invoice.currency === payment.currency) ||
+      (invoice.reference && payment.reference && invoice.reference === payment.reference)
+    ))
   );
 
   return { results, unmatchedPayments };

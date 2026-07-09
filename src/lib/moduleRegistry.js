@@ -8,7 +8,7 @@ export const MODULE_REGISTRY = {
   },
   inventory: {
     id: 'inventory',
-    routes: ['/inventory', '/work-orders', '/barcode', '/qc', '/logistics'],
+    routes: ['/inventory', '/work-orders', '/barcode', '/qc', '/logistics', '/warehouse'],
     minPlanTier: 3,
     status: 'active',
     roleAccess: ['warehouse_head', 'ceo'],

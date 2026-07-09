@@ -38,6 +38,18 @@ export function computeAgingReport({ vendorLines = [], customerLines = [] } = {}
   };
 }
 
+export function computeAgingMultiCurrency({ vendorLines = [], customerLines = [], fxRates = {} } = {}) {
+  // fxRates: { 'USD': 55.0, 'ETB': 1.0 } mapping to base
+  function convert(line) {
+    const rate = fxRates[line.currency] || 1;
+    return { ...line, amountBase: Number(line.amount || 0) * rate };
+  }
+  const v = vendorLines.map(convert);
+  const c = customerLines.map(convert);
+  const baseReport = computeAgingReport({ vendorLines: v, customerLines: c });
+  return { fxRates, baseCurrency: 'BASE', ...baseReport };
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');

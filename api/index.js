@@ -12,20 +12,21 @@ import { computeAgingReport } from '../server/api/finance/aging.js';
 import { matchPaymentsToInvoices } from '../server/api/finance/reconciliation.js';
 
 // CRM handlers
-import { fetchPipeline } from '../server/api/crm/pipeline.js';
-import { fetchActivityTimeline } from '../server/api/crm/activity.js';
+import { buildSamplePipeline as fetchPipeline } from '../server/api/crm/pipeline.js';
+import { buildActivityTimeline as fetchActivityTimeline } from '../server/api/crm/activity.js';
 
 // Warehouse handlers
-import { manageWarehouseWorkflow } from '../server/api/inventory/warehouse.js';
+import warehouseHandler from '../server/api/inventory/warehouse.js';
+import inventoryMovementsHandler from '../server/api/inventory/movements.js';
+import reorderSuggestionHandler from '../server/api/inventory/reorder-suggestion.js';
+import cycleCountHandler from '../server/api/inventory/cycle-counts.js';
 
 // Analytics handlers
-import { computeMetrics } from '../server/api/analytics/metrics.js';
-import { generateDecisions } from '../server/api/analytics/decisions.js';
+import analyticsMetricsHandler from '../server/api/analytics/metrics.js';
+import analyticsDecisionsHandler from '../server/api/analytics/decisions.js';
 
 // Connectors handlers
-import { validateContract } from '../server/api/connectors/contracts.js';
-import { executeWithRetry } from '../server/api/connectors/retries.js';
-import { recordAuditEvent } from '../server/api/connectors/audit.js';
+// Connector routes are not implemented in this branch; placeholder routing is omitted.
 
 // Import from odoo and keep-alive modules
 import odooProxyHandler from './odooProxy.js';
@@ -104,36 +105,103 @@ export default async function handler(req, res) {
       return respond(res, 200, { success: true, data: activities });
     }
 
-    // Warehouse module
-    if (path.startsWith('/api/inventory/warehouse') || path.startsWith('/api/warehouse')) {
-      await enforceModuleAccess(context, 'warehouse');
-      if (method !== 'POST') return respond(res, 405, { success: false, error: 'Method not allowed' });
-      const result = await manageWarehouseWorkflow(context, req.body);
-      return respond(res, 200, { success: true, data: result });
+    // Sales module - quotes & orders
+    if (path.startsWith('/api/sales/quotes')) {
+      const mod = await import('../server/api/sales/quotes.js');
+      return mod.default(req, res);
     }
 
-    // Analytics module
+    if (path.startsWith('/api/sales/orders')) {
+      const mod = await import('../server/api/sales/orders.js');
+      return mod.default(req, res);
+    }
+
+    // Sales commission & recurring
+    if (path.startsWith('/api/sales/commission')) {
+      const mod = await import('../server/api/sales/commission-recurring.js');
+      return mod.default(req, res);
+    }
+
+    // Purchase RFQ and receipts
+    if (path.startsWith('/api/purchase/rfq')) {
+      const mod = await import('../server/api/purchase/rfq.js');
+      return mod.default(req, res);
+    }
+
+    if (path.startsWith('/api/purchase/receipts')) {
+      const mod = await import('../server/api/purchase/receipts.js');
+      return mod.default(req, res);
+    }
+
+    if (path.startsWith('/api/purchase/vendor-performance')) {
+      const mod = await import('../server/api/purchase/vendor-performance.js');
+      return mod.default(req, res);
+    }
+
+    // Inventory valuation
+    if (path.startsWith('/api/inventory/valuation')) {
+      const mod = await import('../server/api/inventory/valuation.js');
+      return mod.default(req, res);
+    }
+
+    // Finance: payment batching
+    if (path.startsWith('/api/finance/payment-batching')) {
+      const mod = await import('../server/api/finance/payment-batching.js');
+      return mod.default(req, res);
+    }
+
+    // Shipping label service
+    if (path.startsWith('/api/shipping/label')) {
+      const mod = await import('../server/api/shipping/label-service.js');
+      return mod.default(req, res);
+    }
+
+    // Inventory lot tracking
+    if (path.startsWith('/api/inventory/lot')) {
+      const mod = await import('../server/api/inventory/lot-tracking.js');
+      return mod.default(req, res);
+    }
+
+    // Inventory cycle scheduler
+    if (path.startsWith('/api/inventory/cycle-scheduler')) {
+      const mod = await import('../server/api/inventory/cycle-scheduler.js');
+      return mod.default(req, res);
+    }
+
+    // Audit logging
+    if (path.startsWith('/api/audit/logs')) {
+      const mod = await import('../server/api/audit/logging.js');
+      return mod.default(req, res);
+    }
+
+    // Warehouse module
+    if (path.startsWith('/api/inventory/warehouse') || path.startsWith('/api/warehouse')) {
+      return warehouseHandler(req, res);
+    }
+
+    // Inventory module
+    if (path.startsWith('/api/inventory/movements')) {
+      return inventoryMovementsHandler(req, res);
+    }
+
+    if (path.startsWith('/api/inventory/reorder-suggestion')) {
+      return reorderSuggestionHandler(req, res);
+    }
+
+    if (path.startsWith('/api/inventory/cycle-counts')) {
+      return cycleCountHandler(req, res);
+    }
+
+    // Analytics module routes
     if (path.startsWith('/api/analytics/metrics')) {
-      await enforceModuleAccess(context, 'analytics');
-      if (method !== 'GET') return respond(res, 405, { success: false, error: 'Method not allowed' });
-      const metrics = await computeMetrics(context);
-      return respond(res, 200, { success: true, data: metrics });
+      return analyticsMetricsHandler(req, res);
     }
 
     if (path.startsWith('/api/analytics/decisions')) {
-      await enforceModuleAccess(context, 'analytics');
-      if (method !== 'GET') return respond(res, 405, { success: false, error: 'Method not allowed' });
-      const decisions = await generateDecisions(context);
-      return respond(res, 200, { success: true, data: decisions });
+      return analyticsDecisionsHandler(req, res);
     }
 
-    // Connectors module
-    if (path.startsWith('/api/connectors/contracts')) {
-      await enforceModuleAccess(context, 'connectors');
-      if (method !== 'POST') return respond(res, 405, { success: false, error: 'Method not allowed' });
-      const validation = await validateContract(context, req.body);
-      return respond(res, 200, { success: true, data: validation });
-    }
+    // Connector routes are not available in this branch.
 
     // 404 - Not found
     return respond(res, 404, {

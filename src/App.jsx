@@ -33,6 +33,7 @@ import Approvals from './pages/Approvals';
 import BarcodeMVP from './pages/Barcode';
 import QCModule from './pages/QC';
 import Analytics from './pages/Analytics';
+import WarehouseDashboard from './pages/WarehouseDashboard';
 
 function App() {
   const location = useLocation();
@@ -58,6 +59,7 @@ function App() {
         <Route path='/inventory' element={<RoleGuard><Inventory /></RoleGuard>} />
         <Route path='/inventory/new' element={<RoleGuard><ItemDetail /></RoleGuard>} />
         <Route path='/inventory/:id' element={<RoleGuard><ItemDetail /></RoleGuard>} />
+        <Route path='/warehouse' element={<RoleGuard><WarehouseDashboard /></RoleGuard>} />
 
         {/* Manufacturing — CEO & Warehouse Head */}
         <Route path='/work-orders' element={<RoleGuard><WorkOrders /></RoleGuard>} />

@@ -50,7 +50,17 @@ export function getFirebaseAdmin() {
   return admin;
 }
 
-export async function verifyBearerToken(authHeader) {
+export async function verifyBearerToken(authHeaderOrReq) {
+  let authHeader = null;
+
+  if (typeof authHeaderOrReq === 'string') {
+    authHeader = authHeaderOrReq;
+  } else if (authHeaderOrReq && typeof authHeaderOrReq.headers === 'object') {
+    authHeader = authHeaderOrReq.headers.authorization || authHeaderOrReq.headers.Authorization || null;
+  } else if (authHeaderOrReq && typeof authHeaderOrReq.authorization === 'string') {
+    authHeader = authHeaderOrReq.authorization;
+  }
+
   if (!authHeader?.startsWith('Bearer ')) return null;
   const token = authHeader.slice(7).trim();
   if (!token) return null;

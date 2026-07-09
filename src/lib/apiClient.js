@@ -147,6 +147,17 @@ export class ApiClient {
     throw new Error(`Unknown warehouse action: ${action}`);
   }
 
+  async inventory(action, payload = null) {
+    if (action === 'movements') {
+      return this.get('/api/inventory/movements', { service: 'inventory' });
+    } else if (action === 'reorder') {
+      return this.post('/api/inventory/reorder-suggestion', payload, { service: 'inventory' });
+    } else if (action === 'cycleCounts') {
+      return this.get('/api/inventory/cycle-counts', { service: 'inventory' });
+    }
+    throw new Error(`Unknown inventory action: ${action}`);
+  }
+
   async analytics(action, payload = null) {
     if (action === 'metrics') {
       return this.get('/api/analytics/metrics', { service: 'analytics' });

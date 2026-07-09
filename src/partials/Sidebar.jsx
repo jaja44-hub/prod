@@ -20,6 +20,7 @@ function Sidebar() {
       items: [
         { to: "/dashboard", label: t('dashboard') },
         { to: "/analytics", label: "Analytics" },
+        { to: "/warehouse", label: "Warehouse" },
         { to: "/inventory", label: t('inventory') },
         { to: "/barcode", label: "Barcode" },
         { to: "/work-orders", label: t('workOrders') },

@@ -1,0 +1,56 @@
+{
+  "audit": {
+    "audit-1783628381883-omgu": {
+      "id": "audit-1783628381883-omgu",
+      "timestamp": "2026-07-09T20:19:41.883Z",
+      "actor": "round7",
+      "action": "persistence-test"
+    }
+  },
+  "snapshots": {
+    "round7-snap-0l17l5": {
+      "id": "round7-snap-0l17l5",
+      "name": "round7-snap",
+      "createdAt": "2026-07-09T20:19:43.159Z",
+      "items": [
+        {
+          "productId": "p1",
+          "qty": 1,
+          "unitCost": 1
+        }
+      ]
+    }
+  },
+  "receipts": {
+    "rcv-bbziyn-1783628383160": {
+      "receiptId": "rcv-bbziyn-1783628383160",
+      "tenantId": "test-tenant",
+      "poId": "po-rt7",
+      "lines": [
+        {
+          "productId": "p1",
+          "qty": 1,
+          "unitCost": 1
+        }
+      ],
+      "receivedAt": "2026-07-09T20:19:43.160Z",
+      "status": "received"
+    }
+  },
+  "batches": {
+    "batch-ofys9l-1783628383161": {
+      "id": "batch-ofys9l-1783628383161",
+      "createdAt": "2026-07-09T20:19:43.161Z",
+      "payments": [
+        {
+          "paymentId": "p-rt7",
+          "amount": 10
+        }
+      ],
+      "opts": {
+        "batchFor": "round7"
+      },
+      "status": "created"
+    }
+  }
+}

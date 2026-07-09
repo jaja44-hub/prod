@@ -23,6 +23,7 @@ const MODULE_ROLES = {
   finance: ['ceo', 'finance_head', 'accountant'],
   crm: ['ceo', 'sales_head', 'sales_manager'],
   hr: ['ceo', 'hr_head'],
+  analytics: ['ceo', 'finance_head', 'sales_head', 'warehouse_head'],
 };
 
 export function getModuleForModel(model) {

@@ -3,13 +3,22 @@
  * Warehouse dashboard component integrating pick/pack/ship workflow APIs.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { getApiClient } from '../lib/apiClient.js';
 
 export function WarehouseDashboard() {
   const [workflowData, setWorkflowData] = useState(null);
+  const [cycleCounts, setCycleCounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const countSummary = useMemo(() => {
+    return cycleCounts.reduce((summary, item) => {
+      const status = item.state || 'unknown';
+      summary[status] = (summary[status] || 0) + 1;
+      return summary;
+    }, {});
+  }, [cycleCounts]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -17,9 +26,13 @@ export function WarehouseDashboard() {
         setLoading(true);
         const client = getApiClient();
 
-        // Fetch warehouse workflow data
-        const workflow = await client.warehouse('workflow');
+        const [workflow, counts] = await Promise.all([
+          client.warehouse('workflow'),
+          client.inventory('cycleCounts'),
+        ]);
+
         setWorkflowData(workflow);
+        setCycleCounts(Array.isArray(counts) ? counts : []);
       } catch (err) {
         setError(err.message || 'Failed to load warehouse data');
       } finally {
@@ -122,6 +135,56 @@ export function WarehouseDashboard() {
                     <span className="quantity">x{movement.quantity}</span>
                   </div>
                 ))}
+            </div>
+          </div>
+
+          <div className="cycle-counts-section">
+            <h2>Cycle Count Inventory</h2>
+
+            <div className="summary-grid">
+              <div className="summary-card">
+                <label>Total Cycle Counts</label>
+                <span>{cycleCounts.length}</span>
+              </div>
+              {Object.entries(countSummary).map(([status, count]) => (
+                <div key={status} className="summary-card">
+                  <label>{status}</label>
+                  <span>{count}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="cycle-counts-table">
+              <h3>Recent Cycle Counts</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Location</th>
+                    <th>Line Count</th>
+                    <th>Updated</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cycleCounts.slice(0, 20).map((count) => (
+                    <tr key={count.id || count.name || Math.random()}>
+                      <td>{count.id || 'N/A'}</td>
+                      <td>{count.name || count.display_name || 'Untitled'}</td>
+                      <td>{count.state || 'unknown'}</td>
+                      <td>{count.location_name || (Array.isArray(count.location_ids) ? count.location_ids.join(', ') : 'N/A')}</td>
+                      <td>{count.line_count ?? (Array.isArray(count.line_ids) ? count.line_ids.length : 'N/A')}</td>
+                      <td>{count.date || count.last_write_date || 'N/A'}</td>
+                    </tr>
+                  ))}
+                  {cycleCounts.length === 0 && (
+                    <tr>
+                      <td colSpan="6">No cycle count data is available.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

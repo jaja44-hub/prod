@@ -1,6 +1,10 @@
 import { verifyBearerToken } from '../lib/firebaseAdmin.js';
 import { enforceModuleAccess } from '../lib/policyOrchestrator.js';
 
+function createId(prefix = 'wf') {
+  return `${prefix}-${Math.random().toString(36).slice(2, 10)}-${Date.now()}`;
+}
+
 export function buildPickPackShipWorkflow(tenantId = 'production') {
   const now = Date.now();
   const picks = [
@@ -52,21 +56,39 @@ export function buildPickPackShipWorkflow(tenantId = 'production') {
     },
   ];
 
-  return { tenantId, picks, packs, shipments };
+  const transfers = [
+    {
+      transferId: 'transfer-101',
+      orderId: 'order-108',
+      productId: 'prod-110',
+      quantity: 30,
+      sourceLocationId: 'WH-A',
+      destinationLocationId: 'WH-B',
+      status: 'pending',
+      tenantId,
+      createdAt: new Date(now - 1000 * 60 * 60 * 2).toISOString(),
+      expectedAt: new Date(now + 1000 * 60 * 60 * 10).toISOString(),
+    },
+  ];
+
+  return { tenantId, picks, packs, shipments, transfers };
 }
 
 export function buildWarehouseSummary(workflow = {}) {
   const picks = Array.isArray(workflow.picks) ? workflow.picks : [];
   const packs = Array.isArray(workflow.packs) ? workflow.packs : [];
   const shipments = Array.isArray(workflow.shipments) ? workflow.shipments : [];
+  const transfers = Array.isArray(workflow.transfers) ? workflow.transfers : [];
 
   return {
     totalPicks: picks.length,
     totalPacks: packs.length,
     totalShipments: shipments.length,
+    totalTransfers: transfers.length,
     readyToPick: picks.filter((item) => item.status === 'ready').length,
     packedCount: packs.filter((item) => item.status === 'packed').length,
     shipmentsInTransit: shipments.filter((item) => item.status === 'in_transit').length,
+    transfersPending: transfers.filter((item) => item.status === 'pending').length,
   };
 }
 
@@ -95,6 +117,26 @@ export function createShipmentRecord(data = {}) {
   };
 }
 
+export function createTransferRecord(data = {}) {
+  return {
+    transferId: data.transferId || createId('transfer'),
+    orderId: data.orderId || null,
+    productId: data.productId || null,
+    quantity: Number(data.quantity || 0),
+    sourceLocationId: data.sourceLocationId || 'WH-A',
+    destinationLocationId: data.destinationLocationId || 'WH-B',
+    status: data.status || 'pending',
+    tenantId: data.tenantId || 'production',
+    createdAt: data.createdAt || new Date().toISOString(),
+    expectedAt: data.expectedAt || new Date(Date.now() + 1000 * 60 * 60 * 12).toISOString(),
+    metadata: data.metadata || null,
+  };
+}
+
+export function buildTransferRecord(data = {}) {
+  return createTransferRecord(data);
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -107,8 +149,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    const authHeader = req.headers.authorization;
-    const decoded = await verifyBearerToken(authHeader);
+    const decoded = await verifyBearerToken(req);
     if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
     await enforceModuleAccess(decoded || {}, 'inventory', 'warehouse');
     const tenantId = decoded?.tenantId || decoded?.tenant_id || 'production';
@@ -121,6 +162,14 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       const payload = req.body || {};
+      if (payload.type === 'transfer' || payload.action === 'transfer') {
+        if (!payload.orderId || !payload.sourceLocationId || !payload.destinationLocationId) {
+          return res.status(400).json({ error: 'Missing orderId, sourceLocationId, or destinationLocationId' });
+        }
+        const transfer = createTransferRecord({ ...payload, tenantId, status: 'pending' });
+        return res.status(201).json({ success: true, tenantId, transfer });
+      }
+
       if (!payload.orderId) {
         return res.status(400).json({ error: 'Missing orderId' });
       }
