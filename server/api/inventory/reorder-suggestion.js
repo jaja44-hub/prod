@@ -62,17 +62,20 @@ export default async function handler(req, res) {
   try {
     const authHeader = req.headers.authorization;
     const decoded = await verifyBearerToken(authHeader);
+    if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
+    await enforceModuleAccess(decoded || {}, 'inventory', 'reorder');
+    const tenantId = decoded?.tenantId || decoded?.tenant_id || 'production';
+    const { productId, currentStock, reorderPoint, moq } = req.body || {};
+    if (!productId) return res.status(400).json({ error: 'Missing productId' });
+
     let stock = Number(currentStock || 0);
-    // try to fetch live stock if not provided
+    // try to fetch live stock if not provided or zero
     if (!stock) {
       const live = await fetchCurrentStockFromOdoo(tenantId, productId);
       if (live !== null) stock = Number(live);
     }
+
     const result = computeReorderSuggestion({ currentStock: Number(stock || 0), reorderPoint: Number(reorderPoint || 10), moq: Number(moq || 10) });
-    const tenantId = decoded?.tenantId || decoded?.tenant_id || 'production';
-    const { productId, currentStock, reorderPoint, moq } = req.body || {};
-    if (!productId) return res.status(400).json({ error: 'Missing productId' });
-    const result = computeReorderSuggestion({ currentStock: Number(currentStock || 0), reorderPoint: Number(reorderPoint || 10), moq: Number(moq || 10) });
     return res.status(200).json({ success: true, productId, tenantId, result });
   } catch (err) {
     console.error('[inventory/reorder-suggestion] error', err?.message || err);
