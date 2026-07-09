@@ -1,11 +1,11 @@
 /**
- * api/client.js
+ * src/lib/apiClient.js
  * Unified API client wrapper for React components.
  * Handles auth, retries, error handling, and correlation IDs.
  */
 
-import { retryWithBackoff, CircuitBreaker, executeWithTimeout, buildRetryConfig } from './connectors/retries.js';
-import { generateCorrelationId, AuditLogger } from './connectors/audit.js';
+import { retryWithBackoff, CircuitBreaker, executeWithTimeout, buildRetryConfig } from '../../server/api/lib/connectors/retries.js';
+import { generateCorrelationId, AuditLogger } from '../../server/api/lib/connectors/audit.js';
 
 export class ApiClient {
   constructor({

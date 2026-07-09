@@ -1,5 +1,5 @@
 /**
- * api/connectors/retries.js
+ * server/api/lib/connectors/retries.js
  * Retry logic, exponential backoff, and circuit breaker patterns.
  */
 
@@ -98,27 +98,13 @@ export function buildRetryConfig(serviceType = 'odoo') {
     odoo: {
       maxAttempts: 3,
       baseDelayMs: 200,
-      timeoutMs: 5000,
-      shouldRetry: (error) => {
-        if (error.code === 'ECONNREFUSED') return true;
-        if (error.code === 'ETIMEDOUT') return true;
-        if (error.message && error.message.includes('temporarily')) return true;
-        return false;
-      },
+      shouldRetry: (error) => error.statusCode >= 500 || error.message.includes('timeout'),
     },
-    firestore: {
-      maxAttempts: 2,
-      baseDelayMs: 100,
-      timeoutMs: 3000,
-      shouldRetry: (error) => error.code === 'UNAVAILABLE' || error.code === 'DEADLINE_EXCEEDED',
-    },
-    github: {
+    api: {
       maxAttempts: 3,
-      baseDelayMs: 300,
-      timeoutMs: 8000,
-      shouldRetry: (error) => error.status === 429 || error.status >= 500,
+      baseDelayMs: 100,
+      shouldRetry: (error) => error.statusCode >= 500,
     },
   };
-
-  return configs[serviceType] || configs.odoo;
+  return configs[serviceType] || configs.api;
 }

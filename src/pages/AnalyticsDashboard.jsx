@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { getApiClient } from '../../api/client.js';
+import { getApiClient } from '../lib/apiClient.js';
 
 export function AnalyticsDashboard() {
   const [metricsData, setMetricsData] = useState(null);
