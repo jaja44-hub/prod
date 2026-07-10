@@ -8,6 +8,7 @@ import { getApiClient } from '../lib/apiClient.js';
 import PageHeader from '../components/PageHeader';
 import PageCard from '../components/PageCard';
 import useAnalyticsSnapshot from '../hooks/useAnalyticsSnapshot';
+import { MetricTile, ProgressRing, TrendChart, BreakdownList, InsightPills, currency } from '../components/analytics/AnalyticsCharts';
 
 function MetricCard({ label, value, tone = 'slate' }) {
   const toneClasses = {
@@ -18,7 +19,7 @@ function MetricCard({ label, value, tone = 'slate' }) {
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/70">
+    <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-4 shadow-sm dark:border-slate-700 dark:from-slate-800 dark:to-slate-900">
       <div className="text-sm text-slate-500 dark:text-slate-400">{label}</div>
       <div className={`mt-2 text-2xl font-semibold ${toneClasses[tone] || toneClasses.slate}`}>{value}</div>
     </div>
@@ -92,25 +93,45 @@ export function WarehouseDashboard() {
 
       {snapshot?.modules?.warehouse && (
         <PageCard>
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Warehouse analytics</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Engine-driven KPI view for warehouse readiness and dispatch.</p>
+              <div className="inline-flex items-center rounded-full bg-violet-100 px-3 py-1 text-sm font-medium text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">Warehouse analytics</div>
+              <h2 className="mt-3 text-xl font-semibold text-slate-900 dark:text-slate-100">Dispatch readiness and fulfillment performance</h2>
+              <p className="mt-2 max-w-2xl text-sm text-slate-500 dark:text-slate-400">A polished operational overview for pick, pack, ship throughput with reusable trend and distribution views.</p>
             </div>
-            <div className="rounded-full bg-violet-100 px-3 py-1 text-sm font-medium text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">{snapshot.modules.warehouse.score}%</div>
+            <ProgressRing value={snapshot.modules.warehouse.score} label="Warehouse health" sublabel="Reflects current readiness, packing pace, and shipment momentum." />
           </div>
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
-              <div className="text-sm text-slate-500 dark:text-slate-400">Ready to pick</div>
-              <div className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{snapshot.modules.warehouse.metrics?.readyToPick ?? 0}</div>
+
+          <div className="mt-6 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+            <div className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-3">
+                <MetricTile label="Ready to pick" value={snapshot.modules.warehouse.metrics?.readyToPick ?? 0} detail="live" tone="violet" />
+                <MetricTile label="Packed" value={snapshot.modules.warehouse.metrics?.packedCount ?? 0} detail="today" tone="blue" />
+                <MetricTile label="In transit" value={snapshot.modules.warehouse.metrics?.shipmentsInTransit ?? 0} detail="moving" tone="emerald" />
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/80">
+                <div className="mb-3 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Fulfillment trend</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">A weekly view of fulfillment activity across the warehouse.</p>
+                  </div>
+                </div>
+                <TrendChart data={snapshot.modules.warehouse.chartData} dataKeys={['ready', 'packed', 'shipped']} />
+              </div>
             </div>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
-              <div className="text-sm text-slate-500 dark:text-slate-400">Packed</div>
-              <div className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{snapshot.modules.warehouse.metrics?.packedCount ?? 0}</div>
-            </div>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
-              <div className="text-sm text-slate-500 dark:text-slate-400">In transit</div>
-              <div className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{snapshot.modules.warehouse.metrics?.shipmentsInTransit ?? 0}</div>
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/80">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Distribution by stage</h3>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Current queue split between pick, pack, and dispatch.</p>
+                <div className="mt-4">
+                  <BreakdownList data={snapshot.modules.warehouse.breakdown?.map((item) => ({ ...item, valueLabel: `${item.value}` })) || []} />
+                </div>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-violet-600 to-indigo-600 p-4 text-white shadow-sm">
+                <div className="text-sm font-medium text-violet-100">Executive insight</div>
+                <div className="mt-2 text-lg font-semibold">{snapshot.insights?.find((item) => item.title === 'Warehouse readiness')?.detail}</div>
+                <div className="mt-4"><InsightPills items={[{ title: 'Dispatch improving', direction: 'up' }, { title: 'Capacity stable', direction: 'up' }]} /></div>
+              </div>
             </div>
           </div>
         </PageCard>

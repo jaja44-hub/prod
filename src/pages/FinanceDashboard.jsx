@@ -8,6 +8,7 @@ import { getApiClient } from '../lib/apiClient.js';
 import PageHeader from '../components/PageHeader';
 import PageCard from '../components/PageCard';
 import useAnalyticsSnapshot from '../hooks/useAnalyticsSnapshot';
+import { MetricTile, ProgressRing, TrendChart, BreakdownList, InsightPills, currency } from '../components/analytics/AnalyticsCharts';
 
 export function FinanceDashboard() {
   const [agingData, setAgingData] = useState(null);
@@ -54,25 +55,45 @@ export function FinanceDashboard() {
 
       {snapshot?.modules?.finance && (
         <PageCard>
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Finance analytics</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Receivables, payables, and margin health for the active tenant.</p>
+              <div className="inline-flex items-center rounded-full bg-violet-100 px-3 py-1 text-sm font-medium text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">Finance analytics</div>
+              <h2 className="mt-3 text-xl font-semibold text-slate-900 dark:text-slate-100">Working capital health and liquidity outlook</h2>
+              <p className="mt-2 max-w-2xl text-sm text-slate-500 dark:text-slate-400">Modern cash-flow intelligence for receivables, payables, and margin visibility using the shared analytics engine.</p>
             </div>
-            <div className="rounded-full bg-violet-100 px-3 py-1 text-sm font-medium text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">{snapshot.modules.finance.score}%</div>
+            <ProgressRing value={snapshot.modules.finance.score} label="Finance health" sublabel="Balances liquidity pressure with operating margin strength." />
           </div>
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
-              <div className="text-sm text-slate-500 dark:text-slate-400">Receivables</div>
-              <div className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{snapshot.modules.finance.metrics?.totalReceivable ?? 0}</div>
+
+          <div className="mt-6 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+            <div className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-3">
+                <MetricTile label="Receivables" value={currency(snapshot.modules.finance.metrics?.totalReceivable ?? 0)} detail="AR" tone="violet" />
+                <MetricTile label="Payables" value={currency(snapshot.modules.finance.metrics?.totalPayable ?? 0)} detail="AP" tone="blue" />
+                <MetricTile label="Margin" value={`${snapshot.modules.finance.metrics?.margin ?? 0}%`} detail="profit" tone="emerald" />
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/80">
+                <div className="mb-3 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Cash-flow trend</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">A simplified month-by-month view of receivables vs payables.</p>
+                  </div>
+                </div>
+                <TrendChart data={snapshot.modules.finance.chartData} dataKeys={['receivable', 'payable']} />
+              </div>
             </div>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
-              <div className="text-sm text-slate-500 dark:text-slate-400">Payables</div>
-              <div className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{snapshot.modules.finance.metrics?.totalPayable ?? 0}</div>
-            </div>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
-              <div className="text-sm text-slate-500 dark:text-slate-400">Margin</div>
-              <div className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{snapshot.modules.finance.metrics?.margin ?? 0}%</div>
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/80">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Account structure</h3>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Current balance composition across core finance buckets.</p>
+                <div className="mt-4">
+                  <BreakdownList data={snapshot.modules.finance.breakdown?.map((item) => ({ ...item, valueLabel: item.name === 'Margin' ? `${item.value}%` : currency(item.value) })) || []} />
+                </div>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-emerald-600 to-cyan-600 p-4 text-white shadow-sm">
+                <div className="text-sm font-medium text-emerald-100">Leadership note</div>
+                <div className="mt-2 text-lg font-semibold">{snapshot.insights?.find((item) => item.title === 'Revenue pulse')?.detail}</div>
+                <div className="mt-4"><InsightPills items={[{ title: 'Collections steady', direction: 'up' }, { title: 'Risk contained', direction: 'up' }]} /></div>
+              </div>
             </div>
           </div>
         </PageCard>
