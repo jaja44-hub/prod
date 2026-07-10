@@ -53,8 +53,8 @@ service cloud.firestore {
 
     // ── TENANTS COLLECTION (super-admin only) ─────────────────────
     match /tenants/{tenantId} {
-      allow read:  if isCEO() && getUserTenantId() == 'default';
-      allow write: if isCEO() && getUserTenantId() == 'default';
+      allow read:  if isAuthenticated() && (getUserTenantId() == tenantId || getUserTenantId() == 'default');
+      allow write: if isCEO() && (getUserTenantId() == tenantId || getUserTenantId() == 'default');
     }
 
     // ── PACKAGES (read-only for authenticated users; seeded by Admin SDK) ─

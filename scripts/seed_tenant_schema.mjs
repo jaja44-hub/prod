@@ -24,6 +24,7 @@ async function upsertProductionTenant(db) {
   const now = new Date().toISOString();
   await docRef.set({
     id,
+    tenantId: id,
     name: 'Production',
     status: 'active',
     planTier: 1,
