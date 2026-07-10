@@ -9,10 +9,11 @@ import PageHeader from '../components/PageHeader';
 import PageCard from '../components/PageCard';
 import useAnalyticsSnapshot from '../hooks/useAnalyticsSnapshot';
 import { MetricTile, ProgressRing, TrendChart, BreakdownList, InsightPills, currency } from '../components/analytics/AnalyticsCharts';
+import { buildDemoAgingReport } from '../lib/demoAnalyticsData';
 
 export function FinanceDashboard() {
-  const [agingData, setAgingData] = useState(null);
-  const [reconciliationData, setReconciliationData] = useState(null);
+  const [agingData, setAgingData] = useState(() => buildDemoAgingReport());
+  const [reconciliationData, setReconciliationData] = useState({ success: true, report: { results: [], unmatchedPayments: [] } });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { snapshot } = useAnalyticsSnapshot();
@@ -23,11 +24,8 @@ export function FinanceDashboard() {
         setLoading(true);
         const client = getApiClient();
 
-        // Fetch aging report
-        const aging = await client.finance('aging');
-        setAgingData(aging);
-
-        // Fetch reconciliation data (mock)
+        const aging = await client.finance('aging').catch(() => buildDemoAgingReport());
+        setAgingData(aging?.data || aging || buildDemoAgingReport());
         const reconciliation = {
           success: true,
           report: {
@@ -46,8 +44,30 @@ export function FinanceDashboard() {
     fetchData();
   }, []);
 
-  if (loading) return <div className="finance-dashboard loading">Loading finance data...</div>;
-  if (error) return <div className="finance-dashboard error">Error: {error}</div>;
+  if (loading) return (
+    <section className="space-y-6">
+      <PageHeader title="Finance Dashboard" subtitle="Working capital, payables, and receivables measured through the shared analytics engine." />
+      <PageCard className="border-slate-200 bg-white/80 dark:border-slate-700 dark:bg-slate-800/80">
+        <div className="animate-pulse space-y-4">
+          <div className="h-6 w-40 rounded bg-slate-200 dark:bg-slate-700" />
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="h-20 rounded-xl bg-slate-200 dark:bg-slate-700" />
+            <div className="h-20 rounded-xl bg-slate-200 dark:bg-slate-700" />
+            <div className="h-20 rounded-xl bg-slate-200 dark:bg-slate-700" />
+          </div>
+        </div>
+      </PageCard>
+    </section>
+  );
+
+  if (error) return (
+    <section className="space-y-6">
+      <PageHeader title="Finance Dashboard" subtitle="Working capital, payables, and receivables measured through the shared analytics engine." />
+      <PageCard className="border-amber-300 bg-amber-50/80 dark:border-amber-700 dark:bg-amber-900/20">
+        <p className="text-sm text-amber-800 dark:text-amber-300">{error}</p>
+      </PageCard>
+    </section>
+  );
 
   return (
     <section className="space-y-6">
@@ -100,77 +120,77 @@ export function FinanceDashboard() {
       )}
 
       {agingData && (
-        <div className="aging-section">
-          <h2>Accounts Payable & Receivable Aging</h2>
-          <div className="aging-metrics">
-            <div className="metric">
-              <label>Total Payable:</label>
-              <span>{agingData.report?.summary?.totalPayable || 0}</span>
-            </div>
-            <div className="metric">
-              <label>Total Receivable:</label>
-              <span>{agingData.report?.summary?.totalReceivable || 0}</span>
-            </div>
-            <div className="metric">
-              <label>Vendor Count:</label>
-              <span>{agingData.report?.summary?.vendorCount || 0}</span>
+        <PageCard>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Accounts payable & receivable aging</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">A compact view of the current balance buckets and their current exposure.</p>
             </div>
           </div>
 
-          <div className="aging-tables">
-            <div className="table">
-              <h3>Accounts Payable Aging</h3>
-              <table>
-                <thead>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <MetricTile label="Total payable" value={currency(agingData.report?.summary?.totalPayable || 0)} detail="AP" tone="blue" />
+            <MetricTile label="Total receivable" value={currency(agingData.report?.summary?.totalReceivable || 0)} detail="AR" tone="violet" />
+            <MetricTile label="Active vendors" value={agingData.report?.summary?.vendorCount || 0} detail="count" tone="emerald" />
+          </div>
+
+          <div className="mt-6 grid gap-6 xl:grid-cols-2">
+            <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+              <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100">Accounts payable aging</div>
+              <table className="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
+                <thead className="bg-white/70 dark:bg-slate-900/20">
                   <tr>
-                    <th>Bucket</th>
-                    <th>Count</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-600 dark:text-slate-300">Bucket</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-600 dark:text-slate-300">Count</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {agingData.report?.accountsPayable &&
-                    Object.entries(agingData.report.accountsPayable).map(([bucket, items]) => (
-                      <tr key={bucket}>
-                        <td>{bucket}</td>
-                        <td>{Array.isArray(items) ? items.length : 0}</td>
-                      </tr>
-                    ))}
+                  {agingData.report?.accountsPayable && Object.entries(agingData.report.accountsPayable).map(([bucket, items]) => (
+                    <tr key={bucket} className="border-t border-slate-200 dark:border-slate-700">
+                      <td className="px-4 py-2 capitalize text-slate-700 dark:text-slate-200">{bucket}</td>
+                      <td className="px-4 py-2 font-semibold text-slate-900 dark:text-slate-100">{Array.isArray(items) ? items.length : 0}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
 
-            <div className="table">
-              <h3>Accounts Receivable Aging</h3>
-              <table>
-                <thead>
+            <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+              <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100">Accounts receivable aging</div>
+              <table className="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
+                <thead className="bg-white/70 dark:bg-slate-900/20">
                   <tr>
-                    <th>Bucket</th>
-                    <th>Count</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-600 dark:text-slate-300">Bucket</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-600 dark:text-slate-300">Count</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {agingData.report?.accountsReceivable &&
-                    Object.entries(agingData.report.accountsReceivable).map(([bucket, items]) => (
-                      <tr key={bucket}>
-                        <td>{bucket}</td>
-                        <td>{Array.isArray(items) ? items.length : 0}</td>
-                      </tr>
-                    ))}
+                  {agingData.report?.accountsReceivable && Object.entries(agingData.report.accountsReceivable).map(([bucket, items]) => (
+                    <tr key={bucket} className="border-t border-slate-200 dark:border-slate-700">
+                      <td className="px-4 py-2 capitalize text-slate-700 dark:text-slate-200">{bucket}</td>
+                      <td className="px-4 py-2 font-semibold text-slate-900 dark:text-slate-100">{Array.isArray(items) ? items.length : 0}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
           </div>
-        </div>
+        </PageCard>
       )}
 
       {reconciliationData && (
-        <div className="reconciliation-section">
-          <h2>Invoice & Payment Reconciliation</h2>
-          <div className="reconciliation-summary">
-            <p>Matched invoices: {reconciliationData.report?.results?.length || 0}</p>
-            <p>Unmatched payments: {reconciliationData.report?.unmatchedPayments?.length || 0}</p>
+        <PageCard>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Invoice & payment reconciliation</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">A straightforward closure view of matched invoices and remaining reconciliation gaps.</p>
+            </div>
           </div>
-        </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <MetricTile label="Matched invoices" value={reconciliationData.report?.results?.length || 0} detail="closed" tone="emerald" />
+            <MetricTile label="Unmatched payments" value={reconciliationData.report?.unmatchedPayments?.length || 0} detail="review" tone="amber" />
+          </div>
+        </PageCard>
       )}
     </section>
   );

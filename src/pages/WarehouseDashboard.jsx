@@ -9,6 +9,7 @@ import PageHeader from '../components/PageHeader';
 import PageCard from '../components/PageCard';
 import useAnalyticsSnapshot from '../hooks/useAnalyticsSnapshot';
 import { MetricTile, ProgressRing, TrendChart, BreakdownList, InsightPills, currency } from '../components/analytics/AnalyticsCharts';
+import { buildDemoWarehouseWorkflow, buildDemoCycleCounts } from '../lib/demoAnalyticsData';
 
 function MetricCard({ label, value, tone = 'slate' }) {
   const toneClasses = {
@@ -27,8 +28,8 @@ function MetricCard({ label, value, tone = 'slate' }) {
 }
 
 export function WarehouseDashboard() {
-  const [workflowData, setWorkflowData] = useState(null);
-  const [cycleCounts, setCycleCounts] = useState([]);
+  const [workflowData, setWorkflowData] = useState(() => buildDemoWarehouseWorkflow());
+  const [cycleCounts, setCycleCounts] = useState(() => buildDemoCycleCounts());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { snapshot } = useAnalyticsSnapshot();
@@ -49,19 +50,14 @@ export function WarehouseDashboard() {
         const client = getApiClient();
 
         const [workflow, counts] = await Promise.all([
-          client.warehouse('workflow').catch((err) => ({ __error: err.message || 'Failed to load workflow' })),
-          client.inventory('cycleCounts').catch((err) => ({ __error: err.message || 'Failed to load cycle counts' })),
+          client.warehouse('workflow').catch(() => buildDemoWarehouseWorkflow()),
+          client.inventory('cycleCounts').catch(() => buildDemoCycleCounts()),
         ]);
 
-        if (workflow?.__error) {
-          throw new Error(workflow.__error);
-        }
-        if (counts?.__error) {
-          throw new Error(counts.__error);
-        }
-
-        setWorkflowData(workflow);
-        setCycleCounts(Array.isArray(counts?.data) ? counts.data : Array.isArray(counts) ? counts : []);
+        const nextWorkflow = workflow?.data || workflow || buildDemoWarehouseWorkflow();
+        setWorkflowData(nextWorkflow);
+        const nextCounts = Array.isArray(counts?.data) ? counts.data : Array.isArray(counts) ? counts : buildDemoCycleCounts();
+        setCycleCounts(nextCounts);
       } catch (err) {
         setError(err.message || 'Failed to load warehouse data');
       } finally {

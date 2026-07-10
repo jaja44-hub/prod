@@ -7,9 +7,16 @@
 import { retryWithBackoff, CircuitBreaker, executeWithTimeout, buildRetryConfig } from '../../server/api/lib/connectors/retries.js';
 import { generateCorrelationId, AuditLogger } from '../../server/api/lib/connectors/audit.js';
 
+function resolveBaseUrl() {
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin;
+  }
+  return 'http://localhost:3000';
+}
+
 export class ApiClient {
   constructor({
-    baseUrl = 'http://localhost:3000',
+    baseUrl = resolveBaseUrl(),
     authToken = null,
     tenantId = 'production',
     retryConfig = {},
