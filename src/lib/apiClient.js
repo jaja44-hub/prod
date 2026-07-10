@@ -83,7 +83,29 @@ export class ApiClient {
         throw error;
       }
 
-      return response.json();
+      const contentType = response.headers?.get?.('content-type') || '';
+      const text = await response.text();
+
+      if (!text) {
+        return {};
+      }
+
+      if (!contentType.includes('application/json') && !contentType.includes('+json')) {
+        const fallback = {
+          __rawText: text,
+          __parseError: 'HTML or non-JSON response',
+        };
+        return fallback;
+      }
+
+      try {
+        return JSON.parse(text);
+      } catch (parseError) {
+        return {
+          __rawText: text,
+          __parseError: parseError.message || 'Invalid JSON response',
+        };
+      }
     };
 
     try {

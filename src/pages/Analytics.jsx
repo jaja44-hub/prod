@@ -1,81 +1,69 @@
 import React from 'react';
-import { useLang } from '../context/LangContext';
 import PageHeader from '../components/PageHeader';
 import PageCard from '../components/PageCard';
 
+const insightCards = [
+  { label: 'OEE', value: '84.5%', delta: '+2.1% vs last month', tone: 'violet' },
+  { label: 'Inventory Turnover', value: '4.2x', delta: '+0.3x vs last month', tone: 'blue' },
+  { label: 'Fulfillment Rate', value: '98.1%', delta: 'Stable across the week', tone: 'emerald' },
+  { label: 'Supply Risk', value: 'Low', delta: 'No major disruptions forecast', tone: 'slate' },
+];
+
+const weeklyOutput = [45, 52, 38, 65, 59, 80, 71];
+const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
 export default function Analytics() {
-  const { t } = useLang();
-
-  // Mock Data representing aggregated metrics from Odoo
-  const metrics = {
-    oee: 84.5, // Overall Equipment Effectiveness
-    stockTurnover: 4.2,
-    fulfillmentRate: 98.1,
-    predictiveRisk: 'Low'
-  };
-
   return (
-    <section>
+    <section className="space-y-6">
       <PageHeader
         title="Operational Analytics"
-        subtitle="Aggregated performance and predictive metrics (Phase 6 Preview)."
+        subtitle="Executive-grade performance signals for warehouse, procurement, and fulfillment teams."
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <PageCard>
-          <div className="text-gray-500 dark:text-gray-400 text-sm mb-1">OEE (Overall Equip. Effectiveness)</div>
-          <div className="text-3xl font-bold text-violet-600 dark:text-violet-400">{metrics.oee}%</div>
-          <div className="text-xs text-green-500 mt-2">↑ 2.1% from last month</div>
-        </PageCard>
-        
-        <PageCard>
-          <div className="text-gray-500 dark:text-gray-400 text-sm mb-1">Stock Turnover Ratio</div>
-          <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">{metrics.stockTurnover}x</div>
-          <div className="text-xs text-green-500 mt-2">↑ 0.3x from last month</div>
-        </PageCard>
-
-        <PageCard>
-          <div className="text-gray-500 dark:text-gray-400 text-sm mb-1">Order Fulfillment Rate</div>
-          <div className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">{metrics.fulfillmentRate}%</div>
-          <div className="text-xs text-gray-400 dark:text-gray-500 mt-2">Stable</div>
-        </PageCard>
-
-        <PageCard>
-          <div className="text-gray-500 dark:text-gray-400 text-sm mb-1">Predictive Supply Risk</div>
-          <div className="text-3xl font-bold text-green-600 dark:text-green-400">{metrics.predictiveRisk}</div>
-          <div className="text-xs text-gray-400 dark:text-gray-500 mt-2">No disruptions forecasted</div>
-        </PageCard>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {insightCards.map((card) => (
+          <PageCard key={card.label}>
+            <div className="text-sm text-slate-500 dark:text-slate-400">{card.label}</div>
+            <div className="mt-3 text-3xl font-semibold text-slate-900 dark:text-slate-100">{card.value}</div>
+            <div className="mt-2 text-sm text-emerald-600 dark:text-emerald-400">{card.delta}</div>
+          </PageCard>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <PageCard>
-          <h2 className="font-semibold mb-4 text-gray-800 dark:text-gray-200">Production Output (Last 7 Days)</h2>
-          <div className="h-48 flex items-end gap-2 justify-between">
-            {[45, 52, 38, 65, 59, 80, 71].map((val, idx) => (
-              <div key={idx} className="w-full bg-violet-200 dark:bg-violet-900/45 rounded-t relative group h-full flex flex-col justify-end">
-                <div 
-                  className="w-full bg-violet-500 dark:bg-violet-600 rounded-t transition-all" 
-                  style={{ height: `${(val / 80) * 100}%` }}
-                ></div>
-                <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-                  {val}
-                </div>
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Production output</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">A weekly pulse of throughput and demand pressure.</p>
+            </div>
+            <div className="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">Last 7 days</div>
+          </div>
+          <div className="flex h-56 items-end gap-2">
+            {weeklyOutput.map((value, idx) => (
+              <div key={weekDays[idx]} className="flex h-full w-full flex-col justify-end">
+                <div className="rounded-t-xl bg-violet-500/85" style={{ height: `${(value / 80) * 100}%` }} />
+                <div className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">{weekDays[idx]}</div>
               </div>
             ))}
           </div>
-          <div className="flex justify-between mt-2 text-xs text-gray-500">
-            <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
-          </div>
         </PageCard>
 
         <PageCard>
-          <h2 className="font-semibold mb-4 text-gray-850 dark:text-gray-205">Predictive Analytics Spike</h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            This module integrates AI-driven supply chain forecasting, demand pattern recognition, and preventive maintenance triggers.
-            Currently stubbed for Phase 6 rollout.
-          </p>
-          <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-250 dark:border-yellow-700/50 rounded-lg text-yellow-800 dark:text-yellow-500 text-sm">
-            <strong>Active Spike:</strong> Evaluating Prophet and LSTM models against historical Odoo MRP data to predict machine downtime.
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Predictive guidance</h2>
+          <div className="mt-4 space-y-3">
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
+              <div className="font-semibold">Demand spike watch</div>
+              <div className="mt-1">Forecasting shows a short-term uplift in fast-moving SKU demand next week.</div>
+            </div>
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300">
+              <div className="font-semibold">Maintenance signal</div>
+              <div className="mt-1">Preventive planning is aligned with the next two scheduled maintenance windows.</div>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-300">
+              <div className="font-semibold">Procurement recommendation</div>
+              <div className="mt-1">Replenishment should remain conservative until the warehouse backlog is cleared.</div>
+            </div>
           </div>
         </PageCard>
       </div>

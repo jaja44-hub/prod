@@ -6,7 +6,8 @@ const scriptsToRun = [
   'test_module_registry.mjs',
   'test_event_bus.mjs',
   'test_tenant_domain.mjs',
-  'test_odoo_query.mjs'
+  'test_odoo_query.mjs',
+  'test_api_client_fallback.mjs'
 ];
 
 let failed = false;
