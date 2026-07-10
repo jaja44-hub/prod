@@ -7,19 +7,12 @@ import { db } from '../config/firebase';
 import { setActiveTenant } from '../services/ServiceGateway';
 import { fetchEnabledTenantModules } from '../lib/tenantSchema';
 import { initApiClient, getApiClient } from '../lib/apiClient';
+import { buildProfileFromToken } from '../lib/authProfile';
 
 const AuthContext = createContext(null);
 
 async function profileFromToken(user) {
-  const tokenResult = await user.getIdTokenResult();
-  return {
-    uid: user.uid,
-    email: user.email,
-    name: user.displayName || user.email,
-    role: tokenResult.claims?.role || 'viewer',
-    tenantId: tokenResult.claims?.tenantId || 'production',
-    tier: tokenResult.claims?.tier ?? 1,
-  };
+  return buildProfileFromToken(user, { forceRefresh: true });
 }
 
 async function loadUserProfile(user) {
@@ -81,8 +74,8 @@ export function AuthProvider({ children }) {
 
       setCurrentUser(user);
       try {
-        // Get ID token and initialize API client with Bearer token
-        const idToken = await user.getIdToken();
+        // Get a fresh ID token and initialize the API client with the latest claims
+        const idToken = await user.getIdToken(true);
         const profile = await loadUserProfile(user);
         
         // Initialize API client with token and tenant
@@ -97,20 +90,23 @@ export function AuthProvider({ children }) {
         setTenantConfig(null);
         if (profile?.tenantId) {
           setActiveTenant(profile.tenantId);
-          
-          if (db) {
+
+          const canReadTenantConfig = ['ceo', 'platform_admin'].includes(profile.role) || profile.tenantId === 'default';
+          if (db && canReadTenantConfig) {
             getDoc(doc(db, 'tenants', profile.tenantId))
               .then((snap) => {
                 if (snap.exists()) {
                   setTenantConfig(snap.data());
                 } else {
-                  setTenantConfig({ complianceProfile: 'global_flat' }); // safe fallback
+                  setTenantConfig({ complianceProfile: 'global_flat' });
                 }
               })
               .catch((err) => {
                 console.warn('AuthContext: failed to load tenant config', err);
                 setTenantConfig({ complianceProfile: 'global_flat' });
               });
+          } else {
+            setTenantConfig({ complianceProfile: 'global_flat' });
           }
 
           fetchEnabledTenantModules(profile.tenantId)

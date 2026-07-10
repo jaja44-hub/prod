@@ -16,7 +16,10 @@ export async function fetchEnabledTenantModules(tenantId) {
       .filter((moduleId) => typeof moduleId === 'string');
     return moduleIds;
   } catch (err) {
-    console.warn('[tenantSchema] fetchEnabledTenantModules failed:', err?.message || err);
+    const code = err?.code || '';
+    if (code !== 'permission-denied') {
+      console.warn('[tenantSchema] fetchEnabledTenantModules failed:', err?.message || err);
+    }
     return null;
   }
 }
