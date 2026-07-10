@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
 import PageCard from '../components/PageCard';
-import { getApiClient } from '../lib/apiClient';
+import useAnalyticsSnapshot from '../hooks/useAnalyticsSnapshot';
+import { TrendChart, BreakdownList, MetricTile, ProgressRing, currency } from '../components/analytics/AnalyticsCharts';
 
 function formatCurrency(value) {
   return new Intl.NumberFormat('en-ET', {
@@ -18,28 +19,7 @@ function formatMetric(value) {
 
 export default function Analytics() {
   const { userProfile } = useAuth();
-  const [snapshot, setSnapshot] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const fetchAnalytics = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const client = getApiClient();
-        const response = await client.analytics('engine');
-        const payload = response?.data || response;
-        setSnapshot(payload);
-      } catch (err) {
-        setError(err.message || 'Failed to load analytics snapshot');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAnalytics();
-  }, []);
+  const { snapshot, loading, error } = useAnalyticsSnapshot();
 
   const summaryCards = useMemo(() => {
     if (!snapshot?.summary) return [];
@@ -61,6 +41,11 @@ export default function Analytics() {
       metrics: module.metrics || {},
     }));
   }, [snapshot]);
+
+  const financeModule = snapshot?.modules?.finance;
+  const warehouseModule = snapshot?.modules?.warehouse;
+  const salesChartData = snapshot?.modules?.sales?.chartData || [];
+  const insightItems = (snapshot?.insights || []).map((insight) => ({ title: insight.title, direction: insight.severity === 'positive' ? 'up' : 'down' }));
 
   return (
     <section className="space-y-6">
@@ -130,21 +115,33 @@ export default function Analytics() {
               </div>
             </PageCard>
 
-            <PageCard>
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Operational insights</h2>
-              <div className="mt-4 space-y-3">
-                {(snapshot.insights || []).map((insight) => (
-                  <div key={insight.title} className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-300">
-                    <div className="font-semibold text-slate-900 dark:text-slate-100">{insight.title}</div>
-                    <div className="mt-1">{insight.detail}</div>
+            <div className="space-y-4">
+              <PageCard>
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <div className="inline-flex items-center rounded-full bg-violet-100 px-3 py-1 text-sm font-medium text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">Executive view</div>
+                    <h2 className="mt-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Operational insights</h2>
                   </div>
-                ))}
-              </div>
-              <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300">
-                <div className="font-semibold">Finance pulse</div>
-                <div className="mt-1">Receivables {formatCurrency(snapshot.summary?.totalReceivable || 0)} · Payables {formatCurrency(snapshot.summary?.totalPayable || 0)}</div>
-              </div>
-            </PageCard>
+                  <ProgressRing value={warehouseModule?.score ?? 0} label="Warehouse health" sublabel="Rounded view of stock movement and dispatch readiness." />
+                </div>
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  <MetricTile label="Receivables" value={currency(financeModule?.metrics?.totalReceivable ?? 0)} detail="AR" tone="violet" />
+                  <MetricTile label="Payables" value={currency(financeModule?.metrics?.totalPayable ?? 0)} detail="AP" tone="blue" />
+                </div>
+                <div className="mt-4 rounded-2xl border border-slate-200 bg-white/70 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+                  <div className="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-100">Sales momentum</div>
+                  <TrendChart data={salesChartData} dataKeys={['value']} />
+                </div>
+              </PageCard>
+
+              <PageCard>
+                <div className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Snapshot highlights</div>
+                <BreakdownList data={(snapshot?.modules?.warehouse?.breakdown || []).map((item) => ({ ...item, valueLabel: `${item.value}` }))} />
+                <div className="mt-4">
+                  <InsightPills items={insightItems} />
+                </div>
+              </PageCard>
+            </div>
           </div>
         </>
       )}

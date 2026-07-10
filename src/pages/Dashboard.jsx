@@ -6,6 +6,7 @@ import PageCard from '../components/PageCard';
 import ModuleActivityFeed from '../components/ModuleActivityFeed';
 import Skeleton from '../components/Skeleton';
 import useAnalyticsSnapshot from '../hooks/useAnalyticsSnapshot';
+import { TrendChart, BreakdownList, MetricTile, ProgressRing, currency } from '../components/analytics/AnalyticsCharts';
 
 function formatCurrency(value) {
   return new Intl.NumberFormat('en-ET', { style: 'currency', currency: 'ETB', maximumFractionDigits: 0 }).format(Number(value || 0));
@@ -29,6 +30,19 @@ export default function Dashboard() {
   const moduleCards = useMemo(() => {
     if (!snapshot?.modules) return [];
     return Object.entries(snapshot.modules).map(([key, module]) => ({ key, name: module.name || key, score: module.score || 0, metrics: module.metrics || {} }));
+  }, [snapshot]);
+
+  const financeModule = snapshot?.modules?.finance;
+  const warehouseModule = snapshot?.modules?.warehouse;
+  const trendData = snapshot?.modules?.sales?.chartData || [];
+  const moduleBreakdown = useMemo(() => {
+    if (!snapshot?.modules) return [];
+    return Object.entries(snapshot.modules).map(([key, module]) => ({
+      name: module.name || key,
+      value: module.score || 0,
+      color: ['#7c3aed', '#0ea5e9', '#f59e0b', '#10b981'][Object.keys(snapshot.modules).indexOf(key) % 4],
+      valueLabel: `${module.score || 0}%`,
+    }));
   }, [snapshot]);
 
   if (authLoading || loading) {
@@ -65,7 +79,7 @@ export default function Dashboard() {
             ))}
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+          <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
             <PageCard>
               <div className="mb-4">
                 <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Command center analytics</h2>
@@ -89,23 +103,30 @@ export default function Dashboard() {
               </div>
             </PageCard>
 
-            <PageCard>
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">CEO control surface</h2>
-              <div className="mt-4 space-y-3">
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-300">
-                  <div className="font-semibold">Broadcast message</div>
-                  <div className="mt-1">Send operational directives to module leaders and field teams.</div>
+            <div className="space-y-4">
+              <PageCard>
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <div className="inline-flex items-center rounded-full bg-violet-100 px-3 py-1 text-sm font-medium text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">Operational intelligence</div>
+                    <h2 className="mt-3 text-lg font-semibold text-slate-900 dark:text-slate-100">CEO control surface</h2>
+                  </div>
+                  <ProgressRing value={warehouseModule?.score ?? 0} label="Warehouse readiness" sublabel="Live operational health for dispatch and stock movement." />
                 </div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-300">
-                  <div className="font-semibold">Escalation rules</div>
-                  <div className="mt-1">Set thresholds for finance, warehouse, and sales exceptions.</div>
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  <MetricTile label="Finance score" value={`${financeModule?.score ?? 0}%`} detail="finance" tone="emerald" />
+                  <MetricTile label="Warehouse score" value={`${warehouseModule?.score ?? 0}%`} detail="warehouse" tone="violet" />
                 </div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-300">
-                  <div className="font-semibold">Operator overview</div>
-                  <div className="mt-1">Review current module activity and priority actions from one place.</div>
+                <div className="mt-4 rounded-2xl border border-slate-200 bg-white/70 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+                  <div className="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-100">Performance trend</div>
+                  <TrendChart data={trendData} dataKeys={['value']} />
                 </div>
-              </div>
-            </PageCard>
+              </PageCard>
+
+              <PageCard>
+                <div className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Module health breakdown</div>
+                <BreakdownList data={moduleBreakdown} />
+              </PageCard>
+            </div>
           </div>
         </>
       )}

@@ -14,10 +14,13 @@ import DataTable from '../components/DataTable';
 import StateBadge from '../components/StateBadge';
 import BackendStatusBanner from '../components/BackendStatusBanner';
 import { formatEtb } from '../lib/formatEtb';
+import useAnalyticsSnapshot from '../hooks/useAnalyticsSnapshot';
+import { MetricTile, TrendChart, BreakdownList, InsightPills, currency } from '../components/analytics/AnalyticsCharts';
 
 export default function Accounts() {
   const { t } = useLang();
   const { currentUser, loading: authLoading, tenantConfig } = useAuth();
+  const { snapshot: analyticsSnapshot } = useAnalyticsSnapshot();
   const isET = tenantConfig?.complianceProfile === 'ethiopia_primary';
   const [activeTab, setActiveTab] = useState('accounts'); // 'accounts', 'journals', 'payments'
   const [accounts, setAccounts] = useState([]);
@@ -103,6 +106,40 @@ export default function Accounts() {
         title={t('finance')}
         subtitle={t('financeDescription')}
       />
+
+      <PageCard className="mb-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <div className="inline-flex items-center rounded-full bg-violet-100 px-3 py-1 text-sm font-medium text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">Finance analytics</div>
+            <h2 className="mt-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Cash-flow pulse and account structure</h2>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">A chart-backed view of receivables, payables, and margin health for the active tenant.</p>
+          </div>
+        </div>
+        <div className="mt-6 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+          <div className="space-y-4">
+            <div className="grid gap-3 md:grid-cols-3">
+              <MetricTile label="Receivables" value={currency(analyticsSnapshot?.modules?.finance?.metrics?.totalReceivable ?? 0)} detail="AR" tone="violet" />
+              <MetricTile label="Payables" value={currency(analyticsSnapshot?.modules?.finance?.metrics?.totalPayable ?? 0)} detail="AP" tone="blue" />
+              <MetricTile label="Margin" value={`${analyticsSnapshot?.modules?.finance?.metrics?.margin ?? 0}%`} detail="profit" tone="emerald" />
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/80">
+              <div className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Cash-flow trend</div>
+              <TrendChart data={analyticsSnapshot?.modules?.finance?.chartData || []} dataKeys={['receivable', 'payable']} />
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/80">
+              <div className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Account structure</div>
+              <BreakdownList data={(analyticsSnapshot?.modules?.finance?.breakdown || []).map((item) => ({ ...item, valueLabel: item.name === 'Margin' ? `${item.value}%` : currency(item.value) }))} />
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-emerald-600 to-cyan-600 p-4 text-white shadow-sm">
+              <div className="text-sm font-medium text-emerald-100">Leadership note</div>
+              <div className="mt-2 text-lg font-semibold">{analyticsSnapshot?.insights?.find((item) => item.title === 'Revenue pulse')?.detail || 'Collections remain steady and risk remains contained.'}</div>
+              <div className="mt-4"><InsightPills items={[{ title: 'Collections steady', direction: 'up' }, { title: 'Risk contained', direction: 'up' }]} /></div>
+            </div>
+          </div>
+        </div>
+      </PageCard>
 
       <PageCard>
         {/* Navigation Tabs */}

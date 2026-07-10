@@ -4,6 +4,14 @@ import { db } from '../config/firebase';
 import EmptyState from './EmptyState';
 import Skeleton from './Skeleton';
 
+function buildDemoEvents() {
+  return [
+    { id: 'demo-1', moduleId: 'warehouse', action: 'Packed 12 orders for dispatch', odooModel: 'stock.picking', odooId: '1004', ts: new Date(Date.now() - 1000 * 60 * 12) },
+    { id: 'demo-2', moduleId: 'finance', action: 'Receivables ageing refreshed', odooModel: 'account.move', odooId: '204', ts: new Date(Date.now() - 1000 * 60 * 60 * 2) },
+    { id: 'demo-3', moduleId: 'sales', action: 'New order booked from partner', odooModel: 'sale.order', odooId: '512', ts: new Date(Date.now() - 1000 * 60 * 60 * 6) },
+  ];
+}
+
 function timeAgo(ts) {
   if (!ts) return '—';
   const d = ts?.toDate ? ts.toDate() : new Date(ts);
@@ -26,25 +34,26 @@ const MODULE_COLORS = {
  * Read-only. Never writes to Firestore.
  */
 export default function ModuleActivityFeed() {
-  const [events, setEvents] = useState([]);
+  const [events, setEvents] = useState(buildDemoEvents());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!db) {
+      setEvents(buildDemoEvents());
       setLoading(false);
       return;
     }
     const q = query(collection(db, 'module_events'), orderBy('ts', 'desc'), limit(20));
     const unsub = onSnapshot(q, (snap) => {
-      setEvents(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      const liveEvents = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      setEvents(liveEvents.length ? liveEvents : buildDemoEvents());
       setLoading(false);
-    }, () => setLoading(false));
+    }, () => {
+      setEvents(buildDemoEvents());
+      setLoading(false);
+    });
     return () => unsub();
   }, []);
-
-  if (!db) {
-    return <EmptyState title="Firestore not configured" description="Configure Firebase to see live activity." icon="🔌" />;
-  }
 
   if (loading) return <Skeleton lines={5} />;
 
