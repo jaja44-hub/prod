@@ -10,6 +10,7 @@ import DataTable from '../components/DataTable';
 import BackendStatusBanner from '../components/BackendStatusBanner';
 import { formatEtb } from '../lib/formatEtb';
 import { buildInventoryInsights } from '../lib/inventoryDepth';
+import useAnalyticsSnapshot from '../hooks/useAnalyticsSnapshot';
 
 export default function Inventory() {
   const { t } = useLang();
@@ -23,6 +24,7 @@ export default function Inventory() {
   const [endReached, setEndReached] = useState(true);
   const [showValue, setShowValue] = useState(false);
   const [inventorySummary, setInventorySummary] = useState(null);
+  const { snapshot } = useAnalyticsSnapshot();
 
   const normalizeErrorMessage = (err) => {
     const raw = err?.response?.data?.error || err?.message || t('error');
@@ -106,6 +108,32 @@ export default function Inventory() {
           </button>
         }
       />
+
+      {snapshot?.modules?.warehouse && (
+        <PageCard>
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Inventory analytics</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Current availability and stock position from the shared analytics engine.</p>
+            </div>
+            <div className="rounded-full bg-violet-100 px-3 py-1 text-sm font-medium text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">{snapshot.modules.warehouse.score}%</div>
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+              <div className="text-sm text-slate-500 dark:text-slate-400">Ready to pick</div>
+              <div className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{snapshot.modules.warehouse.metrics?.readyToPick ?? 0}</div>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+              <div className="text-sm text-slate-500 dark:text-slate-400">Packed</div>
+              <div className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{snapshot.modules.warehouse.metrics?.packedCount ?? 0}</div>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+              <div className="text-sm text-slate-500 dark:text-slate-400">In transit</div>
+              <div className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{snapshot.modules.warehouse.metrics?.shipmentsInTransit ?? 0}</div>
+            </div>
+          </div>
+        </PageCard>
+      )}
 
       <PageCard>
         <ListFilterBar

@@ -5,12 +5,16 @@
 
 import { useEffect, useState } from 'react';
 import { getApiClient } from '../lib/apiClient.js';
+import PageHeader from '../components/PageHeader';
+import PageCard from '../components/PageCard';
+import useAnalyticsSnapshot from '../hooks/useAnalyticsSnapshot';
 
 export function FinanceDashboard() {
   const [agingData, setAgingData] = useState(null);
   const [reconciliationData, setReconciliationData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { snapshot } = useAnalyticsSnapshot();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -45,8 +49,34 @@ export function FinanceDashboard() {
   if (error) return <div className="finance-dashboard error">Error: {error}</div>;
 
   return (
-    <div className="finance-dashboard">
-      <h1>Finance Dashboard</h1>
+    <section className="space-y-6">
+      <PageHeader title="Finance Dashboard" subtitle="Working capital, payables, and receivables measured through the shared analytics engine." />
+
+      {snapshot?.modules?.finance && (
+        <PageCard>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Finance analytics</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Receivables, payables, and margin health for the active tenant.</p>
+            </div>
+            <div className="rounded-full bg-violet-100 px-3 py-1 text-sm font-medium text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">{snapshot.modules.finance.score}%</div>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+              <div className="text-sm text-slate-500 dark:text-slate-400">Receivables</div>
+              <div className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{snapshot.modules.finance.metrics?.totalReceivable ?? 0}</div>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+              <div className="text-sm text-slate-500 dark:text-slate-400">Payables</div>
+              <div className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{snapshot.modules.finance.metrics?.totalPayable ?? 0}</div>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+              <div className="text-sm text-slate-500 dark:text-slate-400">Margin</div>
+              <div className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{snapshot.modules.finance.metrics?.margin ?? 0}%</div>
+            </div>
+          </div>
+        </PageCard>
+      )}
 
       {agingData && (
         <div className="aging-section">
@@ -121,7 +151,7 @@ export function FinanceDashboard() {
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }
 

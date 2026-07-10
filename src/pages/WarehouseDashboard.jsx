@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { getApiClient } from '../lib/apiClient.js';
 import PageHeader from '../components/PageHeader';
 import PageCard from '../components/PageCard';
+import useAnalyticsSnapshot from '../hooks/useAnalyticsSnapshot';
 
 function MetricCard({ label, value, tone = 'slate' }) {
   const toneClasses = {
@@ -29,6 +30,7 @@ export function WarehouseDashboard() {
   const [cycleCounts, setCycleCounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { snapshot } = useAnalyticsSnapshot();
 
   const countSummary = useMemo(() => {
     return cycleCounts.reduce((summary, item) => {
@@ -87,6 +89,32 @@ export function WarehouseDashboard() {
         <MetricCard label="Packing" value={workflowReport?.summary?.packingCount || workflowData?.summary?.totalPacks || 0} tone="slate" />
         <MetricCard label="Shipped" value={workflowReport?.summary?.shippedCount || workflowData?.summary?.totalShipments || 0} tone="green" />
       </div>
+
+      {snapshot?.modules?.warehouse && (
+        <PageCard>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Warehouse analytics</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Engine-driven KPI view for warehouse readiness and dispatch.</p>
+            </div>
+            <div className="rounded-full bg-violet-100 px-3 py-1 text-sm font-medium text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">{snapshot.modules.warehouse.score}%</div>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+              <div className="text-sm text-slate-500 dark:text-slate-400">Ready to pick</div>
+              <div className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{snapshot.modules.warehouse.metrics?.readyToPick ?? 0}</div>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+              <div className="text-sm text-slate-500 dark:text-slate-400">Packed</div>
+              <div className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{snapshot.modules.warehouse.metrics?.packedCount ?? 0}</div>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+              <div className="text-sm text-slate-500 dark:text-slate-400">In transit</div>
+              <div className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{snapshot.modules.warehouse.metrics?.shipmentsInTransit ?? 0}</div>
+            </div>
+          </div>
+        </PageCard>
+      )}
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <PageCard>

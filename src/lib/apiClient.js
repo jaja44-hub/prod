@@ -189,6 +189,8 @@ export class ApiClient {
       return this.get('/api/analytics/decisions', { service: 'analytics' });
     } else if (action === 'budget_analysis') {
       return this.post('/api/analytics/decisions', { type: 'budget_analysis', payload }, { service: 'analytics' });
+    } else if (action === 'engine') {
+      return this.get('/api/analytics/engine', { service: 'analytics' });
     }
     throw new Error(`Unknown analytics action: ${action}`);
   }

@@ -5,12 +5,16 @@
 
 import { useEffect, useState } from 'react';
 import { getApiClient } from '../lib/apiClient.js';
+import PageHeader from '../components/PageHeader';
+import PageCard from '../components/PageCard';
+import useAnalyticsSnapshot from '../hooks/useAnalyticsSnapshot';
 
 export function CRMDashboard() {
   const [pipelineData, setPipelineData] = useState(null);
   const [activityData, setActivityData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { snapshot } = useAnalyticsSnapshot();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -39,8 +43,34 @@ export function CRMDashboard() {
   if (error) return <div className="crm-dashboard error">Error: {error}</div>;
 
   return (
-    <div className="crm-dashboard">
-      <h1>CRM Dashboard</h1>
+    <section className="space-y-6">
+      <PageHeader title="CRM Dashboard" subtitle="Pipeline, activity, and conversion health from the shared analytics engine." />
+
+      {snapshot?.modules?.crm && (
+        <PageCard>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">CRM analytics</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Signals for lead volume, opportunity quality, and revenue momentum.</p>
+            </div>
+            <div className="rounded-full bg-violet-100 px-3 py-1 text-sm font-medium text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">{snapshot.modules.crm.score}%</div>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+              <div className="text-sm text-slate-500 dark:text-slate-400">Leads</div>
+              <div className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{snapshot.modules.crm.metrics?.leads ?? 0}</div>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+              <div className="text-sm text-slate-500 dark:text-slate-400">Opportunities</div>
+              <div className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{snapshot.modules.crm.metrics?.opportunities ?? 0}</div>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+              <div className="text-sm text-slate-500 dark:text-slate-400">Pipeline value</div>
+              <div className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{snapshot.modules.crm.metrics?.pipelineValue ?? 0}</div>
+            </div>
+          </div>
+        </PageCard>
+      )}
 
       {pipelineData && (
         <div className="pipeline-section">
@@ -128,7 +158,7 @@ export function CRMDashboard() {
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }
 

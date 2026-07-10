@@ -7,7 +7,8 @@ const scriptsToRun = [
   'test_event_bus.mjs',
   'test_tenant_domain.mjs',
   'test_odoo_query.mjs',
-  'test_api_client_fallback.mjs'
+  'test_api_client_fallback.mjs',
+  'test_analytics_engine.mjs'
 ];
 
 let failed = false;

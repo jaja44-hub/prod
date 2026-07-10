@@ -24,6 +24,7 @@ import cycleCountHandler from '../server/api/inventory/cycle-counts.js';
 // Analytics handlers
 import analyticsMetricsHandler from '../server/api/analytics/metrics.js';
 import analyticsDecisionsHandler from '../server/api/analytics/decisions.js';
+import analyticsEngineHandler from '../server/api/analytics/engine.js';
 
 // Connectors handlers
 // Connector routes are not implemented in this branch; placeholder routing is omitted.
@@ -199,6 +200,10 @@ export default async function handler(req, res) {
 
     if (path.startsWith('/api/analytics/decisions')) {
       return analyticsDecisionsHandler(req, res);
+    }
+
+    if (path.startsWith('/api/analytics/engine')) {
+      return analyticsEngineHandler(req, res);
     }
 
     // Connector routes are not available in this branch.
