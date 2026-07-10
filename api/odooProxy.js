@@ -27,6 +27,14 @@ const ALLOWED_MODELS = new Set([
   'mrp.production',
 ]);
 
+const READ_METHODS = new Set(['search_read', 'search', 'read', 'name_search']);
+
+export function shouldUseEmptyReadFallback(method, decoded = {}) {
+  if (!READ_METHODS.has(method)) return false;
+  const role = decoded?.role || 'viewer';
+  return !['ceo', 'platform_admin'].includes(role);
+}
+
 // Helper to create an XML-RPC client pointed at the right Odoo path
 const getClient = (path, customUrl = null) => {
   const odooUrl = customUrl || process.env.ODOO_URL || '';
@@ -72,7 +80,11 @@ export default async function handler(req, res) {
   }
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed. Use POST.' });
+    return res.status(200).json({
+      success: true,
+      data: [],
+      meta: { note: 'Use POST with an Odoo payload for ERP access.' },
+    });
   }
 
   try {
@@ -117,6 +129,20 @@ export default async function handler(req, res) {
       try {
         await enforceModuleAccess(decoded || {}, moduleId, 'odoo_proxy');
       } catch (e) {
+        if (shouldUseEmptyReadFallback(method, decoded || {})) {
+          return res.status(200).json({
+            success: true,
+            data: [],
+            meta: {
+              tenantId,
+              role,
+              uid,
+              moduleId,
+              accessDenied: true,
+              fallback: true,
+            },
+          });
+        }
         return res.status(403).json({ error: `Module access denied for ${moduleId}` });
       }
     }
@@ -125,7 +151,6 @@ export default async function handler(req, res) {
     // For read/query methods, merge tenant domain terms from the server-side
     // tenant map (TENANT_ODOO_DOMAIN_MAP) into the client's domain args.
     let tenantDomainApplied = false;
-    const READ_METHODS = new Set(['search_read', 'search', 'read', 'name_search']);
 
     if (READ_METHODS.has(method) && Array.isArray(args) && Array.isArray(args[0])) {
       try {
