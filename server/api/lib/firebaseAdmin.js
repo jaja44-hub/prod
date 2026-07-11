@@ -42,7 +42,8 @@ export function getFirebaseAdmin() {
   if (!initialized && admin.apps.length === 0) {
     const sa = loadServiceAccount();
     if (!sa) {
-      throw new Error('FIREBASE_SERVICE_ACCOUNT not configured');
+      console.warn('[firebaseAdmin] FIREBASE_SERVICE_ACCOUNT not configured - Firestore operations will fail');
+      return null;
     }
     admin.initializeApp({ credential: admin.credential.cert(sa) });
     initialized = true;

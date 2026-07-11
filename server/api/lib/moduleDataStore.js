@@ -18,13 +18,17 @@ export async function getTenantDataset(tenantId = 'production', datasetKey, seed
 
   try {
     const admin = getFirebaseAdmin();
-    const db = admin.firestore();
-    const snap = await db.collection(COLLECTION).doc(docId(tenantId, datasetKey)).get();
-    if (snap.exists) {
-      const data = snap.data();
-      if (data && (data.records?.length > 0 || data.picks || data.vendorLines || data.leads || data.events)) {
-        memoryFallback.set(key, data);
-        return data;
+    if (!admin) {
+      console.warn(`[moduleDataStore] Firebase Admin not available, using seed data for ${datasetKey}`);
+    } else {
+      const db = admin.firestore();
+      const snap = await db.collection(COLLECTION).doc(docId(tenantId, datasetKey)).get();
+      if (snap.exists) {
+        const data = snap.data();
+        if (data && (data.records?.length > 0 || data.picks || data.vendorLines || data.leads || data.events)) {
+          memoryFallback.set(key, data);
+          return data;
+        }
       }
     }
   } catch (err) {
@@ -52,6 +56,10 @@ export async function saveTenantDataset(tenantId = 'production', datasetKey, pay
   memoryFallback.set(cacheKey(tenantId, datasetKey), record);
 
   const admin = getFirebaseAdmin();
+  if (!admin) {
+    console.warn(`[moduleDataStore] Firebase Admin not available, skipping Firestore write for ${datasetKey}`);
+    return record;
+  }
   const db = admin.firestore();
   await db.collection(COLLECTION).doc(docId(tenantId, datasetKey)).set(record, { merge: true });
   return record;
@@ -64,6 +72,10 @@ export async function listTenantRecords(tenantId, datasetKey, seedBuilder) {
 
 export async function writeModuleEvents(tenantId = 'production', events = []) {
   const admin = getFirebaseAdmin();
+  if (!admin) {
+    console.warn('[moduleDataStore] Firebase Admin not available, skipping module events write');
+    return events.length;
+  }
   const db = admin.firestore();
   const batch = db.batch();
   for (const event of events) {
