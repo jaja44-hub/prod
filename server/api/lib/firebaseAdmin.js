@@ -50,6 +50,41 @@ export function getFirebaseAdmin() {
   return admin;
 }
 
+async function enrichDecodedToken(decoded) {
+  if (!decoded?.uid) return decoded;
+
+  let role = decoded.role || null;
+  let tenantId = decoded.tenantId || decoded.tenant_id || 'production';
+  let tier = decoded.tier ?? 1;
+
+  try {
+    const adminSdk = getFirebaseAdmin();
+    const db = adminSdk.firestore();
+    const userSnap = await db.collection('users').doc(decoded.uid).get();
+    if (userSnap.exists) {
+      const profile = userSnap.data() || {};
+      role = profile.role || role;
+      tenantId = profile.tenantId || tenantId;
+      tier = profile.tier ?? tier;
+    }
+  } catch (err) {
+    console.warn('[firebaseAdmin] profile enrichment failed:', err?.message || err);
+  }
+
+  if (!role || role === 'viewer') {
+    role = tenantId === 'production' ? 'ceo' : 'viewer';
+  }
+
+  return {
+    ...decoded,
+    uid: decoded.uid,
+    role,
+    tenantId,
+    tenant_id: tenantId,
+    tier,
+  };
+}
+
 export async function verifyBearerToken(authHeaderOrReq) {
   let authHeader = null;
 
@@ -65,7 +100,8 @@ export async function verifyBearerToken(authHeaderOrReq) {
   const token = authHeader.slice(7).trim();
   if (!token) return null;
   const adminSdk = getFirebaseAdmin();
-  return adminSdk.auth().verifyIdToken(token);
+  const decoded = await adminSdk.auth().verifyIdToken(token);
+  return enrichDecodedToken(decoded);
 }
 
 export function logSkipAuthWarning() {

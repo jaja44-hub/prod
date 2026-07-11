@@ -1,21 +1,10 @@
 import { verifyBearerToken } from '../lib/firebaseAdmin.js';
 import { enforceModuleAccess } from '../lib/policyOrchestrator.js';
+import { getTenantDataset } from '../lib/moduleDataStore.js';
+import { buildPurchaseSeed } from '../lib/productionSeedCatalog.js';
 
-/**
- * Compute vendor performance metrics from supplied datasets.
- * Inputs: purchases: [{ vendorId, poId, expectedDate, receivedDate, expectedQty, receivedQty, expectedAmount, paidAmount }]
- */
-export function buildSeededPurchaseData(tenantId = 'production') {
-  return {
-    tenantId,
-    purchases: [
-      { vendorId: 'ven-001', poId: 'PO-1001', expectedDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), receivedDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString(), expectedQty: 120, receivedQty: 120, expectedAmount: 480000, paidAmount: 470000 },
-      { vendorId: 'ven-001', poId: 'PO-1002', expectedDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 8).toISOString(), receivedDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 6).toISOString(), expectedQty: 90, receivedQty: 88, expectedAmount: 360000, paidAmount: 372000 },
-      { vendorId: 'ven-002', poId: 'PO-1003', expectedDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4).toISOString(), receivedDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(), expectedQty: 60, receivedQty: 60, expectedAmount: 180000, paidAmount: 180000 },
-      { vendorId: 'ven-003', poId: 'PO-1004', vendorName: 'Blue Nile Packaging', expectedDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString(), receivedDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12).toISOString(), expectedQty: 200, receivedQty: 198, expectedAmount: 95000, paidAmount: 95000 },
-      { vendorId: 'ven-004', poId: 'PO-1005', vendorName: 'East Africa Freight', expectedDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(), receivedDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(), expectedQty: 40, receivedQty: 40, expectedAmount: 128000, paidAmount: 131000 },
-    ],
-  };
+export async function buildSeededPurchaseData(tenantId = 'production') {
+  return getTenantDataset(tenantId, 'purchase_data', buildPurchaseSeed);
 }
 
 export function computeVendorScore({ purchases = [] } = {}) {

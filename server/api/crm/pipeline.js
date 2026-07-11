@@ -1,17 +1,16 @@
 import { verifyBearerToken } from '../lib/firebaseAdmin.js';
 import { enforceModuleAccess } from '../lib/policyOrchestrator.js';
+import { getTenantDataset, saveTenantDataset } from '../lib/moduleDataStore.js';
+import { buildCrmPipelineSeed } from '../lib/productionSeedCatalog.js';
 
-export function buildSamplePipeline(tenantId = 'production') {
-  const now = Date.now();
-  const leads = [
-    { leadId: 'lead-001', company: 'Nile Tech', contact: 'Mona Tesfaye', stage: 'new', value: 0, owner: 'sales_manager', createdAt: new Date(now - 1000 * 60 * 60 * 24 * 5).toISOString() },
-    { leadId: 'lead-002', company: 'Blue Ridge Trading', contact: 'Hanna Solomon', stage: 'qualified', value: 0, owner: 'sales_executive', createdAt: new Date(now - 1000 * 60 * 60 * 24 * 12).toISOString() },
-  ];
-  const opportunities = [
-    { opportunityId: 'opp-101', company: 'Harmony Logistics', amount: 18000, stage: 'proposal', owner: 'sales_head', expectedClose: new Date(now + 1000 * 60 * 60 * 24 * 18).toISOString(), lastActivity: new Date(now - 1000 * 60 * 60 * 24 * 2).toISOString() },
-    { opportunityId: 'opp-102', company: 'Ethio FMCG', amount: 7500, stage: 'negotiation', owner: 'sales_manager', expectedClose: new Date(now + 1000 * 60 * 60 * 24 * 30).toISOString(), lastActivity: new Date(now - 1000 * 60 * 60 * 24 * 6).toISOString() },
-  ];
-  return { tenantId, leads, opportunities };
+export async function buildSamplePipeline(tenantId = 'production') {
+  try {
+    const dataset = await getTenantDataset(tenantId, 'crm_pipeline', buildCrmPipelineSeed);
+    return dataset;
+  } catch (err) {
+    console.warn('[crm/pipeline] falling back to seed builder', err?.message || err);
+    return buildCrmPipelineSeed(tenantId);
+  }
 }
 
 export function normalizePipelineLead(input = {}) {
@@ -65,7 +64,7 @@ export default async function handler(req, res) {
     const tenantId = decoded?.tenantId || decoded?.tenant_id || 'production';
 
     if (req.method === 'GET') {
-      const pipeline = buildSamplePipeline(tenantId);
+      const pipeline = await buildSamplePipeline(tenantId);
       const summary = buildPipelineSummary(pipeline);
       return res.status(200).json({ success: true, tenantId, pipeline, summary });
     }

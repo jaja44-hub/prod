@@ -1,174 +1,21 @@
 import { verifyBearerToken } from '../lib/firebaseAdmin.js';
 import { enforceModuleAccess } from '../lib/policyOrchestrator.js';
+import { getTenantDataset } from '../lib/moduleDataStore.js';
+import { buildWarehouseWorkflowSeed } from '../lib/productionSeedCatalog.js';
 
 function createId(prefix = 'wf') {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}-${Date.now()}`;
 }
 
-export function buildPickPackShipWorkflow(tenantId = 'production') {
-  const now = Date.now();
-  const picks = [
-    {
-      pickId: 'pick-001',
-      orderId: 'order-103',
-      productId: 'prod-100',
-      sku: 'SKU-TEFF-01',
-      quantity: 12,
-      status: 'ready',
-      location: 'WH-A / A1',
-      tenantId,
-      dueAt: new Date(now + 1000 * 60 * 60 * 6).toISOString(),
-    },
-    {
-      pickId: 'pick-002',
-      orderId: 'order-104',
-      productId: 'prod-200',
-      sku: 'SKU-OIL-05',
-      quantity: 5,
-      status: 'in_progress',
-      location: 'WH-A / B2',
-      tenantId,
-      dueAt: new Date(now + 1000 * 60 * 60 * 8).toISOString(),
-    },
-    {
-      pickId: 'pick-003',
-      orderId: 'order-105',
-      productId: 'prod-150',
-      sku: 'SKU-SPICE-12',
-      quantity: 18,
-      status: 'ready',
-      location: 'WH-B / C4',
-      tenantId,
-      dueAt: new Date(now + 1000 * 60 * 60 * 4).toISOString(),
-    },
-    {
-      pickId: 'pick-004',
-      orderId: 'order-106',
-      productId: 'prod-310',
-      sku: 'SKU-GRAIN-08',
-      quantity: 30,
-      status: 'ready',
-      location: 'WH-B / D1',
-      tenantId,
-      dueAt: new Date(now + 1000 * 60 * 60 * 10).toISOString(),
-    },
-  ];
-
-  const packs = [
-    {
-      packId: 'pack-301',
-      orderId: 'order-103',
-      packageType: 'box',
-      weightKg: 8.4,
-      dimensionsCm: { length: 55, width: 35, height: 20 },
-      status: 'packed',
-      tenantId,
-      packedAt: new Date(now - 1000 * 60 * 30).toISOString(),
-    },
-    {
-      packId: 'pack-302',
-      orderId: 'order-102',
-      packageType: 'pallet',
-      weightKg: 42.0,
-      dimensionsCm: { length: 120, width: 80, height: 140 },
-      status: 'packed',
-      tenantId,
-      packedAt: new Date(now - 1000 * 60 * 90).toISOString(),
-    },
-    {
-      packId: 'pack-303',
-      orderId: 'order-104',
-      packageType: 'box',
-      weightKg: 5.2,
-      dimensionsCm: { length: 40, width: 30, height: 18 },
-      status: 'packed',
-      tenantId,
-      packedAt: new Date(now - 1000 * 60 * 45).toISOString(),
-    },
-  ];
-
-  const shipments = [
-    {
-      shipmentId: 'ship-501',
-      orderId: 'order-102',
-      carrier: 'DHL',
-      trackingNumber: 'DHL-789012',
-      status: 'in_transit',
-      shippedAt: new Date(now - 1000 * 60 * 60 * 14).toISOString(),
-      estimatedDelivery: new Date(now + 1000 * 60 * 60 * 24).toISOString(),
-      tenantId,
-    },
-    {
-      shipmentId: 'ship-502',
-      orderId: 'order-101',
-      carrier: 'Ethio Post',
-      trackingNumber: 'EP-334455',
-      status: 'delivered',
-      shippedAt: new Date(now - 1000 * 60 * 60 * 48).toISOString(),
-      estimatedDelivery: new Date(now - 1000 * 60 * 60 * 24).toISOString(),
-      tenantId,
-    },
-    {
-      shipmentId: 'ship-503',
-      orderId: 'order-103',
-      carrier: 'Rhino Logistics',
-      trackingNumber: 'RL-778899',
-      status: 'in_transit',
-      shippedAt: new Date(now - 1000 * 60 * 60 * 6).toISOString(),
-      estimatedDelivery: new Date(now + 1000 * 60 * 60 * 18).toISOString(),
-      tenantId,
-    },
-  ];
-
-  const transfers = [
-    {
-      transferId: 'transfer-101',
-      orderId: 'order-108',
-      productId: 'prod-110',
-      type: 'internal_transfer',
-      location: 'WH-A → WH-B',
-      quantity: 30,
-      sourceLocationId: 'WH-A',
-      destinationLocationId: 'WH-B',
-      status: 'pending',
-      tenantId,
-      timestamp: new Date(now - 1000 * 60 * 60 * 2).toISOString(),
-      createdAt: new Date(now - 1000 * 60 * 60 * 2).toISOString(),
-      expectedAt: new Date(now + 1000 * 60 * 60 * 10).toISOString(),
-    },
-    {
-      transferId: 'transfer-102',
-      orderId: 'order-109',
-      productId: 'prod-220',
-      type: 'receipt',
-      location: 'Vendor Dock → WH-A',
-      quantity: 120,
-      sourceLocationId: 'Vendor Dock',
-      destinationLocationId: 'WH-A',
-      status: 'completed',
-      tenantId,
-      timestamp: new Date(now - 1000 * 60 * 60 * 20).toISOString(),
-      createdAt: new Date(now - 1000 * 60 * 60 * 20).toISOString(),
-      expectedAt: new Date(now - 1000 * 60 * 60 * 18).toISOString(),
-    },
-    {
-      transferId: 'transfer-103',
-      orderId: 'order-110',
-      productId: 'prod-180',
-      type: 'pick',
-      location: 'WH-B / Pick Face',
-      quantity: 8,
-      sourceLocationId: 'WH-B',
-      destinationLocationId: 'Dispatch',
-      status: 'in_progress',
-      tenantId,
-      timestamp: new Date(now - 1000 * 60 * 60 * 1).toISOString(),
-      createdAt: new Date(now - 1000 * 60 * 60 * 1).toISOString(),
-      expectedAt: new Date(now + 1000 * 60 * 60 * 3).toISOString(),
-    },
-  ];
-
-  return { tenantId, picks, packs, shipments, transfers };
+export async function buildPickPackShipWorkflow(tenantId = 'production') {
+  const dataset = await getTenantDataset(tenantId, 'warehouse_workflow', buildWarehouseWorkflowSeed);
+  return {
+    tenantId,
+    picks: dataset.picks || [],
+    packs: dataset.packs || [],
+    shipments: dataset.shipments || [],
+    transfers: dataset.transfers || [],
+  };
 }
 
 export function buildWarehouseSummary(workflow = {}) {
@@ -252,7 +99,7 @@ export default async function handler(req, res) {
     const tenantId = decoded?.tenantId || decoded?.tenant_id || 'production';
 
     if (req.method === 'GET') {
-      const workflow = buildPickPackShipWorkflow(tenantId);
+      const workflow = await buildPickPackShipWorkflow(tenantId);
       const summary = buildWarehouseSummary(workflow);
       return res.status(200).json({ success: true, tenantId, workflow, summary });
     }

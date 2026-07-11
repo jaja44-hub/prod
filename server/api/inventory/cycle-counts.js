@@ -1,10 +1,7 @@
 import { verifyBearerToken } from '../lib/firebaseAdmin.js';
 import { enforceModuleAccess } from '../lib/policyOrchestrator.js';
-import { getTenantDomainTermsAsync, mergeOdooDomains } from '../lib/tenantOdooDomain.js';
-import odooClient from '../lib/odooClient.js';
-import { getTenantDoc } from '../lib/tenantFirestore.js';
-
-const cycleCountStore = new Map();
+import { getTenantDataset, saveTenantDataset } from '../lib/moduleDataStore.js';
+import { buildCycleCountsSeed } from '../lib/productionSeedCatalog.js';
 
 function createId(prefix = 'cc') {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}-${Date.now()}`;
@@ -25,96 +22,46 @@ function buildCycleCountRecord({ tenantId, name, locationId, expectedQuantities 
   };
 }
 
-function getTenantCycleCounts(tenantId) {
-  return Array.from(cycleCountStore.values()).filter((item) => item.tenantId === tenantId);
+async function loadCycleCountDataset(tenantId) {
+  return getTenantDataset(tenantId, 'cycle_counts', buildCycleCountsSeed);
 }
 
-function getCycleCountById(cycleCountId, tenantId) {
-  const record = cycleCountStore.get(cycleCountId);
-  if (!record || record.tenantId !== tenantId) return null;
-  return record;
-}
-
-export function seedCycleCounts(tenantId = 'production') {
-  const existing = getTenantCycleCounts(tenantId);
-  if (existing.length > 0) return existing;
-
-  const now = Date.now();
-  const seeded = [
-    {
-      cycleCountId: createId('cc'),
-      name: 'WH-A Aisle A cycle count',
-      locationId: 'WH-A / Aisle A',
-      state: 'verified',
-      createdAt: new Date(now - 1000 * 60 * 60 * 24 * 2).toISOString(),
-      dueDate: new Date(now - 1000 * 60 * 60 * 24).toISOString(),
-      expectedQuantities: [{ sku: 'SKU-TEFF-01', qty: 240 }],
-      countedBy: 'inventory_lead',
-      adjustments: [],
-      tenantId,
-    },
-    {
-      cycleCountId: createId('cc'),
-      name: 'WH-B bulk storage review',
-      locationId: 'WH-B / Bulk',
-      state: 'review',
-      createdAt: new Date(now - 1000 * 60 * 60 * 12).toISOString(),
-      dueDate: new Date(now + 1000 * 60 * 60 * 24).toISOString(),
-      expectedQuantities: [{ sku: 'SKU-GRAIN-08', qty: 520 }],
-      countedBy: 'warehouse_supervisor',
-      adjustments: [],
-      tenantId,
-    },
-    {
-      cycleCountId: createId('cc'),
-      name: 'WH-A cold chain spot check',
-      locationId: 'WH-A / Cold',
-      state: 'pending',
-      createdAt: new Date(now - 1000 * 60 * 60 * 4).toISOString(),
-      dueDate: new Date(now + 1000 * 60 * 60 * 48).toISOString(),
-      expectedQuantities: [{ sku: 'SKU-OIL-05', qty: 88 }],
-      countedBy: 'cycle_counter_02',
-      adjustments: [],
-      tenantId,
-    },
-    {
-      cycleCountId: createId('cc'),
-      name: 'WH-B pick face variance audit',
-      locationId: 'WH-B / Pick Face',
-      state: 'adjusted',
-      createdAt: new Date(now - 1000 * 60 * 60 * 36).toISOString(),
-      dueDate: new Date(now - 1000 * 60 * 60 * 6).toISOString(),
-      expectedQuantities: [{ sku: 'SKU-SPICE-12', qty: 64 }],
-      countedBy: 'inventory_lead',
-      adjustments: [{ adjustmentId: createId('adj'), variance: -2 }],
-      tenantId,
-    },
-  ];
-
-  seeded.forEach((record) => cycleCountStore.set(record.cycleCountId, record));
-  return seeded;
+export async function seedCycleCounts(tenantId = 'production') {
+  const dataset = await loadCycleCountDataset(tenantId);
+  return Array.isArray(dataset?.records) ? dataset.records : [];
 }
 
 export async function getCycleCounts(tenantId = 'production') {
   return seedCycleCounts(tenantId);
 }
+
+async function persistRecords(tenantId, records) {
+  const dataset = await loadCycleCountDataset(tenantId);
+  await saveTenantDataset(tenantId, 'cycle_counts', { ...dataset, records });
+}
+
 export async function createCycleCount(tenantId, payload = {}) {
   const record = buildCycleCountRecord({ tenantId, ...payload });
-  cycleCountStore.set(record.cycleCountId, record);
+  const records = [...await getCycleCounts(tenantId), record];
+  await persistRecords(tenantId, records);
   return record;
 }
 
 export async function updateCycleCount(cycleCountId, tenantId, changes = {}) {
-  const existing = getCycleCountById(cycleCountId, tenantId);
-  if (!existing) throw new Error('Cycle count not found');
-  const updated = { ...existing, ...changes, updatedAt: new Date().toISOString() };
-  cycleCountStore.set(cycleCountId, updated);
+  const records = await getCycleCounts(tenantId);
+  const index = records.findIndex((item) => item.cycleCountId === cycleCountId);
+  if (index < 0) throw new Error('Cycle count not found');
+  const updated = { ...records[index], ...changes, updatedAt: new Date().toISOString() };
+  records[index] = updated;
+  await persistRecords(tenantId, records);
   return updated;
 }
 
 export async function applyCycleCountAdjustment(cycleCountId, tenantId, adjustment = {}) {
-  const existing = getCycleCountById(cycleCountId, tenantId);
-  if (!existing) throw new Error('Cycle count not found');
+  const records = await getCycleCounts(tenantId);
+  const index = records.findIndex((item) => item.cycleCountId === cycleCountId);
+  if (index < 0) throw new Error('Cycle count not found');
+  const existing = records[index];
   const adjustmentRecord = {
     adjustmentId: createId('adj'),
     adjustedAt: new Date().toISOString(),
@@ -129,10 +76,11 @@ export async function applyCycleCountAdjustment(cycleCountId, tenantId, adjustme
   const updated = {
     ...existing,
     state: 'adjusted',
-    adjustments: [...existing.adjustments, adjustmentRecord],
+    adjustments: [...(existing.adjustments || []), adjustmentRecord],
     updatedAt: new Date().toISOString(),
   };
-  cycleCountStore.set(cycleCountId, updated);
+  records[index] = updated;
+  await persistRecords(tenantId, records);
   return { cycleCount: updated, adjustment: adjustmentRecord };
 }
 
