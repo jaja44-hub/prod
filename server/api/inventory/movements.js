@@ -1,16 +1,9 @@
 import { verifyBearerToken } from '../lib/firebaseAdmin.js';
 import { enforceModuleAccess } from '../lib/policyOrchestrator.js';
+import { getTenantDomainTermsAsync, mergeOdooDomains } from '../lib/tenantOdooDomain.js';
+import odooClient from '../lib/odooClient.js';
+import { getTenantDoc } from '../lib/tenantFirestore.js';
 
-<<<<<<< Updated upstream
-export async function getMovements(tenantId = 'production') {
-  // Stubbed, tenant-scoped movement history
-  const now = Date.now();
-  return [
-    { productId: 'prod-100', qty: -10, type: 'sale', timestamp: new Date(now - 1000 * 60 * 60 * 24).toISOString() },
-    { productId: 'prod-100', qty: 50, type: 'purchase', timestamp: new Date(now - 1000 * 60 * 60 * 48).toISOString() },
-    { productId: 'prod-200', qty: -2, type: 'transfer', timestamp: new Date(now - 1000 * 60 * 60 * 6).toISOString() },
-  ].map((m, i) => ({ ...m, tenantId }));
-=======
 function parseDomainValue(raw) {
   if (!raw) return [];
   if (Array.isArray(raw)) return raw;
@@ -33,6 +26,62 @@ function normalizeMovement(row, tenantId) {
     meta: { raw: row },
     tenantId,
   };
+}
+
+export function buildSeededMovements(tenantId = 'production') {
+  const now = Date.now();
+  return [
+    {
+      movementId: 'move-001',
+      productId: 'prod-100',
+      qty: -24,
+      type: 'sale',
+      sourceLocation: 'WH-A / Shelf 12',
+      destinationLocation: 'Customer Bole',
+      timestamp: new Date(now - 1000 * 60 * 60 * 4).toISOString(),
+      tenantId,
+    },
+    {
+      movementId: 'move-002',
+      productId: 'prod-100',
+      qty: 120,
+      type: 'purchase',
+      sourceLocation: 'Vendor Dock',
+      destinationLocation: 'WH-A / Receiving',
+      timestamp: new Date(now - 1000 * 60 * 60 * 28).toISOString(),
+      tenantId,
+    },
+    {
+      movementId: 'move-003',
+      productId: 'prod-200',
+      qty: -18,
+      type: 'transfer',
+      sourceLocation: 'WH-A',
+      destinationLocation: 'WH-B',
+      timestamp: new Date(now - 1000 * 60 * 60 * 6).toISOString(),
+      tenantId,
+    },
+    {
+      movementId: 'move-004',
+      productId: 'prod-310',
+      qty: 45,
+      type: 'receipt',
+      sourceLocation: 'Zenith Supplies',
+      destinationLocation: 'WH-B / Bulk',
+      timestamp: new Date(now - 1000 * 60 * 60 * 52).toISOString(),
+      tenantId,
+    },
+    {
+      movementId: 'move-005',
+      productId: 'prod-150',
+      qty: -6,
+      type: 'sale',
+      sourceLocation: 'WH-B / Pick Face',
+      destinationLocation: 'Ethio Retail',
+      timestamp: new Date(now - 1000 * 60 * 60 * 2).toISOString(),
+      tenantId,
+    },
+  ];
 }
 
 export async function getMovements(tenantId = 'production', opts = {}) {
@@ -66,46 +115,12 @@ export async function getMovements(tenantId = 'production', opts = {}) {
 
     const args = [fullDomain, ['id', 'product_id', 'product_uom_qty', 'location_id', 'location_dest_id', 'create_date', 'picking_type_id']];
     const rows = await odooClient.executeKw(session.db, session.uid, apiKey, model, method, args, {}, customUrl);
-    return (Array.isArray(rows) ? rows : []).map((row) => normalizeMovement(row, tenantId));
-  } catch (err) {
-    const now = Date.now();
-    return [
-      {
-        movementId: 'stub-1',
-        productId: 'prod-100',
-        qty: -10,
-        type: 'sale',
-        sourceLocation: 'Warehouse A',
-        destinationLocation: 'Customer Site',
-        timestamp: new Date(now - 1000 * 60 * 60 * 24).toISOString(),
-        meta: { reason: 'stub fallback' },
-        tenantId,
-      },
-      {
-        movementId: 'stub-2',
-        productId: 'prod-100',
-        qty: 50,
-        type: 'purchase',
-        sourceLocation: 'Supplier Dock',
-        destinationLocation: 'Warehouse A',
-        timestamp: new Date(now - 1000 * 60 * 60 * 48).toISOString(),
-        meta: { reason: 'stub fallback' },
-        tenantId,
-      },
-      {
-        movementId: 'stub-3',
-        productId: 'prod-200',
-        qty: -2,
-        type: 'transfer',
-        sourceLocation: 'Warehouse A',
-        destinationLocation: 'Warehouse B',
-        timestamp: new Date(now - 1000 * 60 * 60 * 6).toISOString(),
-        meta: { reason: 'stub fallback' },
-        tenantId,
-      },
-    ];
+    const live = (Array.isArray(rows) ? rows : []).map((row) => normalizeMovement(row, tenantId));
+    if (live.length > 0) return live;
+    throw new Error('No Odoo movements returned');
+  } catch {
+    return buildSeededMovements(tenantId);
   }
->>>>>>> Stashed changes
 }
 
 export default async function handler(req, res) {

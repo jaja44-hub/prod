@@ -16,6 +16,14 @@ export function FinanceDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { snapshot } = useAnalyticsSnapshot();
+  const financeAnalytics = snapshot?.modules?.finance;
+  const financeMetrics = financeAnalytics?.metrics || {};
+  const agingSummary = agingData?.report?.summary || agingData?.summary || snapshot?.agingReport?.summary || null;
+  const agingBuckets = agingData?.report || agingData || snapshot?.agingReport || null;
+  const financeInsight = snapshot?.insights?.find((item) => item.title === 'Revenue pulse');
+  const financePills = (snapshot?.insights || [])
+    .slice(0, 2)
+    .map((item) => ({ title: item.title, direction: item.severity === 'positive' ? 'up' : item.severity === 'watch' ? 'down' : 'neutral' }));
 
   useEffect(() => {
     const fetchData = async () => {
@@ -24,7 +32,8 @@ export function FinanceDashboard() {
         const client = getApiClient();
 
         const aging = await client.finance('aging').catch(() => null);
-        setAgingData(aging?.data || aging || null);
+        const payload = aging?.data || (aging?.report ? aging : null);
+        setAgingData(payload);
         setReconciliationData(null);
       } catch (err) {
         setError(err.message || 'Failed to load finance data');
@@ -65,7 +74,7 @@ export function FinanceDashboard() {
     <section className="space-y-6">
       <PageHeader title="Finance Dashboard" subtitle="Working capital, payables, and receivables measured through the shared analytics engine." />
 
-      {snapshot?.modules?.finance && (
+      {financeAnalytics && (
         <PageCard>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
@@ -73,15 +82,15 @@ export function FinanceDashboard() {
               <h2 className="mt-3 text-xl font-semibold text-slate-900 dark:text-slate-100">Working capital health and liquidity outlook</h2>
               <p className="mt-2 max-w-2xl text-sm text-slate-500 dark:text-slate-400">Modern cash-flow intelligence for receivables, payables, and margin visibility using the shared analytics engine.</p>
             </div>
-            <ProgressRing value={snapshot.modules.finance.score} label="Finance health" sublabel="Balances liquidity pressure with operating margin strength." />
+            <ProgressRing value={financeAnalytics.score} label="Finance health" sublabel="Balances liquidity pressure with operating margin strength." />
           </div>
 
           <div className="mt-6 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
             <div className="space-y-4">
               <div className="grid gap-4 md:grid-cols-3">
-                <MetricTile label="Receivables" value={currency(snapshot.modules.finance.metrics?.totalReceivable ?? 0)} detail="AR" tone="violet" />
-                <MetricTile label="Payables" value={currency(snapshot.modules.finance.metrics?.totalPayable ?? 0)} detail="AP" tone="blue" />
-                <MetricTile label="Margin" value={`${snapshot.modules.finance.metrics?.margin ?? 0}%`} detail="profit" tone="emerald" />
+                <MetricTile label="Receivables" value={currency(financeMetrics.totalReceivable ?? 0)} detail="AR" tone="violet" />
+                <MetricTile label="Payables" value={currency(financeMetrics.totalPayable ?? 0)} detail="AP" tone="blue" />
+                <MetricTile label="Margin" value={`${financeMetrics.margin ?? 0}%`} detail="profit" tone="emerald" />
               </div>
               <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/80">
                 <div className="mb-3 flex items-center justify-between">
@@ -90,7 +99,7 @@ export function FinanceDashboard() {
                     <p className="text-sm text-slate-500 dark:text-slate-400">A simplified month-by-month view of receivables vs payables.</p>
                   </div>
                 </div>
-                <TrendChart data={snapshot.modules.finance.chartData} dataKeys={['receivable', 'payable']} />
+                <TrendChart data={financeAnalytics.chartData || []} dataKeys={['receivable', 'payable']} />
               </div>
             </div>
             <div className="space-y-4">
@@ -98,20 +107,20 @@ export function FinanceDashboard() {
                 <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Account structure</h3>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Current balance composition across core finance buckets.</p>
                 <div className="mt-4">
-                  <BreakdownList data={snapshot.modules.finance.breakdown?.map((item) => ({ ...item, valueLabel: item.name === 'Margin' ? `${item.value}%` : currency(item.value) })) || []} />
+                  <BreakdownList data={(financeAnalytics.breakdown || []).map((item) => ({ ...item, valueLabel: item.name === 'Margin' ? `${item.value}%` : currency(item.value) }))} />
                 </div>
               </div>
               <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-emerald-600 to-cyan-600 p-4 text-white shadow-sm">
                 <div className="text-sm font-medium text-emerald-100">Leadership note</div>
-                <div className="mt-2 text-lg font-semibold">{snapshot.insights?.find((item) => item.title === 'Revenue pulse')?.detail}</div>
-                <div className="mt-4"><InsightPills items={[{ title: 'Collections steady', direction: 'up' }, { title: 'Risk contained', direction: 'up' }]} /></div>
+                <div className="mt-2 text-lg font-semibold">{financeInsight?.detail || 'Finance analytics will populate as receivable and payable activity grows.'}</div>
+                <div className="mt-4">{financePills.length > 0 ? <InsightPills items={financePills} /> : null}</div>
               </div>
             </div>
           </div>
         </PageCard>
       )}
 
-      {agingData && (
+      {(agingSummary || agingBuckets) && (
         <PageCard>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -121,9 +130,9 @@ export function FinanceDashboard() {
           </div>
 
           <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <MetricTile label="Total payable" value={currency(agingData.report?.summary?.totalPayable || 0)} detail="AP" tone="blue" />
-            <MetricTile label="Total receivable" value={currency(agingData.report?.summary?.totalReceivable || 0)} detail="AR" tone="violet" />
-            <MetricTile label="Active vendors" value={agingData.report?.summary?.vendorCount || 0} detail="count" tone="emerald" />
+            <MetricTile label="Total payable" value={currency(agingSummary?.totalPayable || agingBuckets?.summary?.totalPayable || 0)} detail="AP" tone="blue" />
+            <MetricTile label="Total receivable" value={currency(agingSummary?.totalReceivable || agingBuckets?.summary?.totalReceivable || 0)} detail="AR" tone="violet" />
+            <MetricTile label="Active vendors" value={agingSummary?.vendorCount || agingBuckets?.summary?.vendorCount || 0} detail="count" tone="emerald" />
           </div>
 
           <div className="mt-6 grid gap-6 xl:grid-cols-2">
@@ -137,7 +146,7 @@ export function FinanceDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {agingData.report?.accountsPayable && Object.entries(agingData.report.accountsPayable).map(([bucket, items]) => (
+                  {(agingBuckets?.accountsPayable ? Object.entries(agingBuckets.accountsPayable) : []).map(([bucket, items]) => (
                     <tr key={bucket} className="border-t border-slate-200 dark:border-slate-700">
                       <td className="px-4 py-2 capitalize text-slate-700 dark:text-slate-200">{bucket}</td>
                       <td className="px-4 py-2 font-semibold text-slate-900 dark:text-slate-100">{Array.isArray(items) ? items.length : 0}</td>
@@ -157,7 +166,7 @@ export function FinanceDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {agingData.report?.accountsReceivable && Object.entries(agingData.report.accountsReceivable).map(([bucket, items]) => (
+                  {(agingBuckets?.accountsReceivable ? Object.entries(agingBuckets.accountsReceivable) : []).map(([bucket, items]) => (
                     <tr key={bucket} className="border-t border-slate-200 dark:border-slate-700">
                       <td className="px-4 py-2 capitalize text-slate-700 dark:text-slate-200">{bucket}</td>
                       <td className="px-4 py-2 font-semibold text-slate-900 dark:text-slate-100">{Array.isArray(items) ? items.length : 0}</td>

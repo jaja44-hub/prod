@@ -1,9 +1,10 @@
 import { buildKpiDashboard } from './metrics.js';
 import { buildSamplePipeline, buildPipelineSummary } from '../crm/pipeline.js';
-import { computeVendorScore } from '../purchase/vendor-performance.js';
+import { buildSeededPurchaseData, computeVendorScore } from '../purchase/vendor-performance.js';
 import { buildPickPackShipWorkflow, buildWarehouseSummary } from '../inventory/warehouse.js';
-import { computeAgingReport } from '../finance/aging.js';
+import { buildSeededFinanceAgingData, computeAgingReport } from '../finance/aging.js';
 import { getOrders } from '../sales/orders.js';
+import { buildSeededFinanceTransactions } from '../lib/productionSeed.js';
 
 function normalizeNumber(value) {
   const num = Number(value || 0);
@@ -77,42 +78,42 @@ export async function buildTenantAnalyticsSnapshot({ tenantId = 'production', da
 
   const pipelineSummary = buildPipelineSummary(crmPipeline);
 
-  const purchaseData = data.purchaseData || data.purchase || { purchases: [] };
-  const vendorScore = computeVendorScore({ purchases: purchaseData.purchases || [] });
+  const purchaseSeed = buildSeededPurchaseData(tenantId);
+  const purchaseData = data.purchaseData || data.purchase || purchaseSeed;
+  const vendorScore = computeVendorScore({ purchases: purchaseData.purchases || purchaseSeed.purchases || [] });
 
   const warehouseSummary = buildWarehouseSummary(warehouseData);
 
-  const financeData = data.financeData || data.finance || { vendorLines: [], customerLines: [] };
-  const agingReport = computeAgingReport(financeData);
+  const financeSeed = buildSeededFinanceAgingData(tenantId);
+  const financeData = data.financeData || data.finance || financeSeed;
+  const agingReport = financeData.report?.summary
+    ? financeData.report
+    : computeAgingReport({ vendorLines: financeData.vendorLines || [], customerLines: financeData.customerLines || [] });
 
   const financeKpis = buildKpiDashboard({
-    transactions: data.transactions || [
-      { amount: 120000, currency: 'ETB' },
-      { amount: 85000, currency: 'ETB' },
-      { amount: 15000, currency: 'USD' },
-    ],
-    costItems: data.costItems || [
-      { amount: 95000, category: 'cogs' },
-      { amount: 30000, category: 'overhead' },
-      { amount: 15000, category: 'labor' },
-    ],
+    transactions: data.transactions || buildSeededFinanceTransactions(tenantId).transactions,
+    costItems: data.costItems || buildSeededFinanceTransactions(tenantId).costItems,
     tenantId,
   });
 
-  const warehouseChartData = [
-    { name: 'Mon', ready: Math.max(4, warehouseSummary.readyToPick - 2), packed: Math.max(3, warehouseSummary.packedCount - 1), shipped: Math.max(2, warehouseSummary.shipmentsInTransit - 1) },
-    { name: 'Tue', ready: warehouseSummary.readyToPick + 1, packed: warehouseSummary.packedCount + 2, shipped: warehouseSummary.shipmentsInTransit + 1 },
-    { name: 'Wed', ready: warehouseSummary.readyToPick + 2, packed: warehouseSummary.packedCount + 1, shipped: warehouseSummary.shipmentsInTransit + 2 },
-    { name: 'Thu', ready: warehouseSummary.readyToPick + 3, packed: warehouseSummary.packedCount + 2, shipped: warehouseSummary.shipmentsInTransit + 3 },
-    { name: 'Fri', ready: warehouseSummary.readyToPick + 4, packed: warehouseSummary.packedCount + 3, shipped: warehouseSummary.shipmentsInTransit + 4 },
-  ];
+  const warehouseChartData = warehouseSummary.totalPicks > 0
+    ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((name, index) => ({
+        name,
+        ready: Math.max(1, warehouseSummary.readyToPick + index),
+        packed: Math.max(1, warehouseSummary.packedCount + Math.max(0, index - 1)),
+        shipped: Math.max(1, warehouseSummary.shipmentsInTransit + Math.max(0, index - 2)),
+      }))
+    : [{ name: 'No activity', ready: 0, packed: 0, shipped: 0 }];
 
-  const financeChartData = [
-    { name: 'Jan', receivable: Math.max(100, agingReport.summary?.totalReceivable ? Math.round(agingReport.summary.totalReceivable / 6) : 120), payable: Math.max(70, (agingReport.summary?.totalPayable || 0) / 5) },
-    { name: 'Feb', receivable: Math.max(120, agingReport.summary?.totalReceivable ? Math.round(agingReport.summary.totalReceivable / 5) : 140), payable: Math.max(80, (agingReport.summary?.totalPayable || 0) / 4) },
-    { name: 'Mar', receivable: Math.max(140, agingReport.summary?.totalReceivable ? Math.round(agingReport.summary.totalReceivable / 4) : 160), payable: Math.max(90, (agingReport.summary?.totalPayable || 0) / 3) },
-    { name: 'Apr', receivable: Math.max(160, agingReport.summary?.totalReceivable ? Math.round(agingReport.summary.totalReceivable / 3) : 180), payable: Math.max(100, (agingReport.summary?.totalPayable || 0) / 2) },
-  ];
+  const receivableTotal = agingReport.summary?.totalReceivable || 0;
+  const payableTotal = agingReport.summary?.totalPayable || 0;
+  const financeChartData = receivableTotal > 0 || payableTotal > 0
+    ? ['Jan', 'Feb', 'Mar', 'Apr'].map((name, index) => ({
+        name,
+        receivable: Math.round(receivableTotal * (0.72 + index * 0.08)),
+        payable: Math.round(payableTotal * (0.68 + index * 0.09)),
+      }))
+    : [{ name: 'No activity', receivable: 0, payable: 0 }];
 
   const modules = {
     sales: buildModuleScore({

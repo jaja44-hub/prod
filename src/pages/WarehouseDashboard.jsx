@@ -67,10 +67,23 @@ export function WarehouseDashboard() {
     fetchData();
   }, []);
 
-  const workflowReport = workflowData?.workflow || workflowData?.report || workflowData?.workflow?.report || null;
-  const shipments = Array.isArray(workflowReport?.shipments) ? workflowReport.shipments : [];
-  const movements = Array.isArray(workflowReport?.transfers) ? workflowReport.transfers : [];
-  const workflowStages = Array.isArray(workflowReport?.picks) ? workflowReport.picks : [];
+  const warehouseMetrics = snapshot?.modules?.warehouse?.metrics || {};
+  const workflow = workflowData?.workflow || null;
+  const workflowSummaryApi = workflowData?.summary || null;
+  const picks = Array.isArray(workflow?.picks) ? workflow.picks : [];
+  const packs = Array.isArray(workflow?.packs) ? workflow.packs : [];
+  const shipments = Array.isArray(workflow?.shipments) ? workflow.shipments : [];
+  const movements = Array.isArray(workflow?.transfers) ? workflow.transfers : [];
+  const warehouseSummary = {
+    totalOrders: workflowSummaryApi?.totalPicks || picks.length + packs.length,
+    picking: workflowSummaryApi?.readyToPick || warehouseMetrics.readyToPick || picks.filter((item) => item.status === 'ready' || item.status === 'in_progress').length,
+    packing: workflowSummaryApi?.totalPacks || warehouseMetrics.packedCount || packs.length,
+    shipped: workflowSummaryApi?.totalShipments || warehouseMetrics.shipmentsInTransit || shipments.length,
+  };
+  const warehouseInsight = snapshot?.insights?.find((item) => item.title === 'Warehouse readiness');
+  const warehousePills = (snapshot?.insights || [])
+    .filter((item) => ['Warehouse readiness', 'Revenue pulse'].includes(item.title))
+    .map((item) => ({ title: item.title, direction: item.severity === 'positive' ? 'up' : item.severity === 'watch' ? 'down' : 'neutral' }));
 
   if (loading) return <div className="space-y-4"><PageHeader title="Warehouse Operations" subtitle="Aggregating dispatch, inventory, and cycle count signals" /><div className="animate-pulse space-y-3"><div className="h-20 rounded-xl bg-slate-200 dark:bg-slate-800" /><div className="h-32 rounded-xl bg-slate-200 dark:bg-slate-800" /></div></div>;
   if (error) return <div className="space-y-4"><PageHeader title="Warehouse Operations" subtitle="The live warehouse feed is temporarily unavailable" /><PageCard className="border-amber-300 bg-amber-50/80 dark:border-amber-700 dark:bg-amber-900/20"><p className="text-sm text-amber-800 dark:text-amber-300">{error}</p></PageCard></div>;
@@ -80,10 +93,10 @@ export function WarehouseDashboard() {
       <PageHeader title="Warehouse Operations" subtitle="Monitor pick, pack, ship progress and physical inventory health in one place." />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Total Orders" value={workflowReport?.summary?.totalOrders || workflowData?.summary?.totalPicks || 0} tone="blue" />
-        <MetricCard label="Picking" value={workflowReport?.summary?.pickingCount || workflowData?.summary?.readyToPick || 0} tone="amber" />
-        <MetricCard label="Packing" value={workflowReport?.summary?.packingCount || workflowData?.summary?.totalPacks || 0} tone="slate" />
-        <MetricCard label="Shipped" value={workflowReport?.summary?.shippedCount || workflowData?.summary?.totalShipments || 0} tone="green" />
+        <MetricCard label="Total Orders" value={warehouseSummary.totalOrders} tone="blue" />
+        <MetricCard label="Picking" value={warehouseSummary.picking} tone="amber" />
+        <MetricCard label="Packing" value={warehouseSummary.packing} tone="slate" />
+        <MetricCard label="Shipped" value={warehouseSummary.shipped} tone="green" />
       </div>
 
       {snapshot?.modules?.warehouse && (
@@ -124,8 +137,8 @@ export function WarehouseDashboard() {
               </div>
               <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-violet-600 to-indigo-600 p-4 text-white shadow-sm">
                 <div className="text-sm font-medium text-violet-100">Executive insight</div>
-                <div className="mt-2 text-lg font-semibold">{snapshot.insights?.find((item) => item.title === 'Warehouse readiness')?.detail}</div>
-                <div className="mt-4"><InsightPills items={[{ title: 'Dispatch improving', direction: 'up' }, { title: 'Capacity stable', direction: 'up' }]} /></div>
+                <div className="mt-2 text-lg font-semibold">{warehouseInsight?.detail || 'Warehouse analytics will populate as dispatch activity grows.'}</div>
+                <div className="mt-4">{warehousePills.length > 0 ? <InsightPills items={warehousePills} /> : null}</div>
               </div>
             </div>
           </div>
@@ -141,11 +154,11 @@ export function WarehouseDashboard() {
             </div>
           </div>
           <div className="grid gap-3 md:grid-cols-3">
-            {workflowStages.length > 0 ? workflowStages.map((item) => (
-              <div key={item.id || item.orderId} className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+            {picks.length > 0 ? picks.map((item) => (
+              <div key={item.pickId || item.id || item.orderId} className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
                 <p className="text-xs uppercase tracking-wide text-slate-500">{item.status}</p>
                 <p className="mt-1 font-semibold text-slate-900 dark:text-slate-100">Order {item.orderId || '—'}</p>
-                <p className="text-sm text-slate-600 dark:text-slate-300">SKU {item.sku || '—'} · Qty {item.quantity || 0}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300">SKU {item.sku || item.productId || '—'} · Qty {item.quantity || 0}</p>
               </div>
             )) : <div className="md:col-span-3 rounded-lg border border-dashed border-slate-300 p-4 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">No dispatch stages reported yet.</div>}
           </div>

@@ -23,8 +23,11 @@ async function main() {
   assert.ok(Array.isArray(snapshot.modules.warehouse.breakdown) && snapshot.modules.warehouse.breakdown.length > 0);
   assert.ok(Array.isArray(snapshot.modules.finance.chartData) && snapshot.modules.finance.chartData.length > 0);
   assert.ok(Array.isArray(snapshot.modules.finance.breakdown) && snapshot.modules.finance.breakdown.length > 0);
-  assert.ok(snapshot.summary.totalOrders > 0, 'analytics engine should observe orders created through the sales module');
-  assert.ok(snapshot.summary.totalRevenue > 0, 'analytics engine should observe revenue from the sales module');
+  assert.ok(snapshot.modules.warehouse.metrics.readyToPick > 0, 'warehouse analytics should reflect seeded workflow activity');
+  assert.ok(snapshot.modules.finance.metrics.totalReceivable > 0 && snapshot.modules.finance.metrics.totalPayable > 0, 'finance analytics should reflect seeded receivable and payable activity');
+  assert.ok(snapshot.summary.totalOrders >= 6, 'analytics engine should observe seeded sales orders');
+  assert.ok(snapshot.summary.totalRevenue >= 100000, 'analytics engine should observe meaningful revenue from seeded sales orders');
+  assert.ok(snapshot.modules.purchase.metrics.vendors >= 3, 'purchase analytics should reflect multiple seeded vendors');
   console.log('✓ Analytics engine produces multi-module tenant snapshot');
 }
 

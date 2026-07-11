@@ -1,16 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { getApiClient } from '../lib/apiClient';
 import EmptyState from './EmptyState';
 import Skeleton from './Skeleton';
-
-function buildDemoEvents() {
-  return [
-    { id: 'demo-1', moduleId: 'warehouse', action: 'Packed 12 orders for dispatch', odooModel: 'stock.picking', odooId: '1004', ts: new Date(Date.now() - 1000 * 60 * 12) },
-    { id: 'demo-2', moduleId: 'finance', action: 'Receivables ageing refreshed', odooModel: 'account.move', odooId: '204', ts: new Date(Date.now() - 1000 * 60 * 60 * 2) },
-    { id: 'demo-3', moduleId: 'sales', action: 'New order booked from partner', odooModel: 'sale.order', odooId: '512', ts: new Date(Date.now() - 1000 * 60 * 60 * 6) },
-  ];
-}
 
 function timeAgo(ts) {
   if (!ts) return '—';
@@ -24,41 +17,81 @@ function timeAgo(ts) {
 
 const MODULE_COLORS = {
   inventory: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  warehouse: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
   sales: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
   purchase: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
   finance: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
+  crm: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
 };
 
+function mapTimelineToEvents(timeline = []) {
+  return timeline.map((entry) => ({
+    id: entry.activityId,
+    moduleId: 'crm',
+    action: entry.subject,
+    odooModel: entry.type,
+    odooId: entry.linkedTo || entry.contact,
+    ts: entry.occurredAt,
+  }));
+}
+
 /**
- * ModuleActivityFeed — real-time Firestore listener on module_events collection.
- * Read-only. Never writes to Firestore.
+ * ModuleActivityFeed — prefers live Firestore events, then seeded module activity from CRM API.
  */
 export default function ModuleActivityFeed() {
-  const [events, setEvents] = useState(buildDemoEvents());
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+
+    const loadSeededActivity = async () => {
+      try {
+        const client = getApiClient();
+        const response = await client.crm('activity').catch(() => null);
+        const moduleEvents = Array.isArray(response?.moduleEvents) ? response.moduleEvents : [];
+        const timelineEvents = mapTimelineToEvents(response?.timeline || []);
+        const combined = [...moduleEvents, ...timelineEvents]
+          .sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime())
+          .slice(0, 20);
+        if (isMounted && combined.length > 0) {
+          setEvents(combined);
+          setLoading(false);
+        }
+      } catch {
+        // fall through to Firestore listener or empty state
+      }
+    };
+
+    loadSeededActivity();
+
     if (!db) {
-      setEvents(buildDemoEvents());
-      setLoading(false);
-      return;
+      return () => {
+        isMounted = false;
+      };
     }
+
     const q = query(collection(db, 'module_events'), orderBy('ts', 'desc'), limit(20));
     const unsub = onSnapshot(q, (snap) => {
       const liveEvents = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setEvents(liveEvents.length ? liveEvents : buildDemoEvents());
+      if (liveEvents.length > 0) {
+        setEvents(liveEvents);
+      }
       setLoading(false);
     }, () => {
-      setEvents(buildDemoEvents());
       setLoading(false);
     });
-    return () => unsub();
+
+    return () => {
+      isMounted = false;
+      unsub();
+    };
   }, []);
 
   if (loading) return <Skeleton lines={5} />;
 
   if (!events.length) {
-    return <EmptyState title="No activity yet" description="Create a product or order to see events here." icon="📋" />;
+    return <EmptyState title="No activity yet" description="Module activity will appear here as orders, inventory, and finance events are recorded." icon="📋" />;
   }
 
   return (

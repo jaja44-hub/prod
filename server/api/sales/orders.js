@@ -7,6 +7,85 @@ function createId(prefix = 'so') {
   return `${prefix}-${Math.random().toString(36).slice(2, 8)}-${Date.now()}`;
 }
 
+export function seedSalesOrders(tenantId = 'production') {
+  const seedBlueprint = [
+    {
+      id: `seed-${tenantId}-ord-101`,
+      name: 'Seed order 101',
+      partnerId: 'partner-001',
+      lines: [{ quantity: 4, unitPrice: 3200 }],
+      amount_total: 12800,
+      amountTotal: 12800,
+      state: 'confirmed',
+      tenantId,
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
+    },
+    {
+      id: `seed-${tenantId}-ord-102`,
+      name: 'Seed order 102',
+      partnerId: 'partner-002',
+      lines: [{ quantity: 7, unitPrice: 2650 }],
+      amount_total: 18550,
+      amountTotal: 18550,
+      state: 'packed',
+      tenantId,
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString(),
+    },
+    {
+      id: `seed-${tenantId}-ord-103`,
+      name: 'Seed order 103',
+      partnerId: 'partner-003',
+      lines: [{ quantity: 12, unitPrice: 1450 }],
+      amount_total: 17400,
+      amountTotal: 17400,
+      state: 'in_transit',
+      tenantId,
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
+    },
+    {
+      id: `seed-${tenantId}-ord-104`,
+      name: 'Seed order 104',
+      partnerId: 'partner-004',
+      lines: [{ quantity: 20, unitPrice: 980 }, { quantity: 5, unitPrice: 4200 }],
+      amount_total: 40600,
+      amountTotal: 40600,
+      state: 'confirmed',
+      tenantId,
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
+    },
+    {
+      id: `seed-${tenantId}-ord-105`,
+      name: 'Seed order 105',
+      partnerId: 'partner-005',
+      lines: [{ quantity: 3, unitPrice: 8900 }],
+      amount_total: 26700,
+      amountTotal: 26700,
+      state: 'draft',
+      tenantId,
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+    },
+    {
+      id: `seed-${tenantId}-ord-106`,
+      name: 'Seed order 106',
+      partnerId: 'partner-006',
+      lines: [{ quantity: 15, unitPrice: 2100 }],
+      amount_total: 31500,
+      amountTotal: 31500,
+      state: 'delivered',
+      tenantId,
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 6).toISOString(),
+    },
+  ];
+
+  seedBlueprint.forEach((record) => {
+    if (!orderStore.has(record.id)) {
+      orderStore.set(record.id, record);
+    }
+  });
+
+  return Array.from(orderStore.values()).filter((order) => order.tenantId === tenantId);
+}
+
 export async function createOrder(tenantId = 'production', payload = {}) {
   // try Odoo writeback via ServiceGateway
   try {
@@ -25,7 +104,7 @@ export async function createOrder(tenantId = 'production', payload = {}) {
 }
 
 export async function getOrders(tenantId = 'production') {
-  return Array.from(orderStore.values()).filter((o) => o.tenantId === tenantId);
+  return seedSalesOrders(tenantId);
 }
 
 export default async function handler(req, res) {

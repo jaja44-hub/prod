@@ -35,8 +35,68 @@ function getCycleCountById(cycleCountId, tenantId) {
   return record;
 }
 
+export function seedCycleCounts(tenantId = 'production') {
+  const existing = getTenantCycleCounts(tenantId);
+  if (existing.length > 0) return existing;
+
+  const now = Date.now();
+  const seeded = [
+    {
+      cycleCountId: createId('cc'),
+      name: 'WH-A Aisle A cycle count',
+      locationId: 'WH-A / Aisle A',
+      state: 'verified',
+      createdAt: new Date(now - 1000 * 60 * 60 * 24 * 2).toISOString(),
+      dueDate: new Date(now - 1000 * 60 * 60 * 24).toISOString(),
+      expectedQuantities: [{ sku: 'SKU-TEFF-01', qty: 240 }],
+      countedBy: 'inventory_lead',
+      adjustments: [],
+      tenantId,
+    },
+    {
+      cycleCountId: createId('cc'),
+      name: 'WH-B bulk storage review',
+      locationId: 'WH-B / Bulk',
+      state: 'review',
+      createdAt: new Date(now - 1000 * 60 * 60 * 12).toISOString(),
+      dueDate: new Date(now + 1000 * 60 * 60 * 24).toISOString(),
+      expectedQuantities: [{ sku: 'SKU-GRAIN-08', qty: 520 }],
+      countedBy: 'warehouse_supervisor',
+      adjustments: [],
+      tenantId,
+    },
+    {
+      cycleCountId: createId('cc'),
+      name: 'WH-A cold chain spot check',
+      locationId: 'WH-A / Cold',
+      state: 'pending',
+      createdAt: new Date(now - 1000 * 60 * 60 * 4).toISOString(),
+      dueDate: new Date(now + 1000 * 60 * 60 * 48).toISOString(),
+      expectedQuantities: [{ sku: 'SKU-OIL-05', qty: 88 }],
+      countedBy: 'cycle_counter_02',
+      adjustments: [],
+      tenantId,
+    },
+    {
+      cycleCountId: createId('cc'),
+      name: 'WH-B pick face variance audit',
+      locationId: 'WH-B / Pick Face',
+      state: 'adjusted',
+      createdAt: new Date(now - 1000 * 60 * 60 * 36).toISOString(),
+      dueDate: new Date(now - 1000 * 60 * 60 * 6).toISOString(),
+      expectedQuantities: [{ sku: 'SKU-SPICE-12', qty: 64 }],
+      countedBy: 'inventory_lead',
+      adjustments: [{ adjustmentId: createId('adj'), variance: -2 }],
+      tenantId,
+    },
+  ];
+
+  seeded.forEach((record) => cycleCountStore.set(record.cycleCountId, record));
+  return seeded;
+}
+
 export async function getCycleCounts(tenantId = 'production') {
-  return getTenantCycleCounts(tenantId);
+  return seedCycleCounts(tenantId);
 }
 export async function createCycleCount(tenantId, payload = {}) {
   const record = buildCycleCountRecord({ tenantId, ...payload });

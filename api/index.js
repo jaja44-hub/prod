@@ -8,12 +8,12 @@ import { verifyBearerToken } from '../server/api/lib/firebaseAdmin.js';
 import { enforceModuleAccess } from '../server/api/lib/policyOrchestrator.js';
 
 // Finance handlers
-import { computeAgingReport } from '../server/api/finance/aging.js';
-import { matchPaymentsToInvoices } from '../server/api/finance/reconciliation.js';
+import financeAgingHandler from '../server/api/finance/aging.js';
+import financeReconciliationHandler from '../server/api/finance/reconciliation.js';
 
 // CRM handlers
-import { buildSamplePipeline as fetchPipeline } from '../server/api/crm/pipeline.js';
-import { buildActivityTimeline as fetchActivityTimeline } from '../server/api/crm/activity.js';
+import crmPipelineHandler from '../server/api/crm/pipeline.js';
+import crmActivityHandler from '../server/api/crm/activity.js';
 
 // Warehouse handlers
 import warehouseHandler from '../server/api/inventory/warehouse.js';
@@ -78,32 +78,20 @@ export default async function handler(req, res) {
     // Route to handlers based on path
     // Finance module
     if (path.startsWith('/api/finance/aging')) {
-      await enforceModuleAccess(context, 'finance');
-      if (method !== 'GET') return respond(res, 405, { success: false, error: 'Method not allowed' });
-      const report = await computeAgingReport(context);
-      return respond(res, 200, { success: true, data: report });
+      return financeAgingHandler(req, res);
     }
 
     if (path.startsWith('/api/finance/reconciliation')) {
-      await enforceModuleAccess(context, 'finance');
-      if (method !== 'POST') return respond(res, 405, { success: false, error: 'Method not allowed' });
-      const result = await matchPaymentsToInvoices(context, req.body);
-      return respond(res, 200, { success: true, data: result });
+      return financeReconciliationHandler(req, res);
     }
 
     // CRM module
     if (path.startsWith('/api/crm/pipeline')) {
-      await enforceModuleAccess(context, 'crm');
-      if (method !== 'GET') return respond(res, 405, { success: false, error: 'Method not allowed' });
-      const pipeline = await fetchPipeline(context);
-      return respond(res, 200, { success: true, data: pipeline });
+      return crmPipelineHandler(req, res);
     }
 
     if (path.startsWith('/api/crm/activity')) {
-      await enforceModuleAccess(context, 'crm');
-      if (method !== 'GET') return respond(res, 405, { success: false, error: 'Method not allowed' });
-      const activities = await fetchActivityTimeline(context);
-      return respond(res, 200, { success: true, data: activities });
+      return crmActivityHandler(req, res);
     }
 
     // Sales module - quotes & orders

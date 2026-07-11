@@ -1,5 +1,6 @@
 import { verifyBearerToken } from '../lib/firebaseAdmin.js';
 import { enforceModuleAccess } from '../lib/policyOrchestrator.js';
+import { buildModuleActivityEvents } from '../lib/productionSeed.js';
 
 export function buildActivityTimeline(tenantId = 'production') {
   const now = Date.now();
@@ -128,7 +129,8 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const timeline = buildActivityTimeline(tenantId);
       const summary = buildActivitySummary(timeline);
-      return res.status(200).json({ success: true, tenantId, timeline, summary });
+      const moduleEvents = buildModuleActivityEvents(tenantId);
+      return res.status(200).json({ success: true, tenantId, timeline, summary, moduleEvents });
     }
 
     if (req.method === 'POST') {
