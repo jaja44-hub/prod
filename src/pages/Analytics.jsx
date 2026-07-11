@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
 import PageCard from '../components/PageCard';
 import useAnalyticsSnapshot from '../hooks/useAnalyticsSnapshot';
-import { TrendChart, BreakdownList, MetricTile, ProgressRing, currency } from '../components/analytics/AnalyticsCharts';
+import { TrendChart, BreakdownList, MetricTile, ProgressRing, InsightPills, DistributionChart, currency } from '../components/analytics/AnalyticsCharts';
 
 function formatCurrency(value) {
   return new Intl.NumberFormat('en-ET', {
@@ -45,6 +45,14 @@ export default function Analytics() {
   const financeModule = snapshot?.modules?.finance;
   const warehouseModule = snapshot?.modules?.warehouse;
   const salesChartData = snapshot?.modules?.sales?.chartData || [];
+  const distributionData = useMemo(() => {
+    if (!snapshot?.modules) return [];
+    return Object.entries(snapshot.modules).map(([key, module]) => ({
+      name: module?.name || key,
+      value: Number(module?.score || 0),
+      color: ['#7c3aed', '#0ea5e9', '#f59e0b', '#10b981', '#ef4444'][Object.keys(snapshot.modules).indexOf(key) % 5],
+    }));
+  }, [snapshot]);
   const insightItems = (snapshot?.insights || []).map((insight) => ({ title: insight.title, direction: insight.severity === 'positive' ? 'up' : 'down' }));
 
   return (
@@ -141,9 +149,21 @@ export default function Analytics() {
                   <InsightPills items={insightItems} />
                 </div>
               </PageCard>
+
+              <PageCard>
+                <div className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Module score spread</div>
+                <DistributionChart data={distributionData} />
+              </PageCard>
             </div>
           </div>
         </>
+      )}
+
+      {!loading && !error && !snapshot && (
+        <PageCard className="border-slate-300 bg-slate-50/80 dark:border-slate-700 dark:bg-slate-800/70">
+          <div className="text-lg font-semibold text-slate-900 dark:text-slate-100">Analytics is not available yet for this session</div>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Sign in with a valid tenant session or wait for the analytics engine to populate the live snapshot.</p>
+        </PageCard>
       )}
     </section>
   );

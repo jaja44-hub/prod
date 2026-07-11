@@ -9,7 +9,6 @@ import PageHeader from '../components/PageHeader';
 import PageCard from '../components/PageCard';
 import useAnalyticsSnapshot from '../hooks/useAnalyticsSnapshot';
 import { MetricTile, ProgressRing, TrendChart, BreakdownList, InsightPills, currency } from '../components/analytics/AnalyticsCharts';
-import { buildDemoWarehouseWorkflow, buildDemoCycleCounts } from '../lib/demoAnalyticsData';
 
 function MetricCard({ label, value, tone = 'slate' }) {
   const toneClasses = {
@@ -28,8 +27,8 @@ function MetricCard({ label, value, tone = 'slate' }) {
 }
 
 export function WarehouseDashboard() {
-  const [workflowData, setWorkflowData] = useState(() => buildDemoWarehouseWorkflow());
-  const [cycleCounts, setCycleCounts] = useState(() => buildDemoCycleCounts());
+  const [workflowData, setWorkflowData] = useState(null);
+  const [cycleCounts, setCycleCounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { snapshot } = useAnalyticsSnapshot();
@@ -50,13 +49,13 @@ export function WarehouseDashboard() {
         const client = getApiClient();
 
         const [workflow, counts] = await Promise.all([
-          client.warehouse('workflow').catch(() => buildDemoWarehouseWorkflow()),
-          client.inventory('cycleCounts').catch(() => buildDemoCycleCounts()),
+          client.warehouse('workflow').catch(() => null),
+          client.inventory('cycleCounts').catch(() => null),
         ]);
 
-        const nextWorkflow = workflow?.data || workflow || buildDemoWarehouseWorkflow();
+        const nextWorkflow = workflow?.data || workflow || null;
         setWorkflowData(nextWorkflow);
-        const nextCounts = Array.isArray(counts?.data) ? counts.data : Array.isArray(counts) ? counts : buildDemoCycleCounts();
+        const nextCounts = Array.isArray(counts?.data) ? counts.data : Array.isArray(counts) ? counts : [];
         setCycleCounts(nextCounts);
       } catch (err) {
         setError(err.message || 'Failed to load warehouse data');
@@ -68,10 +67,10 @@ export function WarehouseDashboard() {
     fetchData();
   }, []);
 
-  const workflowReport = workflowData?.report || workflowData?.workflow?.report || null;
+  const workflowReport = workflowData?.workflow || workflowData?.report || workflowData?.workflow?.report || null;
   const shipments = Array.isArray(workflowReport?.shipments) ? workflowReport.shipments : [];
-  const movements = Array.isArray(workflowReport?.movements) ? workflowReport.movements : [];
-  const workflowStages = Array.isArray(workflowReport?.workflow) ? workflowReport.workflow : [];
+  const movements = Array.isArray(workflowReport?.transfers) ? workflowReport.transfers : [];
+  const workflowStages = Array.isArray(workflowReport?.picks) ? workflowReport.picks : [];
 
   if (loading) return <div className="space-y-4"><PageHeader title="Warehouse Operations" subtitle="Aggregating dispatch, inventory, and cycle count signals" /><div className="animate-pulse space-y-3"><div className="h-20 rounded-xl bg-slate-200 dark:bg-slate-800" /><div className="h-32 rounded-xl bg-slate-200 dark:bg-slate-800" /></div></div>;
   if (error) return <div className="space-y-4"><PageHeader title="Warehouse Operations" subtitle="The live warehouse feed is temporarily unavailable" /><PageCard className="border-amber-300 bg-amber-50/80 dark:border-amber-700 dark:bg-amber-900/20"><p className="text-sm text-amber-800 dark:text-amber-300">{error}</p></PageCard></div>;

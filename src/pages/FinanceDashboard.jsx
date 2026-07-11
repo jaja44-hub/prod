@@ -9,11 +9,10 @@ import PageHeader from '../components/PageHeader';
 import PageCard from '../components/PageCard';
 import useAnalyticsSnapshot from '../hooks/useAnalyticsSnapshot';
 import { MetricTile, ProgressRing, TrendChart, BreakdownList, InsightPills, currency } from '../components/analytics/AnalyticsCharts';
-import { buildDemoAgingReport } from '../lib/demoAnalyticsData';
 
 export function FinanceDashboard() {
-  const [agingData, setAgingData] = useState(() => buildDemoAgingReport());
-  const [reconciliationData, setReconciliationData] = useState({ success: true, report: { results: [], unmatchedPayments: [] } });
+  const [agingData, setAgingData] = useState(null);
+  const [reconciliationData, setReconciliationData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { snapshot } = useAnalyticsSnapshot();
@@ -24,16 +23,9 @@ export function FinanceDashboard() {
         setLoading(true);
         const client = getApiClient();
 
-        const aging = await client.finance('aging').catch(() => buildDemoAgingReport());
-        setAgingData(aging?.data || aging || buildDemoAgingReport());
-        const reconciliation = {
-          success: true,
-          report: {
-            results: [],
-            unmatchedPayments: [],
-          },
-        };
-        setReconciliationData(reconciliation);
+        const aging = await client.finance('aging').catch(() => null);
+        setAgingData(aging?.data || aging || null);
+        setReconciliationData(null);
       } catch (err) {
         setError(err.message || 'Failed to load finance data');
       } finally {

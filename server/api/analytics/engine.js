@@ -1,8 +1,9 @@
 import { buildKpiDashboard } from './metrics.js';
-import { buildPipelineSummary } from '../crm/pipeline.js';
+import { buildSamplePipeline, buildPipelineSummary } from '../crm/pipeline.js';
 import { computeVendorScore } from '../purchase/vendor-performance.js';
-import { buildWarehouseSummary } from '../inventory/warehouse.js';
+import { buildPickPackShipWorkflow, buildWarehouseSummary } from '../inventory/warehouse.js';
 import { computeAgingReport } from '../finance/aging.js';
+import { getOrders } from '../sales/orders.js';
 
 function normalizeNumber(value) {
   const num = Number(value || 0);
@@ -19,21 +20,69 @@ function buildModuleScore(moduleData = {}) {
   };
 }
 
+async function resolveSalesOrders(tenantId, data = {}) {
+  if (Array.isArray(data.salesOrders)) return data.salesOrders;
+  if (Array.isArray(data.orders)) return data.orders;
+  try {
+    const liveOrders = await getOrders(tenantId);
+    if (Array.isArray(liveOrders) && liveOrders.length > 0) return liveOrders;
+  } catch (err) {
+    console.warn('[analytics/engine] failed to read sales orders', err?.message || err);
+  }
+  return [];
+}
+
+async function resolveCrmPipeline(tenantId, data = {}) {
+  if (data.crmPipeline) return data.crmPipeline;
+  if (data.pipeline) return data.pipeline;
+  try {
+    return buildSamplePipeline(tenantId);
+  } catch (err) {
+    console.warn('[analytics/engine] failed to read CRM pipeline', err?.message || err);
+    return { leads: [], opportunities: [] };
+  }
+}
+
+async function resolveWarehouseWorkflow(tenantId, data = {}) {
+  if (data.warehouseData) return data.warehouseData;
+  if (data.workflow) return data.workflow;
+  try {
+    return buildPickPackShipWorkflow(tenantId);
+  } catch (err) {
+    console.warn('[analytics/engine] failed to read warehouse workflow', err?.message || err);
+    return { picks: [], packs: [], shipments: [], transfers: [] };
+  }
+}
+
 export async function buildTenantAnalyticsSnapshot({ tenantId = 'production', data = {} } = {}) {
-  const salesOrders = Array.isArray(data.salesOrders) ? data.salesOrders : [];
+  const [salesOrders, crmPipeline, warehouseData] = await Promise.all([
+    resolveSalesOrders(tenantId, data),
+    resolveCrmPipeline(tenantId, data),
+    resolveWarehouseWorkflow(tenantId, data),
+  ]);
+
   const salesRevenue = salesOrders.reduce((sum, order) => sum + normalizeNumber(order.amountTotal || order.amount_total || order.amount || 0), 0);
   const salesOrdersCount = salesOrders.length;
+  const salesChartData = salesOrders.length > 0
+    ? salesOrders.slice(-4).map((order, index) => ({
+        name: order.name || order.orderId || `Order ${index + 1}`,
+        value: normalizeNumber(order.amountTotal || order.amount_total || order.amount || 0),
+      }))
+    : [
+        { name: 'No orders', value: 0 },
+        { name: 'Pending', value: 0 },
+        { name: 'Booked', value: 0 },
+        { name: 'Ready', value: 0 },
+      ];
 
-  const crmPipeline = data.crmPipeline || { leads: [], opportunities: [] };
   const pipelineSummary = buildPipelineSummary(crmPipeline);
 
-  const purchaseData = data.purchaseData || { purchases: [] };
+  const purchaseData = data.purchaseData || data.purchase || { purchases: [] };
   const vendorScore = computeVendorScore({ purchases: purchaseData.purchases || [] });
 
-  const warehouseData = data.warehouseData || { picks: [], packs: [], shipments: [], transfers: [] };
   const warehouseSummary = buildWarehouseSummary(warehouseData);
 
-  const financeData = data.financeData || { vendorLines: [], customerLines: [] };
+  const financeData = data.financeData || data.finance || { vendorLines: [], customerLines: [] };
   const agingReport = computeAgingReport(financeData);
 
   const financeKpis = buildKpiDashboard({
@@ -75,6 +124,12 @@ export async function buildTenantAnalyticsSnapshot({ tenantId = 'production', da
         orders: salesOrdersCount,
         averageOrderValue: salesOrdersCount > 0 ? salesRevenue / salesOrdersCount : 0,
       },
+      chartData: salesChartData,
+      breakdown: [
+        { name: 'Orders', value: salesOrdersCount, color: '#7c3aed' },
+        { name: 'Revenue', value: salesRevenue, color: '#0ea5e9' },
+        { name: 'Avg. order', value: salesOrdersCount > 0 ? salesRevenue / salesOrdersCount : 0, color: '#f59e0b' },
+      ],
     }),
     crm: buildModuleScore({
       name: 'CRM',
