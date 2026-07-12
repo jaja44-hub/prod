@@ -62,15 +62,16 @@ async function resolveWarehouseWorkflow(tenantId, data = {}) {
   if (data.warehouseData) return data.warehouseData;
   if (data.workflow) return data.workflow;
   try {
+    // Now calls Odoo proxy via updated warehouse API
+    return await buildPickPackShipWorkflow(tenantId);
+  } catch (err) {
+    console.warn('[analytics/engine] failed to read warehouse workflow from Odoo proxy', err?.message || err);
+  }
+  try {
     const dataset = await getTenantDataset(tenantId, 'warehouse_workflow', buildWarehouseWorkflowSeed);
     return dataset;
   } catch (err) {
     console.warn('[analytics/engine] failed to read warehouse workflow from Firestore', err?.message || err);
-  }
-  try {
-    return buildPickPackShipWorkflow(tenantId);
-  } catch (err) {
-    console.warn('[analytics/engine] failed to read warehouse workflow from seed builder', err?.message || err);
     return { picks: [], packs: [], shipments: [], transfers: [] };
   }
 }
@@ -114,6 +115,12 @@ export async function buildTenantAnalyticsSnapshot({ tenantId = 'production', da
 
   let financeData = data.financeData || data.finance;
   if (!financeData) {
+    try {
+      // Now calls Odoo proxy via updated finance API
+      financeData = await buildSeededFinanceAgingData(tenantId);
+    } catch (err) {
+      console.warn('[analytics/engine] failed to read finance data from Odoo proxy', err?.message || err);
+    }
     try {
       const dataset = await getTenantDataset(tenantId, 'finance_aging', buildFinanceAgingSeed);
       financeData = dataset;
