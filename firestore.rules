@@ -53,7 +53,7 @@ service cloud.firestore {
 
     // ── TENANTS COLLECTION (super-admin only) ─────────────────────
     match /tenants/{tenantId} {
-      allow read:  if isAuthenticated() && (getUserTenantId() == tenantId || getUserTenantId() == 'default');
+      allow read:  if isAuthenticated() && (getUserTenantId() == tenantId || getUserTenantId() == 'default' || getUserTenantId() == null);
       allow write: if isCEO() && (getUserTenantId() == tenantId || getUserTenantId() == 'default');
     }
 
@@ -163,6 +163,13 @@ service cloud.firestore {
       allow read:   if isManagerOrAbove() && sameTenant(resource.data);
       allow create: if isAuthenticated() && validTenantWrite();
       allow update, delete: if false;
+    }
+
+    // ── TENANT OPERATIONAL DATA (seeded data for analytics) ─────────
+    // This collection holds seeded production data for all modules
+    match /tenant_operational_data/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Only Admin SDK can write
     }
 
     // ── SYSTEM CONFIG (module locks, branding) — tenant-scoped ───
