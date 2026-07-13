@@ -105,10 +105,19 @@ export default async function handler(req, res) {
     await enforceModuleAccess(decoded || {}, 'analytics', 'metrics');
     const tenantId = decoded?.tenantId || decoded?.tenant_id || 'production';
 
+    // Use Neon DB data instead of sample data
+    const { getSalesAnalytics } = await import('../lib/neonAgingQueries.js');
+    const salesData = await getSalesAnalytics(tenantId).catch(() => []);
+    
+    const transactions = salesData.map(sale => ({
+      amount: Number(sale.amount_total) || 0,
+      currency: sale.currency || 'ETB'
+    }));
+
     if (req.method === 'GET') {
       const dashboard = buildKpiDashboard({
-        transactions: buildSampleTransactionData(),
-        costItems: buildSampleCostData(),
+        transactions,
+        costItems: [], // Cost items not yet migrated to Neon DB
         tenantId,
       });
       return res.status(200).json({ success: true, tenantId, ...dashboard });
@@ -116,8 +125,8 @@ export default async function handler(req, res) {
 
     const payload = req.body || {};
     const dashboard = buildKpiDashboard({
-      transactions: payload.transactions || buildSampleTransactionData(),
-      costItems: payload.costItems || buildSampleCostData(),
+      transactions: payload.transactions || transactions,
+      costItems: payload.costItems || [],
       tenantId,
     });
     return res.status(200).json({ success: true, tenantId, ...dashboard });

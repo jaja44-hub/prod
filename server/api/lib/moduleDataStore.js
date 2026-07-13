@@ -1,48 +1,17 @@
-import { getFirebaseAdmin } from './firebaseAdmin.js';
-
-const COLLECTION = 'tenant_operational_data';
 const memoryFallback = new Map();
 
-function docId(tenantId, datasetKey) {
+function cacheKey(tenantId, datasetKey) {
   return `${tenantId}__${datasetKey}`;
 }
 
-function cacheKey(tenantId, datasetKey) {
-  return docId(tenantId, datasetKey);
-}
-
-export async function getTenantDataset(tenantId = 'production', datasetKey, seedBuilder) {
+export async function getTenantDataset(tenantId = 'production', datasetKey) {
   const key = cacheKey(tenantId, datasetKey);
   const cached = memoryFallback.get(key);
   if (cached) return cached;
 
-  try {
-    const admin = getFirebaseAdmin();
-    if (!admin) {
-      console.warn(`[moduleDataStore] Firebase Admin not available, using seed data for ${datasetKey}`);
-    } else {
-      const db = admin.firestore();
-      const snap = await db.collection(COLLECTION).doc(docId(tenantId, datasetKey)).get();
-      if (snap.exists) {
-        const data = snap.data();
-        if (data && (data.records?.length > 0 || data.picks || data.vendorLines || data.leads || data.events)) {
-          memoryFallback.set(key, data);
-          return data;
-        }
-      }
-    }
-  } catch (err) {
-    console.warn(`[moduleDataStore] Firestore read failed for ${datasetKey}:`, err?.message || err);
-  }
-
-  const seeded = seedBuilder(tenantId);
-  memoryFallback.set(key, seeded);
-  try {
-    await saveTenantDataset(tenantId, datasetKey, seeded);
-  } catch (err) {
-    console.warn(`[moduleDataStore] Firestore lazy-seed failed for ${datasetKey}:`, err?.message || err);
-  }
-  return seeded;
+  // Seed builder removed - data must come from Odoo/Neon DB
+  // No fallbacks allowed for Session 8 validation
+  throw new Error(`No data found for datasetKey: ${datasetKey}. Data must be sourced from Odoo/Neon DB.`);
 }
 
 export async function saveTenantDataset(tenantId = 'production', datasetKey, payload = {}) {
@@ -55,18 +24,13 @@ export async function saveTenantDataset(tenantId = 'production', datasetKey, pay
   };
   memoryFallback.set(cacheKey(tenantId, datasetKey), record);
 
-  const admin = getFirebaseAdmin();
-  if (!admin) {
-    console.warn(`[moduleDataStore] Firebase Admin not available, skipping Firestore write for ${datasetKey}`);
-    return record;
-  }
-  const db = admin.firestore();
-  await db.collection(COLLECTION).doc(docId(tenantId, datasetKey)).set(record, { merge: true });
+  // Firestore write removed - data now persisted in Odoo
+  // Keep memory cache for performance
   return record;
 }
 
-export async function listTenantRecords(tenantId, datasetKey, seedBuilder) {
-  const dataset = await getTenantDataset(tenantId, datasetKey, seedBuilder);
+export async function listTenantRecords(tenantId, datasetKey) {
+  const dataset = await getTenantDataset(tenantId, datasetKey);
   return Array.isArray(dataset?.records) ? dataset.records : [];
 }
 

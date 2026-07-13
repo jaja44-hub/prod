@@ -1,12 +1,10 @@
 import { buildKpiDashboard } from './metrics.js';
 import { buildSamplePipeline, buildPipelineSummary } from '../crm/pipeline.js';
-import { buildSeededPurchaseData, computeVendorScore } from '../purchase/vendor-performance.js';
+import { computeVendorScore } from '../purchase/vendor-performance.js';
 import { buildPickPackShipWorkflow, buildWarehouseSummary } from '../inventory/warehouse.js';
-import { buildSeededFinanceAgingData, computeAgingReport } from '../finance/aging.js';
+import { computeAgingReport } from '../finance/aging.js';
 import { getOrders } from '../sales/orders.js';
-import { buildSeededFinanceTransactions } from '../lib/productionSeed.js';
-import { getTenantDataset } from '../lib/moduleDataStore.js';
-import { buildCrmPipelineSeed, buildWarehouseWorkflowSeed, buildFinanceAgingSeed, buildPurchaseSeed, buildSalesOrdersSeed } from '../lib/productionSeedCatalog.js';
+import { getSalesAnalytics, getWarehouseMetrics, getFinanceAging } from '../lib/neonAgingQueries.js';
 
 function normalizeNumber(value) {
   const num = Number(value || 0);
@@ -26,52 +24,55 @@ function buildModuleScore(moduleData = {}) {
 async function resolveSalesOrders(tenantId, data = {}) {
   if (Array.isArray(data.salesOrders)) return data.salesOrders;
   if (Array.isArray(data.orders)) return data.orders;
+  
+  // Try Neon DB first for sales analytics
   try {
-    const dataset = await getTenantDataset(tenantId, 'sales_orders', buildSalesOrdersSeed);
-    return dataset.records || [];
+    const neonSales = await getSalesAnalytics(tenantId);
+    if (neonSales && neonSales.length > 0) {
+      return neonSales.map(sale => ({
+        name: sale.order_name,
+        orderId: sale.order_id,
+        amountTotal: Number(sale.amount_total),
+        amount_total: Number(sale.amount_total),
+        state: sale.state,
+        dateOrder: sale.date_order,
+        partnerId: sale.partner_id,
+        partnerName: sale.partner_name,
+      }));
+    }
   } catch (err) {
-    console.warn('[analytics/engine] failed to read sales orders from Firestore', err?.message || err);
+    console.warn('[analytics/engine] Neon DB query failed for sales orders:', err?.message || err);
   }
+  
+  // Try live orders API as fallback
   try {
     const liveOrders = await getOrders(tenantId);
     if (Array.isArray(liveOrders) && liveOrders.length > 0) return liveOrders;
   } catch (err) {
     console.warn('[analytics/engine] failed to read sales orders from API', err?.message || err);
   }
+  
   return [];
 }
 
 async function resolveCrmPipeline(tenantId, data = {}) {
   if (data.crmPipeline) return data.crmPipeline;
   if (data.pipeline) return data.pipeline;
-  try {
-    const dataset = await getTenantDataset(tenantId, 'crm_pipeline', buildCrmPipelineSeed);
-    return dataset;
-  } catch (err) {
-    console.warn('[analytics/engine] failed to read CRM pipeline from Firestore', err?.message || err);
-  }
-  try {
-    return await buildSamplePipeline(tenantId);
-  } catch (err) {
-    console.warn('[analytics/engine] failed to read CRM pipeline from seed builder', err?.message || err);
-    return { leads: [], opportunities: [] };
-  }
+  
+  // CRM not yet migrated to Neon - return empty for Session 8 validation
+  console.warn('[analytics/engine] CRM pipeline not available - requires Neon DB migration');
+  return { leads: [], opportunities: [] };
 }
 
 async function resolveWarehouseWorkflow(tenantId, data = {}) {
   if (data.warehouseData) return data.warehouseData;
   if (data.workflow) return data.workflow;
+  
+  // Now calls Neon DB via updated warehouse API
   try {
-    // Now calls Odoo proxy via updated warehouse API
     return await buildPickPackShipWorkflow(tenantId);
   } catch (err) {
-    console.warn('[analytics/engine] failed to read warehouse workflow from Odoo proxy', err?.message || err);
-  }
-  try {
-    const dataset = await getTenantDataset(tenantId, 'warehouse_workflow', buildWarehouseWorkflowSeed);
-    return dataset;
-  } catch (err) {
-    console.warn('[analytics/engine] failed to read warehouse workflow from Firestore', err?.message || err);
+    console.warn('[analytics/engine] failed to read warehouse workflow from Neon DB', err?.message || err);
     return { picks: [], packs: [], shipments: [], transfers: [] };
   }
 }
@@ -99,43 +100,30 @@ export async function buildTenantAnalyticsSnapshot({ tenantId = 'production', da
 
   const pipelineSummary = buildPipelineSummary(crmPipeline);
 
-  let purchaseData = data.purchaseData || data.purchase;
-  if (!purchaseData) {
-    try {
-      const dataset = await getTenantDataset(tenantId, 'purchase_data', buildPurchaseSeed);
-      purchaseData = dataset;
-    } catch (err) {
-      console.warn('[analytics/engine] failed to read purchase data from Firestore', err?.message || err);
-      purchaseData = buildSeededPurchaseData(tenantId);
-    }
-  }
-  const vendorScore = computeVendorScore({ purchases: purchaseData.purchases || [] });
+  // Purchase data not yet migrated to Neon DB - return empty for Session 8 validation
+  const purchaseData = { purchases: [] };
+  const vendorScore = computeVendorScore({ purchases: [] });
 
   const warehouseSummary = buildWarehouseSummary(warehouseData);
 
+  // Finance data from Neon DB - no fallbacks for Session 8 validation
   let financeData = data.financeData || data.finance;
   if (!financeData) {
     try {
-      // Now calls Odoo proxy via updated finance API
-      financeData = await buildSeededFinanceAgingData(tenantId);
+      financeData = await getFinanceAging(tenantId);
     } catch (err) {
-      console.warn('[analytics/engine] failed to read finance data from Odoo proxy', err?.message || err);
-    }
-    try {
-      const dataset = await getTenantDataset(tenantId, 'finance_aging', buildFinanceAgingSeed);
-      financeData = dataset;
-    } catch (err) {
-      console.warn('[analytics/engine] failed to read finance data from Firestore', err?.message || err);
-      financeData = buildSeededFinanceAgingData(tenantId);
+      console.error('[analytics/engine] failed to read finance data from Neon DB - no fallback allowed', err?.message || err);
+      throw new Error('Finance data unavailable - Neon DB connection required');
     }
   }
   const agingReport = financeData.report?.summary
     ? financeData.report
     : computeAgingReport({ vendorLines: financeData.vendorLines || [], customerLines: financeData.customerLines || [] });
 
+  // Finance transactions not yet migrated to Neon DB - use empty for Session 8 validation
   const financeKpis = buildKpiDashboard({
-    transactions: data.transactions || buildSeededFinanceTransactions(tenantId).transactions,
-    costItems: data.costItems || buildSeededFinanceTransactions(tenantId).costItems,
+    transactions: data.transactions || [],
+    costItems: data.costItems || [],
     tenantId,
   });
 

@@ -1,8 +1,8 @@
 import { verifyBearerToken } from '../lib/firebaseAdmin.js';
 import { enforceModuleAccess } from '../lib/policyOrchestrator.js';
-import { getTenantDataset } from '../lib/moduleDataStore.js';
-import { buildFinanceAgingSeed } from '../lib/productionSeedCatalog.js';
+import { computeAgingBuckets } from '../lib/neonAgingQueries.js';
 
+// In-memory bucketAging kept as fallback for when Neon DB is unavailable
 function bucketAging(lines = []) {
   const now = Date.now();
   const buckets = {
@@ -40,103 +40,36 @@ export function computeAgingReport({ vendorLines = [], customerLines = [] } = {}
   };
 }
 
-async function fetchOdooFinanceData(tenantId) {
-  try {
-    const odooProxyUrl = process.env.ODOO_PROXY_URL || '/api/odooProxy';
-    
-    // Fetch vendor bills (Accounts Payable)
-    const vendorResponse = await fetch(odooProxyUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': process.env.ODOO_PROXY_SKIP_AUTH === 'true' ? '' : `Bearer ${process.env.INTERNAL_API_TOKEN || ''}`,
-      },
-      body: JSON.stringify({
-        model: 'account.move',
-        method: 'search_read',
-        args: [[['move_type', '=', 'in_invoice'], ['state', 'in', ['posted', 'in_payment']]]],
-        kwargs: {
-          fields: ['id', 'name', 'partner_id', 'invoice_date', 'invoice_date_due', 'amount_total', 'amount_residual', 'currency_id'],
-          limit: 50,
-        },
-        tenantId,
-      }),
-    });
-    
-    // Fetch customer invoices (Accounts Receivable)
-    const customerResponse = await fetch(odooProxyUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': process.env.ODOO_PROXY_SKIP_AUTH === 'true' ? '' : `Bearer ${process.env.INTERNAL_API_TOKEN || ''}`,
-      },
-      body: JSON.stringify({
-        model: 'account.move',
-        method: 'search_read',
-        args: [[['move_type', '=', 'out_invoice'], ['state', 'in', ['posted', 'in_payment']]]],
-        kwargs: {
-          fields: ['id', 'name', 'partner_id', 'invoice_date', 'invoice_date_due', 'amount_total', 'amount_residual', 'currency_id'],
-          limit: 50,
-        },
-        tenantId,
-      }),
-    });
-    
-    const vendorResult = await vendorResponse.json();
-    const customerResult = await customerResponse.json();
-    
-    if (vendorResult.success && customerResult.success) {
-      return transformOdooMoves(vendorResult.data, customerResult.data);
-    }
-    
-    return null;
-  } catch (err) {
-    console.warn('[finance/aging] Failed to fetch from Odoo proxy:', err?.message || err);
-    return null;
-  }
-}
-
-function transformOdooMoves(vendorMoves, customerMoves) {
-  const vendorLines = vendorMoves.map(move => ({
-    invoiceId: move.name || `ap-${move.id}`,
-    vendorName: move.partner_id?.[1] || 'Unknown Vendor',
-    dueDate: move.invoice_date_due || move.invoice_date || new Date().toISOString(),
-    amount: move.amount_residual || move.amount_total || 0,
-    currency: move.currency_id?.[1] || 'ETB',
-  }));
-  
-  const customerLines = customerMoves.map(move => ({
-    invoiceId: move.name || `ar-${move.id}`,
-    customerName: move.partner_id?.[1] || 'Unknown Customer',
-    dueDate: move.invoice_date_due || move.invoice_date || new Date().toISOString(),
-    amount: move.amount_residual || move.amount_total || 0,
-    currency: move.currency_id?.[1] || 'ETB',
-  }));
-  
-  return { vendorLines, customerLines };
-}
-
 export async function buildSeededFinanceAgingData(tenantId = 'production') {
-  // Try Odoo proxy first for real data
-  const odooData = await fetchOdooFinanceData(tenantId);
-  if (odooData && (odooData.vendorLines.length > 0 || odooData.customerLines.length > 0)) {
-    return {
-      tenantId,
-      vendorLines: odooData.vendorLines,
-      customerLines: odooData.customerLines,
-      report: computeAgingReport(odooData),
-    };
+  // Try Neon DB first for analytics
+  try {
+    const neonReport = await computeAgingBuckets(tenantId);
+    if (neonReport) {
+      return {
+        tenantId,
+        vendorLines: neonReport.accountsPayable.current
+          .concat(neonReport.accountsPayable.days30)
+          .concat(neonReport.accountsPayable.days60)
+          .concat(neonReport.accountsPayable.days90)
+          .concat(neonReport.accountsPayable.over90),
+        customerLines: neonReport.accountsReceivable.current
+          .concat(neonReport.accountsReceivable.days30)
+          .concat(neonReport.accountsReceivable.days60)
+          .concat(neonReport.accountsReceivable.days90)
+          .concat(neonReport.accountsReceivable.over90),
+        report: neonReport,
+      };
+    }
+  } catch (err) {
+    console.warn('[finance/aging] Neon DB query failed, using in-memory fallback:', err?.message || err);
   }
   
-  // Fallback to Firestore seed data
-  const dataset = await getTenantDataset(tenantId, 'finance_aging', buildFinanceAgingSeed);
-  const vendorLines = dataset.vendorLines || [];
-  const customerLines = dataset.customerLines || [];
+  // Fallback to empty data with in-memory computation
   return {
     tenantId,
-    vendorLines,
-    customerLines,
-    report: computeAgingReport({ vendorLines, customerLines }),
+    vendorLines: [],
+    customerLines: [],
+    report: computeAgingReport({ vendorLines: [], customerLines: [] }),
   };
 }
 

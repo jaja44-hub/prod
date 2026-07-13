@@ -48,93 +48,32 @@ export async function createAgingTables() {
 }
 
 export async function computeAgingBuckets(tenantId = 'production') {
-  const vendorAgingQuery = `
-    WITH aged_vendors AS (
-      SELECT 
-        invoice_id,
-        vendor_name,
-        due_date,
-        amount,
-        currency,
-        EXTRACT(DAY FROM (CURRENT_DATE - due_date)) as age_days
-      FROM vendor_bills
-      WHERE tenant_id = $1
-    )
+  // Simplified approach: fetch raw data and bucket in JavaScript
+  const vendorQuery = `
     SELECT 
-      CASE 
-        WHEN age_days <= 0 THEN 'current'
-        WHEN age_days <= 30 THEN 'days30'
-        WHEN age_days <= 60 THEN 'days60'
-        WHEN age_days <= 90 THEN 'days90'
-        ELSE 'over90'
-      END as bucket,
-      json_agg(
-        json_build_object(
-          'invoiceId', invoice_id,
-          'vendorName', vendor_name,
-          'dueDate', due_date,
-          'amount', amount,
-          'currency', currency,
-          'ageDays', age_days
-        )
-      ) as lines
-    FROM aged_vendors
-    GROUP BY bucket
-    ORDER BY 
-      CASE bucket
-        WHEN 'current' THEN 1
-        WHEN 'days30' THEN 2
-        WHEN 'days60' THEN 3
-        WHEN 'days90' THEN 4
-        WHEN 'over90' THEN 5
-      END;
+      invoice_id,
+      vendor_name,
+      due_date,
+      amount,
+      currency
+    FROM vendor_bills
+    WHERE tenant_id = $1;
   `;
   
-  const customerAgingQuery = `
-    WITH aged_customers AS (
-      SELECT 
-        invoice_id,
-        customer_name,
-        due_date,
-        amount,
-        currency,
-        EXTRACT(DAY FROM (CURRENT_DATE - due_date)) as age_days
-      FROM customer_invoices
-      WHERE tenant_id = $1
-    )
+  const customerQuery = `
     SELECT 
-      CASE 
-        WHEN age_days <= 0 THEN 'current'
-        WHEN age_days <= 30 THEN 'days30'
-        WHEN age_days <= 60 THEN 'days60'
-        WHEN age_days <= 90 THEN 'days90'
-        ELSE 'over90'
-      END as bucket,
-      json_agg(
-        json_build_object(
-          'invoiceId', invoice_id,
-          'customerName', customer_name,
-          'dueDate', due_date,
-          'amount', amount,
-          'currency', currency,
-          'ageDays', age_days
-        )
-      ) as lines
-    FROM aged_customers
-    GROUP BY bucket
-    ORDER BY 
-      CASE bucket
-        WHEN 'current' THEN 1
-        WHEN 'days30' THEN 2
-        WHEN 'days60' THEN 3
-        WHEN 'days90' THEN 4
-        WHEN 'over90' THEN 5
-      END;
+      invoice_id,
+      customer_name,
+      due_date,
+      amount,
+      currency
+    FROM customer_invoices
+    WHERE tenant_id = $1;
   `;
   
   try {
-    const vendorResult = await queryNeon(vendorAgingQuery, [tenantId]);
-    const customerResult = await queryNeon(customerAgingQuery, [tenantId]);
+    const vendorResult = await queryNeon(vendorQuery, [tenantId]);
+    const customerResult = await queryNeon(customerQuery, [tenantId]);
     
     const accountsPayable = {
       current: [],
@@ -144,8 +83,24 @@ export async function computeAgingBuckets(tenantId = 'production') {
       over90: [],
     };
     
+    const now = new Date();
     for (const row of vendorResult.rows) {
-      accountsPayable[row.bucket] = row.lines || [];
+      const dueDate = new Date(row.due_date);
+      const ageDays = Math.floor((now - dueDate) / (1000 * 60 * 60 * 24));
+      const line = {
+        invoiceId: row.invoice_id,
+        vendorName: row.vendor_name,
+        dueDate: row.due_date,
+        amount: Number(row.amount),
+        currency: row.currency,
+        ageDays,
+      };
+      
+      if (ageDays <= 0) accountsPayable.current.push(line);
+      else if (ageDays <= 30) accountsPayable.days30.push(line);
+      else if (ageDays <= 60) accountsPayable.days60.push(line);
+      else if (ageDays <= 90) accountsPayable.days90.push(line);
+      else accountsPayable.over90.push(line);
     }
     
     const accountsReceivable = {
@@ -157,7 +112,22 @@ export async function computeAgingBuckets(tenantId = 'production') {
     };
     
     for (const row of customerResult.rows) {
-      accountsReceivable[row.bucket] = row.lines || [];
+      const dueDate = new Date(row.due_date);
+      const ageDays = Math.floor((now - dueDate) / (1000 * 60 * 60 * 24));
+      const line = {
+        invoiceId: row.invoice_id,
+        customerName: row.customer_name,
+        dueDate: row.due_date,
+        amount: Number(row.amount),
+        currency: row.currency,
+        ageDays,
+      };
+      
+      if (ageDays <= 0) accountsReceivable.current.push(line);
+      else if (ageDays <= 30) accountsReceivable.days30.push(line);
+      else if (ageDays <= 60) accountsReceivable.days60.push(line);
+      else if (ageDays <= 90) accountsReceivable.days90.push(line);
+      else accountsReceivable.over90.push(line);
     }
     
     const summaryQuery = `
@@ -186,6 +156,58 @@ export async function computeAgingBuckets(tenantId = 'production') {
     console.error('[neonAging] Failed to compute aging buckets:', err);
     throw err;
   }
+}
+
+export async function getWarehouseMetrics(tenantId = 'production') {
+  const query = `
+    SELECT 
+      picking_id,
+      picking_type,
+      state,
+      scheduled_date,
+      location_src,
+      location_dest
+    FROM warehouse_metrics
+    WHERE tenant_id = $1
+    ORDER BY scheduled_date DESC;
+  `;
+  
+  try {
+    const result = await queryNeon(query, [tenantId]);
+    return result.rows;
+  } catch (err) {
+    console.error('[neonAging] Failed to get warehouse metrics:', err);
+    throw err;
+  }
+}
+
+export async function getSalesAnalytics(tenantId = 'production') {
+  const query = `
+    SELECT 
+      order_id,
+      order_name,
+      state,
+      date_order,
+      amount_total,
+      currency,
+      partner_id,
+      partner_name
+    FROM sales_analytics
+    WHERE tenant_id = $1
+    ORDER BY date_order DESC;
+  `;
+  
+  try {
+    const result = await queryNeon(query, [tenantId]);
+    return result.rows;
+  } catch (err) {
+    console.error('[neonAging] Failed to get sales analytics:', err);
+    throw err;
+  }
+}
+
+export async function getFinanceAging(tenantId = 'production') {
+  return await computeAgingBuckets(tenantId);
 }
 
 export async function syncOdooToNeon(vendorBills, customerInvoices, tenantId = 'production') {

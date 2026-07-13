@@ -1,10 +1,10 @@
 import { verifyBearerToken } from '../lib/firebaseAdmin.js';
 import { enforceModuleAccess } from '../lib/policyOrchestrator.js';
-import { getTenantDataset } from '../lib/moduleDataStore.js';
-import { buildPurchaseSeed } from '../lib/productionSeedCatalog.js';
 
 export async function buildSeededPurchaseData(tenantId = 'production') {
-  return getTenantDataset(tenantId, 'purchase_data', buildPurchaseSeed);
+  // Purchase data not yet migrated to Neon DB - return empty for Session 8 validation
+  console.warn('[purchase/vendor-performance] Purchase data not available - requires Neon DB migration');
+  return { purchases: [] };
 }
 
 export function computeVendorScore({ purchases = [] } = {}) {

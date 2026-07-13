@@ -1,7 +1,6 @@
 import { verifyBearerToken } from '../lib/firebaseAdmin.js';
 import { enforceModuleAccess } from '../lib/policyOrchestrator.js';
-import { getTenantDataset } from '../lib/moduleDataStore.js';
-import { buildWarehouseWorkflowSeed } from '../lib/productionSeedCatalog.js';
+import { getWarehouseMetrics } from '../lib/neonAgingQueries.js';
 
 function createId(prefix = 'wf') {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}-${Date.now()}`;
@@ -45,80 +44,80 @@ async function fetchOdooWarehouseData(tenantId) {
   }
 }
 
-function transformOdooPickings(odooPickings) {
+function transformNeonMetricsToWorkflow(neonMetrics) {
   const picks = [];
   const packs = [];
   const shipments = [];
   const transfers = [];
   
-  for (const picking of odooPickings) {
-    const state = picking.state || 'draft';
-    const pickId = `odoo-${picking.id}`;
+  for (const metric of neonMetrics) {
+    const state = metric.state || 'draft';
+    const pickId = metric.picking_id;
     
     if (state === 'assigned') {
       picks.push({
         pickId,
-        orderId: picking.name || `SO-${picking.id}`,
-        productId: `prod-${picking.picking_type_id}`,
-        sku: `SKU-ODOO-${picking.id}`,
+        orderId: pickId,
+        productId: `prod-${metric.picking_type}`,
+        sku: `SKU-${pickId}`,
         quantity: 1,
         status: 'ready',
-        location: picking.location_id?.[1] || 'WH-A',
+        location: metric.location_src || 'WH-A',
         tenantId: 'production',
-        dueAt: picking.scheduled_date || new Date().toISOString(),
+        dueAt: metric.scheduled_date || new Date().toISOString(),
       });
     }
     
     if (state === 'done') {
       packs.push({
-        packId: `pack-${picking.id}`,
-        orderId: picking.name || `SO-${picking.id}`,
+        packId: `pack-${pickId}`,
+        orderId: pickId,
         packageType: 'box',
         weightKg: 5.0,
         status: 'packed',
         tenantId: 'production',
-        packedAt: picking.date_done || new Date().toISOString(),
+        packedAt: metric.scheduled_date || new Date().toISOString(),
       });
       
       shipments.push({
-        shipmentId: `ship-${picking.id}`,
-        orderId: picking.name || `SO-${picking.id}`,
+        shipmentId: `ship-${pickId}`,
+        orderId: pickId,
         carrier: 'Odoo Logistics',
-        trackingNumber: `TRK-${picking.id}`,
+        trackingNumber: `TRK-${pickId}`,
         status: 'delivered',
-        shippedAt: picking.date_done || new Date().toISOString(),
-        estimatedDelivery: picking.scheduled_date || new Date().toISOString(),
+        shippedAt: metric.scheduled_date || new Date().toISOString(),
+        estimatedDelivery: metric.scheduled_date || new Date().toISOString(),
         tenantId: 'production',
       });
     }
     
     if (state === 'in_transit') {
       shipments.push({
-        shipmentId: `ship-${picking.id}`,
-        orderId: picking.name || `SO-${picking.id}`,
+        shipmentId: `ship-${pickId}`,
+        orderId: pickId,
         carrier: 'Odoo Logistics',
-        trackingNumber: `TRK-${picking.id}`,
+        trackingNumber: `TRK-${pickId}`,
         status: 'in_transit',
-        shippedAt: picking.date_done || new Date().toISOString(),
-        estimatedDelivery: picking.scheduled_date || new Date().toISOString(),
+        shippedAt: metric.scheduled_date || new Date().toISOString(),
+        estimatedDelivery: metric.scheduled_date || new Date().toISOString(),
         tenantId: 'production',
       });
     }
     
     transfers.push({
-      transferId: `transfer-${picking.id}`,
-      orderId: picking.name || `SO-${picking.id}`,
-      productId: `prod-${picking.picking_type_id}`,
+      transferId: `transfer-${pickId}`,
+      orderId: pickId,
+      productId: `prod-${metric.picking_type}`,
       type: 'internal_transfer',
-      location: `${picking.location_id?.[1] || 'WH-A'} → ${picking.location_dest_id?.[1] || 'WH-B'}`,
+      location: `${metric.location_src || 'WH-A'} → ${metric.location_dest || 'WH-B'}`,
       quantity: 10,
-      sourceLocationId: picking.location_id?.[1] || 'WH-A',
-      destinationLocationId: picking.location_dest_id?.[1] || 'WH-B',
+      sourceLocationId: metric.location_src || 'WH-A',
+      destinationLocationId: metric.location_dest || 'WH-B',
       status: state === 'done' ? 'completed' : 'in_progress',
       tenantId: 'production',
-      timestamp: picking.date_done || new Date().toISOString(),
-      createdAt: picking.create_date || new Date().toISOString(),
-      expectedAt: picking.scheduled_date || new Date().toISOString(),
+      timestamp: metric.scheduled_date || new Date().toISOString(),
+      createdAt: metric.scheduled_date || new Date().toISOString(),
+      expectedAt: metric.scheduled_date || new Date().toISOString(),
     });
   }
   
@@ -126,26 +125,30 @@ function transformOdooPickings(odooPickings) {
 }
 
 export async function buildPickPackShipWorkflow(tenantId = 'production') {
-  // Try Odoo proxy first for real data
-  const odooData = await fetchOdooWarehouseData(tenantId);
-  if (odooData && (odooData.picks.length > 0 || odooData.shipments.length > 0)) {
-    return {
-      tenantId,
-      picks: odooData.picks || [],
-      packs: odooData.packs || [],
-      shipments: odooData.shipments || [],
-      transfers: odooData.transfers || [],
-    };
+  // Try Neon DB first for analytics
+  try {
+    const neonMetrics = await getWarehouseMetrics(tenantId);
+    if (neonMetrics && neonMetrics.length > 0) {
+      const workflow = transformNeonMetricsToWorkflow(neonMetrics);
+      return {
+        tenantId,
+        picks: workflow.picks || [],
+        packs: workflow.packs || [],
+        shipments: workflow.shipments || [],
+        transfers: workflow.transfers || [],
+      };
+    }
+  } catch (err) {
+    console.warn('[warehouse] Neon DB query failed, using empty fallback:', err?.message || err);
   }
   
-  // Fallback to Firestore seed data
-  const dataset = await getTenantDataset(tenantId, 'warehouse_workflow', buildWarehouseWorkflowSeed);
+  // Fallback to empty data
   return {
     tenantId,
-    picks: dataset.picks || [],
-    packs: dataset.packs || [],
-    shipments: dataset.shipments || [],
-    transfers: dataset.transfers || [],
+    picks: [],
+    packs: [],
+    shipments: [],
+    transfers: [],
   };
 }
 

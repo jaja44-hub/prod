@@ -1,16 +1,10 @@
 import { verifyBearerToken } from '../lib/firebaseAdmin.js';
 import { enforceModuleAccess } from '../lib/policyOrchestrator.js';
-import { getTenantDataset, saveTenantDataset } from '../lib/moduleDataStore.js';
-import { buildCrmPipelineSeed } from '../lib/productionSeedCatalog.js';
 
 export async function buildSamplePipeline(tenantId = 'production') {
-  try {
-    const dataset = await getTenantDataset(tenantId, 'crm_pipeline', buildCrmPipelineSeed);
-    return dataset;
-  } catch (err) {
-    console.warn('[crm/pipeline] falling back to seed builder', err?.message || err);
-    return buildCrmPipelineSeed(tenantId);
-  }
+  // CRM not yet migrated to Neon DB - return empty for Session 8 validation
+  console.warn('[crm/pipeline] CRM pipeline not available - requires Neon DB migration');
+  return { leads: [], opportunities: [] };
 }
 
 export function normalizePipelineLead(input = {}) {

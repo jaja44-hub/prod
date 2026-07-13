@@ -1,15 +1,31 @@
 import { verifyBearerToken } from '../lib/firebaseAdmin.js';
 import { enforceModuleAccess } from '../lib/policyOrchestrator.js';
-import { getTenantDataset, saveTenantDataset } from '../lib/moduleDataStore.js';
-import { buildSalesOrdersSeed } from '../lib/productionSeedCatalog.js';
+import { getSalesAnalytics } from '../lib/neonAgingQueries.js';
 
 function createId(prefix = 'so') {
   return `${prefix}-${Math.random().toString(36).slice(2, 8)}-${Date.now()}`;
 }
 
 export async function seedSalesOrders(tenantId = 'production') {
-  const dataset = await getTenantDataset(tenantId, 'sales_orders', buildSalesOrdersSeed);
-  return Array.isArray(dataset?.records) ? dataset.records : [];
+  // Sales orders now come from Neon DB - no seed builder for Session 8 validation
+  try {
+    const neonSales = await getSalesAnalytics(tenantId);
+    return neonSales.map(sale => ({
+      id: sale.order_id,
+      name: sale.order_name,
+      orderId: sale.order_id,
+      partnerId: sale.partner_id,
+      partnerName: sale.partner_name,
+      amount_total: Number(sale.amount_total),
+      amountTotal: Number(sale.amount_total),
+      state: sale.state,
+      dateOrder: sale.date_order,
+      tenantId,
+    }));
+  } catch (err) {
+    console.error('[sales/orders] failed to read sales orders from Neon DB - no fallback allowed', err?.message || err);
+    throw new Error('Sales orders unavailable - Neon DB connection required');
+  }
 }
 
 export async function createOrder(tenantId = 'production', payload = {}) {
