@@ -6,7 +6,11 @@ const APP_ID = process.env.GITHUB_APP_ID;
 const INSTALLATION_ID = process.env.GITHUB_INSTALLATION_ID;
 const PRIVATE_KEY_PATH = process.env.GITHUB_APP_PRIVATE_KEY_PATH;
 const OWNER = process.env.GITHUB_REPO_OWNER || 'jaja44-hub';
-const REPOS = (process.env.GITHUB_REPO_LIST || 'gibi-sales,legal-commerce').split(',').map((r) => r.trim()).filter(Boolean);
+// Format: repo:branch,repo:branch or just repo for default branch
+const REPOS = (process.env.GITHUB_REPO_LIST || 'gibi-sales,legal-commerce:jafer-legal-services').split(',').map((r) => {
+  const parts = r.trim().split(':');
+  return parts.length === 2 ? { repo: parts[0], branch: parts[1] } : { repo: parts[0], branch: null };
+}).filter(Boolean);
 
 if (!APP_ID || !INSTALLATION_ID || !PRIVATE_KEY_PATH) {
   throw new Error('Missing required env vars: GITHUB_APP_ID, GITHUB_INSTALLATION_ID, GITHUB_APP_PRIVATE_KEY_PATH');
@@ -114,15 +118,17 @@ function buildCandidates(tree) {
   };
 }
 
-async function scanRepo(owner, repo, token) {
+async function scanRepo(owner, repo, token, branch = null) {
   const repoInfo = await request(`/repos/${owner}/${repo}`, 'GET', token);
-  const branchInfo = await request(`/repos/${owner}/${repo}/branches/${repoInfo.default_branch}`, 'GET', token);
+  const targetBranch = branch || repoInfo.default_branch;
+  const branchInfo = await request(`/repos/${owner}/${repo}/branches/${targetBranch}`, 'GET', token);
   const treeSha = branchInfo.commit.commit.tree.sha;
   const treeInfo = await request(`/repos/${owner}/${repo}/git/trees/${treeSha}?recursive=1`, 'GET', token);
   return {
     owner,
     repo,
     defaultBranch: repoInfo.default_branch,
+    scannedBranch: targetBranch,
     treeSize: Array.isArray(treeInfo.tree) ? treeInfo.tree.length : 0,
     samplePaths: Array.isArray(treeInfo.tree) ? treeInfo.tree.slice(0, 20).map((item) => item.path) : [],
     candidates: Array.isArray(treeInfo.tree) ? buildCandidates(treeInfo.tree) : {},
@@ -133,8 +139,8 @@ async function main() {
   const privateKey = await fs.readFile(PRIVATE_KEY_PATH, 'utf8');
   const token = await getInstallationToken(privateKey);
   const results = [];
-  for (const repo of REPOS) {
-    const summary = await scanRepo(OWNER, repo, token);
+  for (const { repo, branch } of REPOS) {
+    const summary = await scanRepo(OWNER, repo, token, branch);
     results.push(summary);
   }
   console.log(JSON.stringify({ scannedAt: new Date().toISOString(), results }, null, 2));

@@ -66,9 +66,34 @@ export default async function handler(req, res) {
       return odooProxyHandler(req, res);
     }
 
-    // Analytics engine (no auth required for development/testing)
+    // Analytics endpoints (no auth required for development/testing)
     if (path.startsWith('/api/analytics/engine')) {
       return analyticsEngineHandler(req, res);
+    }
+    if (path.startsWith('/api/analytics/metrics')) {
+      return analyticsMetricsHandler(req, res);
+    }
+    if (path.startsWith('/api/analytics/decisions')) {
+      return analyticsDecisionsHandler(req, res);
+    }
+
+    // Warehouse endpoints (no auth required for development/testing)
+    if (path.startsWith('/api/inventory/warehouse') || path.startsWith('/api/warehouse')) {
+      return warehouseHandler(req, res);
+    }
+    if (path.startsWith('/api/inventory/movements')) {
+      return inventoryMovementsHandler(req, res);
+    }
+    if (path.startsWith('/api/inventory/cycle-counts')) {
+      return cycleCountHandler(req, res);
+    }
+
+    // Finance endpoints (no auth required for development/testing)
+    if (path.startsWith('/api/finance/aging')) {
+      return financeAgingHandler(req, res);
+    }
+    if (path.startsWith('/api/finance/reconciliation')) {
+      return financeReconciliationHandler(req, res);
     }
 
     // All other endpoints require authentication
