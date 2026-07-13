@@ -270,10 +270,19 @@ export default async function handler(req, res) {
   try {
     const tenantId = req.headers['x-tenant-id'] || 'production';
     const payload = req.method === 'POST' ? (req.body || {}) : {};
+    
+    console.log('[analytics/engine] Building snapshot for tenant:', tenantId);
+    console.log('[analytics/engine] NEON_DATABASE_URL configured:', !!process.env.NEON_DATABASE_URL);
+    
     const snapshot = await buildTenantAnalyticsSnapshot({ tenantId, data: payload });
+    
+    console.log('[analytics/engine] Snapshot generated successfully');
+    console.log('[analytics/engine] Summary:', JSON.stringify(snapshot.summary));
+    
     return res.status(200).json({ success: true, tenantId, data: snapshot });
   } catch (err) {
-    console.error('[analytics/engine] error', err?.message || err);
+    console.error('[analytics/engine] error:', err?.message || err);
+    console.error('[analytics/engine] error stack:', err?.stack);
     return res.status(500).json({ success: false, error: err?.message || 'Internal' });
   }
 }

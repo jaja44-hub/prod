@@ -66,6 +66,11 @@ export default async function handler(req, res) {
       return odooProxyHandler(req, res);
     }
 
+    // Analytics engine (no auth required for development/testing)
+    if (path.startsWith('/api/analytics/engine')) {
+      return analyticsEngineHandler(req, res);
+    }
+
     // All other endpoints require authentication
     const context = await verifyBearerToken(req);
     if (!context) {

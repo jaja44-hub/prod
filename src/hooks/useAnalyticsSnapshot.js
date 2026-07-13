@@ -18,10 +18,12 @@ export function useAnalyticsSnapshot() {
         const response = await client.analytics('engine').catch(() => null);
         if (!isMounted) return;
         const payload = response?.data || response || null;
-        if (!payload || typeof payload !== 'object' || !payload.summary) {
+        // Handle both direct response and wrapped response formats
+        const snapshot = payload?.data || payload;
+        if (!snapshot || typeof snapshot !== 'object' || !snapshot.summary) {
           throw new Error('Analytics snapshot unavailable');
         }
-        setSnapshot(payload);
+        setSnapshot(snapshot);
       } catch (err) {
         if (!isMounted) return;
         setSnapshot(null);
