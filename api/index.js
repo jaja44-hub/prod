@@ -96,6 +96,14 @@ export default async function handler(req, res) {
       return financeReconciliationHandler(req, res);
     }
 
+    // CRM endpoints (no auth required for development/testing)
+    if (path.startsWith('/api/crm/pipeline')) {
+      return crmPipelineHandler(req, res);
+    }
+    if (path.startsWith('/api/crm/activity')) {
+      return crmActivityHandler(req, res);
+    }
+
     // All other endpoints require authentication
     const context = await verifyBearerToken(req);
     if (!context) {

@@ -101,6 +101,11 @@ export async function verifyBearerToken(authHeaderOrReq) {
   const token = authHeader.slice(7).trim();
   if (!token) return null;
   const adminSdk = getFirebaseAdmin();
+  if (!adminSdk) {
+    // FIREBASE_SERVICE_ACCOUNT not configured — cannot verify token, treat as unauthenticated
+    console.warn('[firebaseAdmin] Cannot verify token: Firebase Admin SDK not initialized (missing FIREBASE_SERVICE_ACCOUNT)');
+    return null;
+  }
   const decoded = await adminSdk.auth().verifyIdToken(token);
   return enrichDecodedToken(decoded);
 }

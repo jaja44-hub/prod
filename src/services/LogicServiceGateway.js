@@ -46,10 +46,39 @@ try {
 try {
   const AjvMod = await import('ajv');
   Ajv = AjvMod.default || AjvMod;
-  advisorySchema = (await import('./contracts/advisory.schema.json', { assert: { type: 'json' } })).default;
-  settlementSchema = (await import('./contracts/settlement.schema.json', { assert: { type: 'json' } })).default;
+  // Inline schemas to avoid MIME-type failures from dynamic JSON module imports in Vite/browser environments
+  advisorySchema = {
+    $schema: 'http://json-schema.org/draft-07/schema#',
+    title: 'AdvisoryRequest',
+    type: 'object',
+    required: ['tenantId', 'contextType'],
+    properties: {
+      tenantId: { type: 'string' },
+      module: { type: 'string' },
+      entityId: { type: ['string', 'null'] },
+      contextType: { type: 'string' },
+      amount: { type: 'number' },
+      complianceProfile: { type: ['string', 'null'] },
+      tin: { type: 'string' },
+      requestedBy: { type: 'string' },
+    },
+  };
+  settlementSchema = {
+    $schema: 'http://json-schema.org/draft-07/schema#',
+    title: 'SettlementRequest',
+    type: 'object',
+    required: ['tenantId', 'subtotal'],
+    properties: {
+      tenantId: { type: 'string' },
+      currency: { type: 'string' },
+      subtotal: { type: 'number' },
+      appliesWht: { type: 'boolean' },
+      jurisdiction: { type: 'string' },
+      lineItems: { type: 'array' },
+    },
+  };
 } catch (e) {
-  // validator or schemas not present — runtime will skip validation
+  // validator not present — runtime will skip validation
 }
 
 function normalizeAdvisoryRequest(input = {}) {
