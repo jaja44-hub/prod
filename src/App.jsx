@@ -21,6 +21,7 @@ import WorkOrderDetail from './pages/WorkOrderDetail';
 import PurchaseOrders from './pages/PurchaseOrders';
 import PurchaseOrderDetail from './pages/PurchaseOrderDetail';
 import Customers from './pages/Customers';
+import Vendors from './pages/Vendors';
 import Employees from './pages/Employees';
 import Accounts from './pages/Accounts';
 import MainLayout from './layouts/MainLayout';
@@ -34,6 +35,8 @@ import BarcodeMVP from './pages/Barcode';
 import QCModule from './pages/QC';
 import Analytics from './pages/Analytics';
 import WarehouseDashboard from './pages/WarehouseDashboard';
+import FinanceInvoices from './pages/FinanceInvoices';
+import FinanceReports from './pages/FinanceReports';
 
 function App() {
   const location = useLocation();
@@ -77,7 +80,7 @@ function App() {
         <Route path='/purchases' element={<RoleGuard><PurchaseOrders /></RoleGuard>} />
         <Route path='/purchases/new' element={<RoleGuard><PurchaseOrderDetail /></RoleGuard>} />
         <Route path='/purchases/:id' element={<RoleGuard><PurchaseOrderDetail /></RoleGuard>} />
-        <Route path='/suppliers' element={<RoleGuard><PurchaseOrders /></RoleGuard>} />
+        <Route path='/suppliers' element={<RoleGuard><Vendors /></RoleGuard>} />
         <Route path='/orders' element={<RoleGuard><Sales /></RoleGuard>} />
 
         {/* HR — CEO & HR Head */}
@@ -87,8 +90,8 @@ function App() {
 
         {/* Finance — CEO only */}
         <Route path='/finance' element={<RoleGuard><Accounts /></RoleGuard>} />
-        <Route path='/invoices' element={<RoleGuard><Accounts /></RoleGuard>} />
-        <Route path='/reports' element={<RoleGuard><Accounts /></RoleGuard>} />
+        <Route path='/invoices' element={<RoleGuard><FinanceInvoices /></RoleGuard>} />
+        <Route path='/reports' element={<RoleGuard><FinanceReports /></RoleGuard>} />
 
         {/* Platform & Tenant Admin Plane */}
         <Route path='/platform-admin' element={<PlatformAdminGuard><PlatformAdmin /></PlatformAdminGuard>} />

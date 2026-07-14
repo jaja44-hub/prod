@@ -130,12 +130,19 @@ export async function buildTenantAnalyticsSnapshot({ tenantId = 'production', da
     ? financeData.report
     : computeAgingReport({ vendorLines: financeData.vendorLines || [], customerLines: financeData.customerLines || [] });
 
-  // Finance transactions not yet migrated to Neon DB - use empty for Session 8 validation
-  const financeKpis = buildKpiDashboard({
-    transactions: data.transactions || [],
-    costItems: data.costItems || [],
-    tenantId,
-  });
+  // Finance transactions not yet migrated to Neon DB - compute metrics from aging data instead
+  const receivableTotal = agingReport.summary?.totalReceivable || 0;
+  const payableTotal = agingReport.summary?.totalPayable || 0;
+  const financeKpis = {
+    margin: {
+      marginPercent: receivableTotal > 0 ? ((receivableTotal - payableTotal) / receivableTotal * 100) : 0,
+    },
+    report: {
+      health: {
+        overallStatus: receivableTotal > payableTotal ? 'healthy' : 'at_risk',
+      }
+    }
+  };
 
   const warehouseChartData = warehouseSummary.totalPicks > 0
     ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((name, index) => ({
@@ -146,8 +153,6 @@ export async function buildTenantAnalyticsSnapshot({ tenantId = 'production', da
       }))
     : [{ name: 'No activity', ready: 0, packed: 0, shipped: 0 }];
 
-  const receivableTotal = agingReport.summary?.totalReceivable || 0;
-  const payableTotal = agingReport.summary?.totalPayable || 0;
   const financeChartData = receivableTotal > 0 || payableTotal > 0
     ? ['Jan', 'Feb', 'Mar', 'Apr'].map((name, index) => ({
         name,
