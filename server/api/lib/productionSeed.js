@@ -3,9 +3,9 @@ import { buildSeededPurchaseData } from '../purchase/vendor-performance.js';
 import { seedSalesOrders } from '../sales/orders.js';
 import { buildPickPackShipWorkflow } from '../inventory/warehouse.js';
 
-export function buildSeededFinanceTransactions(tenantId = 'production') {
+export async function buildSeededFinanceTransactions(tenantId = 'production') {
   const finance = buildSeededFinanceAgingData(tenantId);
-  const salesOrders = seedSalesOrders(tenantId);
+  const salesOrders = await seedSalesOrders(tenantId);
   const salesRevenue = salesOrders.reduce((sum, order) => sum + Number(order.amount_total || 0), 0);
   const receivableTotal = finance.report?.summary?.totalReceivable || 0;
 
@@ -24,10 +24,10 @@ export function buildSeededFinanceTransactions(tenantId = 'production') {
   };
 }
 
-export function buildModuleActivityEvents(tenantId = 'production') {
+export async function buildModuleActivityEvents(tenantId = 'production') {
   const warehouse = buildPickPackShipWorkflow(tenantId);
   const finance = buildSeededFinanceAgingData(tenantId);
-  const sales = seedSalesOrders(tenantId);
+  const sales = await seedSalesOrders(tenantId);
   const purchase = buildSeededPurchaseData(tenantId);
   const now = Date.now();
 

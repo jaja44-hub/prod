@@ -137,7 +137,7 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const timeline = buildActivityTimeline(tenantId);
       const summary = buildActivitySummary(timeline);
-      const moduleEvents = buildModuleActivityEvents(tenantId);
+      const moduleEvents = await buildModuleActivityEvents(tenantId);
       return res.status(200).json({ success: true, tenantId, timeline, summary, moduleEvents });
     }
 
