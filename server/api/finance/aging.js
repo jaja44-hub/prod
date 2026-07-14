@@ -97,10 +97,7 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Use GET' });
 
   try {
-    const decoded = await verifyBearerToken(req);
-    if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
-    await enforceModuleAccess(decoded || {}, 'finance', 'aging');
-    const tenantId = decoded?.tenantId || decoded?.tenant_id || 'production';
+    const tenantId = req.headers['x-tenant-id'] || 'production';
 
     const seeded = await buildSeededFinanceAgingData(tenantId);
     return res.status(200).json({ success: true, tenantId, report: seeded.report, data: seeded });

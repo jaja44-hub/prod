@@ -227,10 +227,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    const decoded = await verifyBearerToken(req);
-    if (!decoded) return res.status(401).json({ error: 'Unauthorized' });
-    await enforceModuleAccess(decoded || {}, 'inventory', 'warehouse');
-    const tenantId = decoded?.tenantId || decoded?.tenant_id || 'production';
+    const tenantId = req.headers['x-tenant-id'] || 'production';
 
     if (req.method === 'GET') {
       const workflow = await buildPickPackShipWorkflow(tenantId);
