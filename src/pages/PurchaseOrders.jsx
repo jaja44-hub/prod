@@ -19,11 +19,14 @@ import BackendStatusBanner from '../components/BackendStatusBanner';
 import { formatEtb } from '../lib/formatEtb';
 import { buildPurchaseLifecycle } from '../lib/salesPurchaseDepth';
 import { buildProcurementPosture } from '../lib/procurementDepth';
+import useAnalyticsSnapshot from '../hooks/useAnalyticsSnapshot';
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
 
 export default function PurchaseOrders() {
   const { t } = useLang();
   const { currentUser, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { snapshot } = useAnalyticsSnapshot();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -160,6 +163,79 @@ export default function PurchaseOrders() {
           </button>
         }
       />
+
+      {snapshot?.modules?.purchase && (
+        <div className="mb-8 grid gap-4 lg:grid-cols-3">
+          <div className="lg:col-span-1 flex flex-col gap-4">
+            <div className="rounded-xl border border-white/20 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 p-6 backdrop-blur-xl shadow-lg dark:border-white/10 dark:from-emerald-900/30 dark:to-teal-900/20">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Vendor Reliability</h2>
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-200/50 text-emerald-700 dark:bg-emerald-800/50 dark:text-emerald-200">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </span>
+              </div>
+              <div className="text-3xl font-bold text-slate-900 dark:text-white">
+                {snapshot.modules.purchase.metrics?.onTimePct ?? 0}%
+              </div>
+              <div className="mt-2 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                On-time delivery average
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 flex-1">
+              <div className="rounded-xl border border-white/20 bg-white/40 p-5 backdrop-blur-lg shadow-sm dark:border-slate-700/50 dark:bg-slate-800/40">
+                <div className="text-sm text-slate-500 dark:text-slate-400">Active Vendors</div>
+                <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{snapshot.modules.purchase.metrics?.vendors ?? 0}</div>
+              </div>
+              <div className="rounded-xl border border-white/20 bg-white/40 p-5 backdrop-blur-lg shadow-sm dark:border-slate-700/50 dark:bg-slate-800/40">
+                <div className="text-sm text-slate-500 dark:text-slate-400">Qty Accuracy</div>
+                <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{snapshot.modules.purchase.metrics?.avgQtyAccuracy ?? 0}%</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="lg:col-span-2 rounded-xl border border-white/20 bg-white/60 p-6 backdrop-blur-xl shadow-lg dark:border-slate-700/50 dark:bg-slate-800/60 flex flex-col">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Spend by Status</h2>
+              <div className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                Module Health: {snapshot.modules.purchase.score}%
+              </div>
+            </div>
+            <div className="flex-1 min-h-[200px] w-full flex items-center">
+              {orders.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={Object.entries(
+                        orders.reduce((acc, order) => {
+                          acc[order.state] = (acc[order.state] || 0) + (order.amount_total || 0);
+                          return acc;
+                        }, {})
+                      ).map(([state, value]) => ({ name: state, value }))}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {Object.keys(orders.reduce((acc, order) => { acc[order.state] = 1; return acc; }, {})).map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={['#10b981', '#3b82f6', '#f59e0b', '#6366f1'][index % 4]} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip formatter={(value) => formatEtb(value)} />
+                    <Legend verticalAlign="bottom" height={36}/>
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="w-full text-center text-slate-500 italic">Load orders to view spend distribution.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <PageCard>
         <ListFilterBar

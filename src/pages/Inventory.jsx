@@ -11,6 +11,7 @@ import BackendStatusBanner from '../components/BackendStatusBanner';
 import { formatEtb } from '../lib/formatEtb';
 import { buildInventoryInsights } from '../lib/inventoryDepth';
 import useAnalyticsSnapshot from '../hooks/useAnalyticsSnapshot';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 
 export default function Inventory() {
   const { t } = useLang();
@@ -110,29 +111,71 @@ export default function Inventory() {
       />
 
       {snapshot?.modules?.warehouse && (
-        <PageCard>
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Inventory analytics</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Current availability and stock position from the shared analytics engine.</p>
+        <div className="mb-8 grid gap-4 lg:grid-cols-3">
+          <div className="lg:col-span-1 flex flex-col gap-4">
+            <div className="rounded-xl border border-white/20 bg-gradient-to-br from-amber-500/10 to-orange-500/10 p-6 backdrop-blur-xl shadow-lg dark:border-white/10 dark:from-amber-900/30 dark:to-orange-900/20">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">Fulfillment Pipeline</h2>
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-200/50 text-amber-700 dark:bg-amber-800/50 dark:text-amber-200">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                </span>
+              </div>
+              <div className="text-3xl font-bold text-slate-900 dark:text-white">
+                {snapshot.modules.warehouse.metrics?.shipmentsInTransit ?? 0}
+              </div>
+              <div className="mt-2 text-xs font-medium text-amber-600 dark:text-amber-400">
+                Active shipments in transit
+              </div>
             </div>
-            <div className="rounded-full bg-violet-100 px-3 py-1 text-sm font-medium text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">{snapshot.modules.warehouse.score}%</div>
+
+            <div className="grid grid-cols-2 gap-4 flex-1">
+              <div className="rounded-xl border border-white/20 bg-white/40 p-5 backdrop-blur-lg shadow-sm dark:border-slate-700/50 dark:bg-slate-800/40">
+                <div className="text-sm text-slate-500 dark:text-slate-400">Ready to Pick</div>
+                <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{snapshot.modules.warehouse.metrics?.readyToPick ?? 0}</div>
+              </div>
+              <div className="rounded-xl border border-white/20 bg-white/40 p-5 backdrop-blur-lg shadow-sm dark:border-slate-700/50 dark:bg-slate-800/40">
+                <div className="text-sm text-slate-500 dark:text-slate-400">Packed</div>
+                <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{snapshot.modules.warehouse.metrics?.packedCount ?? 0}</div>
+              </div>
+            </div>
           </div>
-          <div className="grid gap-3 md:grid-cols-3">
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
-              <div className="text-sm text-slate-500 dark:text-slate-400">Ready to pick</div>
-              <div className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{snapshot.modules.warehouse.metrics?.readyToPick ?? 0}</div>
+
+          <div className="lg:col-span-2 rounded-xl border border-white/20 bg-white/60 p-6 backdrop-blur-xl shadow-lg dark:border-slate-700/50 dark:bg-slate-800/60 flex flex-col">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Workflow Volume</h2>
+              <div className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                Module Health: {snapshot.modules.warehouse.score}%
+              </div>
             </div>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
-              <div className="text-sm text-slate-500 dark:text-slate-400">Packed</div>
-              <div className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{snapshot.modules.warehouse.metrics?.packedCount ?? 0}</div>
-            </div>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
-              <div className="text-sm text-slate-500 dark:text-slate-400">In transit</div>
-              <div className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{snapshot.modules.warehouse.metrics?.shipmentsInTransit ?? 0}</div>
+            <div className="flex-1 min-h-[200px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart 
+                  data={[
+                    { name: 'Picking', count: snapshot.modules.warehouse.metrics?.readyToPick ?? 0 },
+                    { name: 'Packing', count: snapshot.modules.warehouse.metrics?.packedCount ?? 0 },
+                    { name: 'Shipping', count: snapshot.modules.warehouse.metrics?.shipmentsInTransit ?? 0 },
+                  ]}
+                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#cbd5e1" strokeOpacity={0.2} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} allowDecimals={false} />
+                  <RechartsTooltip 
+                    cursor={{fill: 'rgba(245, 158, 11, 0.05)'}}
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', backgroundColor: 'rgba(255,255,255,0.9)' }}
+                  />
+                  <Bar dataKey="count" name="Operations" radius={[4, 4, 0, 0]} barSize={40}>
+                    <Cell fill="#f59e0b" />
+                    <Cell fill="#f97316" />
+                    <Cell fill="#eab308" />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
-        </PageCard>
+        </div>
       )}
 
       <PageCard>
