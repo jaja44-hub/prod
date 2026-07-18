@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LangContext';
-import { getOdooProducts, getOdooProductsByLocation, getOdooProductCategories, getOdooStockLocations, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway';
+import { getWarehouseWorkflow, getInventoryProducts, getInventoryLocations } from '../lib/neonWarehouseAPI';
 import ListFilterBar from '../components/ListFilterBar';
 import PageHeader from '../components/PageHeader';
 import PageCard from '../components/PageCard';
@@ -25,11 +25,12 @@ export default function Inventory() {
   const [endReached, setEndReached] = useState(true);
   const [showValue, setShowValue] = useState(false);
   const [inventorySummary, setInventorySummary] = useState(null);
+  const [warehouseWorkflow, setWarehouseWorkflow] = useState(null);
   const { snapshot } = useAnalyticsSnapshot();
 
   const normalizeErrorMessage = (err) => {
-    const raw = err?.response?.data?.error || err?.message || t('error');
-    return raw === BACKEND_WAKEUP_MESSAGE ? t('backendWakingUp') : raw;
+    const raw = err?.error || err?.message || t('error');
+    return raw;
   };
 
   const navigate = useNavigate();
@@ -40,18 +41,18 @@ export default function Inventory() {
       setLoading(true);
       setError('');
       try {
-        const fields = showValue
-          ? ['id', 'name', 'default_code', 'qty_available', 'list_price', 'uom_id', 'categ_id', 'total_value']
-          : ['id', 'name', 'default_code', 'qty_available', 'list_price', 'uom_id', 'categ_id'];
-        const productFetcher = initialFilters.locationId
-          ? getOdooProductsByLocation(initialFilters.locationId, { search: initialFilters.search || undefined, active: initialFilters.active, categoryId: initialFilters.categoryId }, 50)
-          : getOdooProducts(50, fields, { search: initialFilters.search || undefined, active: initialFilters.active, categoryId: initialFilters.categoryId });
-        const products = await productFetcher;
+        const filters = {
+          tenant_id: 'tenant_default',
+          search: initialFilters.search || undefined,
+          location_id: initialFilters.locationId || undefined,
+        };
+        const result = await getInventoryProducts(filters);
+        const products = result.data || result;
         if (!mounted) return;
         const list = Array.isArray(products) ? products : [];
         setItems(list);
         setEndReached(list.length < 50);
-        const summary = list.length > 0 ? buildInventoryInsights(list[0], { quantity: list[0].qty_available || 0, reserved_quantity: 0 }) : null;
+        const summary = list.length > 0 ? buildInventoryInsights(list[0], { quantity: list[0].quantity_available || 0, reserved_quantity: 0 }) : null;
         setInventorySummary(summary);
       } catch (err) {
         if (!mounted) return;
@@ -70,13 +71,12 @@ export default function Inventory() {
     let mounted = true;
     async function loadOptions() {
       try {
-        const [categoryResult, locationResult] = await Promise.all([
-          getOdooProductCategories(100, {}),
-          getOdooStockLocations(100, {}),
-        ]);
+        const locationResult = await getInventoryLocations({ tenant_id: 'tenant_default' });
         if (!mounted) return;
-        setCategories(Array.isArray(categoryResult) ? categoryResult : []);
-        setLocations(Array.isArray(locationResult) ? locationResult : []);
+        const locations = locationResult.data || locationResult;
+        setLocations(Array.isArray(locations) ? locations : []);
+        // For categories, we'll use a static list for now or add backend API later
+        setCategories([]);
       } catch { /* option load failures are non-fatal */ }
     }
     if (authLoading || !currentUser) return;
@@ -84,12 +84,28 @@ export default function Inventory() {
     return () => { mounted = false; };
   }, [authLoading, currentUser]);
 
+  useEffect(() => {
+    let mounted = true;
+    async function loadWarehouseWorkflow() {
+      try {
+        const workflowResult = await getWarehouseWorkflow('tenant_default');
+        if (!mounted) return;
+        setWarehouseWorkflow(workflowResult.data || workflowResult);
+      } catch (err) {
+        console.error('Failed to load warehouse workflow:', err);
+      }
+    }
+    if (authLoading || !currentUser) return;
+    loadWarehouseWorkflow();
+    return () => { mounted = false; };
+  }, [authLoading, currentUser]);
+
   const columns = [
-    { key: 'default_code', header: t('sku'), render: (r) => r.default_code || '—' },
-    { key: 'name', header: t('name') },
-    { key: 'categ_id', header: t('category'), render: (r) => r.categ_id?.[1] || '—' },
-    { key: 'qty_available', header: t('quantity'), className: 'erp-num', render: (r) => typeof r.qty_available === 'number' ? r.qty_available : '—' },
-    { key: 'uom_id', header: t('unit'), render: (r) => r.uom_id?.[1] || t('unit') },
+    { key: 'sku', header: t('sku'), render: (r) => r.sku || r.product_code || '—' },
+    { key: 'name', header: t('name'), render: (r) => r.name || r.product_name || '—' },
+    { key: 'category', header: t('category'), render: (r) => r.category_name || '—' },
+    { key: 'quantity_available', header: t('quantity'), className: 'erp-num', render: (r) => typeof r.quantity_available === 'number' ? r.quantity_available : '—' },
+    { key: 'unit', header: t('unit'), render: (r) => r.unit_of_measure || t('unit') },
     ...(showValue ? [{ key: 'total_value', header: t('value'), className: 'erp-num', render: (r) => typeof r.total_value === 'number' ? formatEtb(r.total_value) : '—' }] : []),
     { key: 'actions', header: '', render: (r) => (
       <button onClick={() => r.id && navigate(`/inventory/${r.id}`)} className="text-xs text-violet-600 dark:text-violet-400 hover:underline">
@@ -123,7 +139,7 @@ export default function Inventory() {
                 </span>
               </div>
               <div className="text-3xl font-bold text-slate-900 dark:text-white">
-                {snapshot.modules.warehouse.metrics?.shipmentsInTransit ?? 0}
+                {warehouseWorkflow?.summary?.shipmentsInTransit ?? snapshot.modules.warehouse.metrics?.shipmentsInTransit ?? 0}
               </div>
               <div className="mt-2 text-xs font-medium text-amber-600 dark:text-amber-400">
                 Active shipments in transit
@@ -133,11 +149,11 @@ export default function Inventory() {
             <div className="grid grid-cols-2 gap-4 flex-1">
               <div className="rounded-xl border border-white/20 bg-white/40 p-5 backdrop-blur-lg shadow-sm dark:border-slate-700/50 dark:bg-slate-800/40">
                 <div className="text-sm text-slate-500 dark:text-slate-400">Ready to Pick</div>
-                <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{snapshot.modules.warehouse.metrics?.readyToPick ?? 0}</div>
+                <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{warehouseWorkflow?.summary?.readyToPick ?? snapshot.modules.warehouse.metrics?.readyToPick ?? 0}</div>
               </div>
               <div className="rounded-xl border border-white/20 bg-white/40 p-5 backdrop-blur-lg shadow-sm dark:border-slate-700/50 dark:bg-slate-800/40">
                 <div className="text-sm text-slate-500 dark:text-slate-400">Packed</div>
-                <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{snapshot.modules.warehouse.metrics?.packedCount ?? 0}</div>
+                <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{warehouseWorkflow?.summary?.packedCount ?? snapshot.modules.warehouse.metrics?.packedCount ?? 0}</div>
               </div>
             </div>
           </div>
@@ -153,9 +169,9 @@ export default function Inventory() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart 
                   data={[
-                    { name: 'Picking', count: snapshot.modules.warehouse.metrics?.readyToPick ?? 0 },
-                    { name: 'Packing', count: snapshot.modules.warehouse.metrics?.packedCount ?? 0 },
-                    { name: 'Shipping', count: snapshot.modules.warehouse.metrics?.shipmentsInTransit ?? 0 },
+                    { name: 'Picking', count: warehouseWorkflow?.summary?.readyToPick ?? snapshot.modules.warehouse.metrics?.readyToPick ?? 0 },
+                    { name: 'Packing', count: warehouseWorkflow?.summary?.packedCount ?? snapshot.modules.warehouse.metrics?.packedCount ?? 0 },
+                    { name: 'Shipping', count: warehouseWorkflow?.summary?.shipmentsInTransit ?? snapshot.modules.warehouse.metrics?.shipmentsInTransit ?? 0 },
                   ]}
                   margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                 >

@@ -35,8 +35,16 @@ import BarcodeMVP from './pages/Barcode';
 import QCModule from './pages/QC';
 import Analytics from './pages/Analytics';
 import WarehouseDashboard from './pages/WarehouseDashboard';
+import WarehouseReceipts from './pages/WarehouseReceipts';
 import FinanceInvoices from './pages/FinanceInvoices';
 import FinanceReports from './pages/FinanceReports';
+import FinancialDocuments from './pages/FinancialDocuments';
+import VATReturns from './pages/VATReturns';
+import PAYECalculation from './pages/PAYECalculation';
+import TaxReconciliation from './pages/TaxReconciliation';
+import BudgetVsActual from './pages/BudgetVsActual';
+import SupplierPerformance from './pages/SupplierPerformance';
+import CashFlowForecast from './pages/CashFlowForecast';
 
 function App() {
   const location = useLocation();
@@ -63,6 +71,7 @@ function App() {
         <Route path='/inventory/new' element={<RoleGuard><ItemDetail /></RoleGuard>} />
         <Route path='/inventory/:id' element={<RoleGuard><ItemDetail /></RoleGuard>} />
         <Route path='/warehouse' element={<RoleGuard><WarehouseDashboard /></RoleGuard>} />
+        <Route path='/warehouse/receipts' element={<RoleGuard><WarehouseReceipts /></RoleGuard>} />
 
         {/* Manufacturing — CEO & Warehouse Head */}
         <Route path='/work-orders' element={<RoleGuard><WorkOrders /></RoleGuard>} />
@@ -92,6 +101,13 @@ function App() {
         <Route path='/finance' element={<RoleGuard><Accounts /></RoleGuard>} />
         <Route path='/invoices' element={<RoleGuard><FinanceInvoices /></RoleGuard>} />
         <Route path='/reports' element={<RoleGuard><FinanceReports /></RoleGuard>} />
+        <Route path='/finance/documents' element={<RoleGuard><FinancialDocuments /></RoleGuard>} />
+        <Route path='/finance/vat' element={<RoleGuard><VATReturns /></RoleGuard>} />
+        <Route path='/finance/paye' element={<RoleGuard><PAYECalculation /></RoleGuard>} />
+        <Route path='/finance/tax' element={<RoleGuard><TaxReconciliation /></RoleGuard>} />
+        <Route path='/finance/budget' element={<RoleGuard><BudgetVsActual /></RoleGuard>} />
+        <Route path='/finance/suppliers' element={<RoleGuard><SupplierPerformance /></RoleGuard>} />
+        <Route path='/finance/cashflow' element={<RoleGuard><CashFlowForecast /></RoleGuard>} />
 
         {/* Platform & Tenant Admin Plane */}
         <Route path='/platform-admin' element={<PlatformAdminGuard><PlatformAdmin /></PlatformAdminGuard>} />

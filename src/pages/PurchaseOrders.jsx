@@ -3,13 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LangContext';
 import {
-  getOdooPurchaseOrders,
-  getOdooPurchaseOrder,
-  confirmOdooPurchaseOrder,
-  cancelOdooPurchaseOrder,
-  getOdooVendors,
-  BACKEND_WAKEUP_MESSAGE
-} from '../services/ServiceGateway';
+  getPurchaseOrders,
+  getPurchaseOrder,
+  createPurchaseOrder,
+  approvePurchaseOrder,
+  sendPurchaseOrderToSupplier,
+  getSuppliers,
+  getSupplierPerformanceReport,
+  checkBudgetAvailability,
+  validatePOBudget
+} from '../lib/neonPurchaseAPI';
 import ListFilterBar from '../components/ListFilterBar';
 import PageHeader from '../components/PageHeader';
 import PageCard from '../components/PageCard';
@@ -37,10 +40,23 @@ export default function PurchaseOrders() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [purchaseLifecycle, setPurchaseLifecycle] = useState(null);
   const [procurementPosture, setProcurementPosture] = useState(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createFormData, setCreateFormData] = useState({
+    supplier_id: '',
+    category_id: '',
+    budget_id: '',
+    payment_terms: 'net_30',
+    delivery_terms: 'fob',
+    expected_delivery_date: '',
+    notes: '',
+    items: []
+  });
+  const [budgetValidation, setBudgetValidation] = useState(null);
+  const [supplierPerformance, setSupplierPerformance] = useState(null);
 
   const normalizeErrorMessage = (err) => {
-    const raw = err?.response?.data?.error || err?.message || t('error');
-    return raw === BACKEND_WAKEUP_MESSAGE ? t('backendWakingUp') : raw;
+    const raw = err?.error || err?.message || t('error');
+    return raw;
   };
 
   useEffect(() => {
@@ -49,14 +65,14 @@ export default function PurchaseOrders() {
       setLoading(true);
       setError('');
       try {
-        const result = await getOdooPurchaseOrders(50, {
-          search: nextFilters.search || undefined,
-          state: nextFilters.state || undefined,
-          dateFrom: nextFilters.dateFrom || undefined,
-          dateTo: nextFilters.dateTo || undefined,
+        const result = await getPurchaseOrders({
+          tenant_id: 'tenant_default',
+          status: nextFilters.state || undefined,
+          start_date: nextFilters.dateFrom || undefined,
+          end_date: nextFilters.dateTo || undefined,
         });
         if (!mounted) return;
-        setOrders(Array.isArray(result) ? result : []);
+        setOrders(Array.isArray(result.data) ? result.data : []);
       } catch (err) {
         if (!mounted) return;
         setError(normalizeErrorMessage(err));
@@ -73,11 +89,11 @@ export default function PurchaseOrders() {
     let mounted = true;
     async function loadVendors() {
       try {
-        const res = await getOdooVendors(100);
+        const res = await getSuppliers({ tenant_id: 'tenant_default', active: true });
         if (mounted) {
-          setVendors(Array.isArray(res) ? res : []);
+          setVendors(Array.isArray(res.data) ? res.data : []);
         }
-      } catch { /* option load failures are non-fatal */ }
+      } catch { /* supplier load failures are non-fatal */ }
     }
     if (authLoading || !currentUser) return;
     loadVendors();
@@ -88,7 +104,8 @@ export default function PurchaseOrders() {
     if (detailLoading) return;
     setDetailLoading(true);
     try {
-      const detail = await getOdooPurchaseOrder(orderItem.id);
+      const result = await getPurchaseOrder(orderItem.id);
+      const detail = result.data;
       setSelectedOrder(detail);
       setPurchaseLifecycle(buildPurchaseLifecycle(detail));
       setProcurementPosture(buildProcurementPosture(detail));
@@ -103,11 +120,11 @@ export default function PurchaseOrders() {
     if (detailLoading) return;
     setDetailLoading(true);
     try {
-      await confirmOdooPurchaseOrder(orderId);
-      const detail = await getOdooPurchaseOrder(orderId);
-      setSelectedOrder(detail);
-      const result = await getOdooPurchaseOrders(50, filters);
-      setOrders(Array.isArray(result) ? result : []);
+      await approvePurchaseOrder(orderId, { approver_id: currentUser?.uid, approver_name: currentUser?.displayName || 'System' });
+      const result = await getPurchaseOrder(orderId);
+      setSelectedOrder(result.data);
+      const ordersResult = await getPurchaseOrders({ tenant_id: 'tenant_default' });
+      setOrders(Array.isArray(ordersResult.data) ? ordersResult.data : []);
     } catch (err) {
       setError(normalizeErrorMessage(err));
     } finally {
@@ -115,15 +132,72 @@ export default function PurchaseOrders() {
     }
   }
 
-  async function handleCancelOrder(orderId) {
+  async function handleSendOrder(orderId) {
     if (detailLoading) return;
     setDetailLoading(true);
     try {
-      await cancelOdooPurchaseOrder(orderId);
-      const detail = await getOdooPurchaseOrder(orderId);
-      setSelectedOrder(detail);
-      const result = await getOdooPurchaseOrders(50, filters);
-      setOrders(Array.isArray(result) ? result : []);
+      await sendPurchaseOrderToSupplier(orderId, { sender_id: currentUser?.uid, sender_name: currentUser?.displayName || 'System' });
+      const result = await getPurchaseOrder(orderId);
+      setSelectedOrder(result.data);
+      const ordersResult = await getPurchaseOrders({ tenant_id: 'tenant_default' });
+      setOrders(Array.isArray(ordersResult.data) ? ordersResult.data : []);
+    } catch (err) {
+      setError(normalizeErrorMessage(err));
+    } finally {
+      setDetailLoading(false);
+    }
+  }
+
+  async function handleBudgetCheck() {
+    if (!createFormData.budget_id || !createFormData.items.length) return;
+    try {
+      const totalAmount = createFormData.items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
+      const validation = await checkBudgetAvailability(createFormData.budget_id, totalAmount);
+      setBudgetValidation(validation.data);
+    } catch (err) {
+      setError(normalizeErrorMessage(err));
+    }
+  }
+
+  async function handleSupplierChange(supplierId) {
+    setCreateFormData({ ...createFormData, supplier_id: supplierId });
+    if (supplierId) {
+      try {
+        const perf = await getSupplierPerformanceReport('tenant_default');
+        const supplierData = perf.data?.find(s => s.supplier_id === Number(supplierId));
+        setSupplierPerformance(supplierData);
+      } catch (err) {
+        console.error('Failed to load supplier performance:', err);
+      }
+    } else {
+      setSupplierPerformance(null);
+    }
+  }
+
+  async function handleCreatePO(e) {
+    e.preventDefault();
+    setDetailLoading(true);
+    try {
+      const newPO = await createPurchaseOrder({
+        tenant_id: 'tenant_default',
+        ...createFormData,
+        created_by: currentUser?.uid,
+        created_by_name: currentUser?.displayName || 'System'
+      });
+      const result = await getPurchaseOrders({ tenant_id: 'tenant_default' });
+      setOrders(Array.isArray(result.data) ? result.data : []);
+      setShowCreateForm(false);
+      setCreateFormData({
+        supplier_id: '',
+        category_id: '',
+        budget_id: '',
+        payment_terms: 'net_30',
+        delivery_terms: 'fob',
+        expected_delivery_date: '',
+        notes: '',
+        items: []
+      });
+      setBudgetValidation(null);
     } catch (err) {
       setError(normalizeErrorMessage(err));
     } finally {
@@ -132,15 +206,15 @@ export default function PurchaseOrders() {
   }
 
   const filteredOrders = selectedVendorId
-    ? orders.filter((o) => o.partner_id?.[0] === Number(selectedVendorId))
+    ? orders.filter((o) => o.supplier_id === Number(selectedVendorId))
     : orders;
 
   const columns = [
-    { key: 'name', header: t('order'), render: (r) => r.name || '—' },
-    { key: 'partner_id', header: t('partner'), render: (r) => r.partner_id?.[1] || '—' },
-    { key: 'date_order', header: t('dateOrder'), render: (r) => r.date_order || '—' },
-    { key: 'amount_total', header: t('amount'), className: 'erp-num', render: (r) => r.amount_total != null ? formatEtb(r.amount_total) : '—' },
-    { key: 'state', header: t('state'), render: (r) => <StateBadge state={r.state} label={r.state ? t(`state${r.state.charAt(0).toUpperCase() + r.state.slice(1)}`) || r.state : '—'} /> },
+    { key: 'po_number', header: t('order'), render: (r) => r.po_number || '—' },
+    { key: 'supplier_name', header: t('partner'), render: (r) => r.supplier_name || '—' },
+    { key: 'po_date', header: t('dateOrder'), render: (r) => r.po_date || '—' },
+    { key: 'total_amount', header: t('amount'), className: 'erp-num', render: (r) => r.total_amount != null ? formatEtb(r.total_amount) : '—' },
+    { key: 'status', header: t('state'), render: (r) => <StateBadge state={r.status} label={r.status || '—'} /> },
     { key: 'actions', header: '', render: (r) => (
       <button
         onClick={() => handleViewOrder(r)}
@@ -158,7 +232,7 @@ export default function PurchaseOrders() {
         title={t('purchaseOrders')}
         subtitle={t('purchaseOrdersDescription')}
         actions={
-          <button onClick={() => navigate('/purchases/new')} className="btn-primary">
+          <button onClick={() => setShowCreateForm(true)} className="btn-primary">
             + {t('createPurchaseOrder')}
           </button>
         }
@@ -310,31 +384,31 @@ export default function PurchaseOrders() {
               ✕
             </button>
             <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
-              {selectedOrder.name} - {t('purchaseOrderState') || 'Purchase Order Detail'}
+              {selectedOrder.po_number} - {t('purchaseOrderState') || 'Purchase Order Detail'}
             </h2>
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
                 <span className="text-xs text-gray-500 block">{t('vendor')}</span>
                 <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {selectedOrder.partner_id?.[1] || '—'}
+                  {selectedOrder.supplier_name || '—'}
                 </span>
               </div>
               <div>
                 <span className="text-xs text-gray-500 block">{t('dateOrder')}</span>
                 <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {selectedOrder.date_order || '—'}
+                  {selectedOrder.po_date || '—'}
                 </span>
               </div>
               <div>
                 <span className="text-xs text-gray-500 block">{t('state')}</span>
                 <span className="text-sm block">
-                  <StateBadge state={selectedOrder.state} label={selectedOrder.state} />
+                  <StateBadge state={selectedOrder.status} label={selectedOrder.status} />
                 </span>
               </div>
               <div>
                 <span className="text-xs text-gray-500 block">{t('amount')}</span>
                 <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {formatEtb(selectedOrder.amount_total)}
+                  {formatEtb(selectedOrder.total_amount)}
                 </span>
               </div>
             </div>
@@ -378,20 +452,20 @@ export default function PurchaseOrders() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(selectedOrder.order_lines || []).map((line) => {
-                    const qty = line.product_uom_qty || 0;
-                    const price = line.price_unit || 0;
+                  {(selectedOrder.items || []).map((line) => {
+                    const qty = line.quantity || 0;
+                    const price = line.unit_price || 0;
                     const subtotal = qty * price;
                     return (
                       <tr key={line.id} className="border-b border-gray-200 dark:border-gray-700 last:border-b-0 text-gray-900 dark:text-gray-100">
-                        <td className="p-3">{line.product_id?.[1] || '—'}</td>
+                        <td className="p-3">{line.product_name || '—'}</td>
                         <td className="p-3 text-right">{qty}</td>
                         <td className="p-3 text-right">{formatEtb(price)}</td>
                         <td className="p-3 text-right font-semibold">{formatEtb(subtotal)}</td>
                       </tr>
                     );
                   })}
-                  {(!selectedOrder.order_lines || selectedOrder.order_lines.length === 0) && (
+                  {(!selectedOrder.items || selectedOrder.items.length === 0) && (
                     <tr>
                       <td colSpan="4" className="p-3 text-center text-gray-500">
                         No lines found
@@ -404,21 +478,21 @@ export default function PurchaseOrders() {
 
             <div className="flex justify-between items-center mt-6">
               <div className="flex space-x-2">
-                {['draft', 'sent', 'to approve'].includes(selectedOrder.state) && (
+                {['draft', 'submitted'].includes(selectedOrder.status) && (
                   <>
                     <button
                       onClick={() => handleConfirmOrder(selectedOrder.id)}
                       disabled={detailLoading}
                       className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded text-sm font-semibold disabled:opacity-50"
                     >
-                      {t('confirm') || 'Confirm Order'}
+                      {t('confirm') || 'Approve Order'}
                     </button>
                     <button
-                      onClick={() => handleCancelOrder(selectedOrder.id)}
+                      onClick={() => handleSendOrder(selectedOrder.id)}
                       disabled={detailLoading}
-                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-semibold disabled:opacity-50"
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-sm font-semibold disabled:opacity-50"
                     >
-                      {t('cancel') || 'Cancel'}
+                      {t('send') || 'Send to Supplier'}
                     </button>
                   </>
                 )}
@@ -430,6 +504,56 @@ export default function PurchaseOrders() {
                 {t('clear') || 'Close'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showCreateForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full p-6">
+            <button onClick={() => setShowCreateForm(false)} className="absolute top-4 right-4 text-gray-500">✕</button>
+            <h2 className="text-xl font-bold mb-4">Create Purchase Order</h2>
+            <form onSubmit={handleCreatePO} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Supplier</label>
+                <select value={createFormData.supplier_id} onChange={(e) => handleSupplierChange(e.target.value)} className="w-full border rounded px-3 py-2" required>
+                  <option value="">Select Supplier</option>
+                  {vendors.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.name} {v.rating ? `(Rating: ${v.rating})` : ''}
+                    </option>
+                  ))}
+                </select>
+                {supplierPerformance && (
+                  <div className="mt-2 text-sm bg-gray-100 dark:bg-gray-700 p-2 rounded">
+                    <div className="font-semibold">Supplier Performance:</div>
+                    <div>On-Time Delivery: {supplierPerformance.on_time_delivery_pct || 0}%</div>
+                    <div>Quality Rating: {supplierPerformance.quality_rating || 'N/A'}</div>
+                    <div>Total Orders: {supplierPerformance.total_orders || 0}</div>
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Budget ID</label>
+                <div className="flex gap-2">
+                  <input type="text" value={createFormData.budget_id} onChange={(e) => setCreateFormData({ ...createFormData, budget_id: e.target.value })} className="flex-1 border rounded px-3 py-2" required />
+                  <button type="button" onClick={handleBudgetCheck} className="px-3 py-2 bg-blue-600 text-white rounded text-sm">Check Budget</button>
+                </div>
+                {budgetValidation && (
+                  <div className={`mt-2 text-sm ${budgetValidation.available ? 'text-green-600' : 'text-red-600'}`}>
+                    {budgetValidation.available 
+                      ? `Budget Available: ${formatEtb(budgetValidation.available_amount)}`
+                      : `Insufficient Budget. Required: ${formatEtb(budgetValidation.required_amount)}, Available: ${formatEtb(budgetValidation.available_amount)}`
+                    }
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Expected Delivery</label>
+                <input type="date" value={createFormData.expected_delivery_date} onChange={(e) => setCreateFormData({ ...createFormData, expected_delivery_date: e.target.value })} className="w-full border rounded px-3 py-2" required />
+              </div>
+              <button type="submit" disabled={detailLoading} className="w-full bg-violet-600 text-white py-2 rounded">Create PO</button>
+            </form>
           </div>
         </div>
       )}
