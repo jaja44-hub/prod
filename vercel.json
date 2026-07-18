@@ -10,6 +10,7 @@
     }
   ],
   "routes": [
+    { "src": "/api/dashboard/metrics", "dest": "/api/dashboard-metrics.js" },
     { "src": "/api/purchase/orders", "dest": "/api/purchase-orders.js" },
     { "src": "/api/purchase/suppliers", "dest": "/api/purchase-suppliers.js" },
     { "src": "/api/finance/journal", "dest": "/api/finance-journal.js" },
