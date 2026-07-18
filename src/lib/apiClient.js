@@ -8,10 +8,13 @@ import { retryWithBackoff, CircuitBreaker, executeWithTimeout, buildRetryConfig 
 import { generateCorrelationId, AuditLogger } from '../../server/api/lib/connectors/audit.js';
 
 function resolveBaseUrl() {
-  if (typeof window !== 'undefined' && window.location?.origin) {
+  if (typeof window !== 'undefined' && window.location?.hostname) {
+    if (window.location.hostname === 'localhost') {
+      return 'http://localhost:3001';
+    }
     return window.location.origin;
   }
-  return 'http://localhost:3000';
+  return 'http://localhost:3001';
 }
 
 export class ApiClient {

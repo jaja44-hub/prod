@@ -10,6 +10,9 @@
     }
   ],
   "routes": [
+    { "src": "/api/purchase/(.*)", "dest": "/api/purchase.js" },
+    { "src": "/api/finance/(.*)", "dest": "/api/finance.js" },
+    { "src": "/api/inventory/(.*)", "dest": "/api/inventory.js" },
     { "src": "/api/(.*)", "dest": "/api/index.js" },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }

@@ -1,4 +1,4 @@
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3001/api';
+const API_BASE = process.env.REACT_APP_API_BASE || (window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api');
 
 async function request(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
