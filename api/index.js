@@ -160,6 +160,49 @@ export default async function handler(req, res) {
       return mod.default(req, res);
     }
 
+    // Purchase orders, requisitions, suppliers, budget
+    if (path.startsWith('/api/purchase/orders')) {
+      const mod = await import('../server/api/purchase/orders.js');
+      return mod.default(req, res);
+    }
+
+    if (path.startsWith('/api/purchase/requisitions')) {
+      const mod = await import('../server/api/purchase/requisitions.js');
+      return mod.default(req, res);
+    }
+
+    if (path.startsWith('/api/purchase/suppliers')) {
+      const mod = await import('../server/api/purchase/suppliers.js');
+      return mod.default(req, res);
+    }
+
+    if (path.startsWith('/api/purchase/budget')) {
+      const mod = await import('../server/api/purchase/budget.js');
+      return mod.default(req, res);
+    }
+
+    // Finance journal and budget variance
+    if (path.startsWith('/api/finance/journal')) {
+      const mod = await import('../server/api/finance/journal.js');
+      return mod.default(req, res);
+    }
+
+    if (path.startsWith('/api/finance/budget-variance')) {
+      const mod = await import('../server/api/finance/journal.js');
+      return mod.default(req, res);
+    }
+
+    // Inventory products and locations
+    if (path.startsWith('/api/inventory/products')) {
+      const mod = await import('../server/api/inventory/router.js');
+      return mod.default(req, res);
+    }
+
+    if (path.startsWith('/api/inventory/locations')) {
+      const mod = await import('../server/api/inventory/router.js');
+      return mod.default(req, res);
+    }
+
     if (path.startsWith('/api/purchase/vendor-performance')) {
       const mod = await import('../server/api/purchase/vendor-performance.js');
       return mod.default(req, res);
