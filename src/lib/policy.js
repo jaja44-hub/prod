@@ -6,7 +6,23 @@
  * planTier: 1 = enterprise, 2 = pro, 3 = starter
  */
 
-import { buildPolicyContext, canAccessModuleByContext } from '../../server/api/lib/tenantPolicy.js';
+// Client-side policy context builder
+function buildPolicyContext(principal, enabledTenantModules = null) {
+  return {
+    role: principal.role,
+    tier: principal.tier,
+    tenantId: principal.tenantId,
+    enabledModules: enabledTenantModules || modulesForPlanTier(principal.tier),
+  };
+}
+
+// Client-side module access checker
+function canAccessModuleByContext(context, moduleId) {
+  if (!context) return false;
+  
+  const modules = context.enabledModules || modulesForPlanTier(context.tier);
+  return modules.includes(moduleId);
+}
 
 export function getPrincipal(userProfile) {
   if (!userProfile) return null;

@@ -4,8 +4,110 @@
  * Handles auth, retries, error handling, and correlation IDs.
  */
 
-import { retryWithBackoff, CircuitBreaker, executeWithTimeout, buildRetryConfig } from '../../server/api/lib/connectors/retries.js';
-import { generateCorrelationId, AuditLogger } from '../../server/api/lib/connectors/audit.js';
+// Client-side retry utilities (simplified from server version)
+function buildRetryConfig(config = {}) {
+  return {
+    maxAttempts: config.maxAttempts || 3,
+    baseDelayMs: config.baseDelayMs || 100,
+    maxDelayMs: config.maxDelayMs || 5000,
+    ...config
+  };
+}
+
+async function retryWithBackoff(fn, config = {}) {
+  const { maxAttempts = 3, baseDelayMs = 100, maxDelayMs = 5000 } = buildRetryConfig(config);
+  let lastError;
+  
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      if (attempt === maxAttempts - 1) throw error;
+      
+      const delay = Math.min(baseDelayMs * Math.pow(2, attempt), maxDelayMs);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  throw lastError;
+}
+
+class CircuitBreaker {
+  constructor(threshold = 5, timeout = 60000) {
+    this.threshold = threshold;
+    this.timeout = timeout;
+    this.failures = 0;
+    this.state = 'closed';
+    this.nextAttempt = 0;
+  }
+
+  async execute(fn) {
+    if (this.state === 'open') {
+      if (Date.now() < this.nextAttempt) {
+        throw new Error('Circuit breaker is open');
+      }
+      this.state = 'half-open';
+    }
+
+    try {
+      const result = await fn();
+      this.onSuccess();
+      return result;
+    } catch (error) {
+      this.onFailure();
+      throw error;
+    }
+  }
+
+  onSuccess() {
+    this.failures = 0;
+    this.state = 'closed';
+  }
+
+  onFailure() {
+    this.failures++;
+    if (this.failures >= this.threshold) {
+      this.state = 'open';
+      this.nextAttempt = Date.now() + this.timeout;
+    }
+  }
+}
+
+async function executeWithTimeout(fn, timeoutMs = 5000) {
+  return Promise.race([
+    fn(),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeoutMs))
+  ]);
+}
+
+// Client-side correlation ID generator
+function generateCorrelationId() {
+  return `corr_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+// Client-side audit logger (simplified)
+class AuditLogger {
+  constructor(maxSize = 500) {
+    this.maxSize = maxSize;
+    this.logs = [];
+  }
+
+  log(event) {
+    this.logs.push({
+      ...event,
+      timestamp: Date.now(),
+      correlationId: generateCorrelationId()
+    });
+    
+    if (this.logs.length > this.maxSize) {
+      this.logs.shift();
+    }
+  }
+
+  getLogs() {
+    return [...this.logs];
+  }
+}
 
 function resolveBaseUrl() {
   if (typeof window !== 'undefined' && window.location?.hostname) {
@@ -122,9 +224,7 @@ export class ApiClient {
       return await breaker.execute(async () => {
         return await retryWithBackoff(
           () => executeWithTimeout(makeRequest(), timeout),
-          retry.maxAttempts,
-          retry.baseDelayMs,
-          (error) => error.statusCode >= 500 || error.message.includes('timeout')
+          retry
         );
       });
     } catch (error) {
@@ -206,7 +306,7 @@ export class ApiClient {
   }
 
   getAuditSummary() {
-    return this.auditLogger.getSummary(this.tenantId);
+    return this.auditLogger.getLogs();
   }
 }
 
