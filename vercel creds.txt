@@ -1,0 +1,14 @@
+VERCEL_TOKEN=vcp_1SVUIEfQpfh5vF6MBmk2MUgXd6iGGR3R8xK1hKYQzytn9em5kf3bemmw
+VERCEL_PROJECT_ID=prj_ZeMhSoHzq7fr9dXB7sBCatTEPooL
+VERCEL_TEAM_ID=team_brr8I5k4O1GstQ81Ic0OfaF5
+
+Project Name=
+Used to identify your Project on the Dashboard, Vercel CLI, and in the URL of your Deployments.
+
+prod
+vercel.com/…rs-projects-761b2f62/
+
+
+
+
+

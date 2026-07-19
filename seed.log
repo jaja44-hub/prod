@@ -1,0 +1,1001 @@
+ja@ja-pc:~$ cd /home/ja/Documents/addis-crown-v3/production-submodule
+node scripts/migrate-firestore-to-odoo.mjs
+🔧 Session 2: Firestore to Odoo Migration Script
+================================================
+
+Mode: LIVE EXECUTION
+
+🔐 Authenticating with Odoo...
+  ✅ Authenticated. UID: 2
+
+📦 Migrating Sales Orders...
+  ❌ Failed to migrate sales order: XML-RPC fault: Traceback (most recent call last):
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 162, in xmlrpc_2
+    response = self._xmlrpc(service)
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 134, in _xmlrpc
+    result = dispatch_rpc(service, method, params)
+  File "/app/odoo/http.py", line 449, in dispatch_rpc
+    return dispatch(method, params)
+  File "/app/odoo/service/model.py", line 133, in dispatch
+    res = execute_cr(cr, uid, model, method_, args, kw)
+  File "/app/odoo/service/model.py", line 150, in execute_cr
+    result = retrying(partial(call_kw, recs, method, args, kw), env)
+  File "/app/odoo/service/model.py", line 188, in retrying
+    result = func()
+  File "/app/odoo/service/model.py", line 97, in call_kw
+    result = method(recs, *args, **kwargs)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale_project/models/sale_order.py", line 272, in create
+    created_records = super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/website_sale/models/sale_order.py", line 185, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale/models/sale_order.py", line 1013, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/mail/models/mail_thread.py", line 328, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/odoo/orm/models.py", line 4657, in create
+    new_vals_list = self._prepare_create_values(vals_list)
+  File "/app/odoo/orm/models.py", line 4810, in _prepare_create_values
+    self._add_precomputed_values(result_vals_list)
+  File "/app/odoo/orm/models.py", line 4836, in _add_precomputed_values
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 4836, in <genexpr>
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 6458, in new
+    record._update_cache(values, validate=False)
+  File "/app/odoo/orm/models.py", line 6081, in _update_cache
+    value = field.convert_to_cache(value, self, validate)
+  File "/app/odoo/orm/fields_temporal.py", line 285, in convert_to_cache
+    return self.to_datetime(value)
+  File "/app/odoo/orm/fields_temporal.py", line 249, in to_datetime
+    return datetime.strptime(value, DATETIME_FORMAT[:len(value)-2])
+  File "/usr/local/lib/python3.10/_strptime.py", line 568, in _strptime_datetime
+    tt, fraction, gmtoff_fraction = _strptime(data_string, format)
+  File "/usr/local/lib/python3.10/_strptime.py", line 349, in _strptime
+    raise ValueError("time data %r does not match format %r" %
+ValueError: time data '2026-06-12T17:43:00.831Z' does not match format '%Y-%m-%d %H:%M:%S'
+
+  ❌ Failed to migrate sales order: XML-RPC fault: Traceback (most recent call last):
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 162, in xmlrpc_2
+    response = self._xmlrpc(service)
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 134, in _xmlrpc
+    result = dispatch_rpc(service, method, params)
+  File "/app/odoo/http.py", line 449, in dispatch_rpc
+    return dispatch(method, params)
+  File "/app/odoo/service/model.py", line 133, in dispatch
+    res = execute_cr(cr, uid, model, method_, args, kw)
+  File "/app/odoo/service/model.py", line 150, in execute_cr
+    result = retrying(partial(call_kw, recs, method, args, kw), env)
+  File "/app/odoo/service/model.py", line 188, in retrying
+    result = func()
+  File "/app/odoo/service/model.py", line 97, in call_kw
+    result = method(recs, *args, **kwargs)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale_project/models/sale_order.py", line 272, in create
+    created_records = super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/website_sale/models/sale_order.py", line 185, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale/models/sale_order.py", line 1013, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/mail/models/mail_thread.py", line 328, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/odoo/orm/models.py", line 4657, in create
+    new_vals_list = self._prepare_create_values(vals_list)
+  File "/app/odoo/orm/models.py", line 4810, in _prepare_create_values
+    self._add_precomputed_values(result_vals_list)
+  File "/app/odoo/orm/models.py", line 4836, in _add_precomputed_values
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 4836, in <genexpr>
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 6458, in new
+    record._update_cache(values, validate=False)
+  File "/app/odoo/orm/models.py", line 6081, in _update_cache
+    value = field.convert_to_cache(value, self, validate)
+  File "/app/odoo/orm/fields_temporal.py", line 285, in convert_to_cache
+    return self.to_datetime(value)
+  File "/app/odoo/orm/fields_temporal.py", line 249, in to_datetime
+    return datetime.strptime(value, DATETIME_FORMAT[:len(value)-2])
+  File "/usr/local/lib/python3.10/_strptime.py", line 568, in _strptime_datetime
+    tt, fraction, gmtoff_fraction = _strptime(data_string, format)
+  File "/usr/local/lib/python3.10/_strptime.py", line 349, in _strptime
+    raise ValueError("time data %r does not match format %r" %
+ValueError: time data '2026-06-13T17:43:00.832Z' does not match format '%Y-%m-%d %H:%M:%S'
+
+  ❌ Failed to migrate sales order: XML-RPC fault: Traceback (most recent call last):
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 162, in xmlrpc_2
+    response = self._xmlrpc(service)
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 134, in _xmlrpc
+    result = dispatch_rpc(service, method, params)
+  File "/app/odoo/http.py", line 449, in dispatch_rpc
+    return dispatch(method, params)
+  File "/app/odoo/service/model.py", line 133, in dispatch
+    res = execute_cr(cr, uid, model, method_, args, kw)
+  File "/app/odoo/service/model.py", line 150, in execute_cr
+    result = retrying(partial(call_kw, recs, method, args, kw), env)
+  File "/app/odoo/service/model.py", line 188, in retrying
+    result = func()
+  File "/app/odoo/service/model.py", line 97, in call_kw
+    result = method(recs, *args, **kwargs)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale_project/models/sale_order.py", line 272, in create
+    created_records = super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/website_sale/models/sale_order.py", line 185, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale/models/sale_order.py", line 1013, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/mail/models/mail_thread.py", line 328, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/odoo/orm/models.py", line 4657, in create
+    new_vals_list = self._prepare_create_values(vals_list)
+  File "/app/odoo/orm/models.py", line 4810, in _prepare_create_values
+    self._add_precomputed_values(result_vals_list)
+  File "/app/odoo/orm/models.py", line 4836, in _add_precomputed_values
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 4836, in <genexpr>
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 6458, in new
+    record._update_cache(values, validate=False)
+  File "/app/odoo/orm/models.py", line 6081, in _update_cache
+    value = field.convert_to_cache(value, self, validate)
+  File "/app/odoo/orm/fields_temporal.py", line 285, in convert_to_cache
+    return self.to_datetime(value)
+  File "/app/odoo/orm/fields_temporal.py", line 249, in to_datetime
+    return datetime.strptime(value, DATETIME_FORMAT[:len(value)-2])
+  File "/usr/local/lib/python3.10/_strptime.py", line 568, in _strptime_datetime
+    tt, fraction, gmtoff_fraction = _strptime(data_string, format)
+  File "/usr/local/lib/python3.10/_strptime.py", line 349, in _strptime
+    raise ValueError("time data %r does not match format %r" %
+ValueError: time data '2026-06-14T17:43:00.832Z' does not match format '%Y-%m-%d %H:%M:%S'
+
+  ❌ Failed to migrate sales order: XML-RPC fault: Traceback (most recent call last):
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 162, in xmlrpc_2
+    response = self._xmlrpc(service)
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 134, in _xmlrpc
+    result = dispatch_rpc(service, method, params)
+  File "/app/odoo/http.py", line 449, in dispatch_rpc
+    return dispatch(method, params)
+  File "/app/odoo/service/model.py", line 133, in dispatch
+    res = execute_cr(cr, uid, model, method_, args, kw)
+  File "/app/odoo/service/model.py", line 150, in execute_cr
+    result = retrying(partial(call_kw, recs, method, args, kw), env)
+  File "/app/odoo/service/model.py", line 188, in retrying
+    result = func()
+  File "/app/odoo/service/model.py", line 97, in call_kw
+    result = method(recs, *args, **kwargs)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale_project/models/sale_order.py", line 272, in create
+    created_records = super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/website_sale/models/sale_order.py", line 185, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale/models/sale_order.py", line 1013, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/mail/models/mail_thread.py", line 328, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/odoo/orm/models.py", line 4657, in create
+    new_vals_list = self._prepare_create_values(vals_list)
+  File "/app/odoo/orm/models.py", line 4810, in _prepare_create_values
+    self._add_precomputed_values(result_vals_list)
+  File "/app/odoo/orm/models.py", line 4836, in _add_precomputed_values
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 4836, in <genexpr>
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 6458, in new
+    record._update_cache(values, validate=False)
+  File "/app/odoo/orm/models.py", line 6081, in _update_cache
+    value = field.convert_to_cache(value, self, validate)
+  File "/app/odoo/orm/fields_temporal.py", line 285, in convert_to_cache
+    return self.to_datetime(value)
+  File "/app/odoo/orm/fields_temporal.py", line 249, in to_datetime
+    return datetime.strptime(value, DATETIME_FORMAT[:len(value)-2])
+  File "/usr/local/lib/python3.10/_strptime.py", line 568, in _strptime_datetime
+    tt, fraction, gmtoff_fraction = _strptime(data_string, format)
+  File "/usr/local/lib/python3.10/_strptime.py", line 349, in _strptime
+    raise ValueError("time data %r does not match format %r" %
+ValueError: time data '2026-06-15T17:43:00.832Z' does not match format '%Y-%m-%d %H:%M:%S'
+
+  ❌ Failed to migrate sales order: XML-RPC fault: Traceback (most recent call last):
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 162, in xmlrpc_2
+    response = self._xmlrpc(service)
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 134, in _xmlrpc
+    result = dispatch_rpc(service, method, params)
+  File "/app/odoo/http.py", line 449, in dispatch_rpc
+    return dispatch(method, params)
+  File "/app/odoo/service/model.py", line 133, in dispatch
+    res = execute_cr(cr, uid, model, method_, args, kw)
+  File "/app/odoo/service/model.py", line 150, in execute_cr
+    result = retrying(partial(call_kw, recs, method, args, kw), env)
+  File "/app/odoo/service/model.py", line 188, in retrying
+    result = func()
+  File "/app/odoo/service/model.py", line 97, in call_kw
+    result = method(recs, *args, **kwargs)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale_project/models/sale_order.py", line 272, in create
+    created_records = super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/website_sale/models/sale_order.py", line 185, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale/models/sale_order.py", line 1013, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/mail/models/mail_thread.py", line 328, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/odoo/orm/models.py", line 4657, in create
+    new_vals_list = self._prepare_create_values(vals_list)
+  File "/app/odoo/orm/models.py", line 4810, in _prepare_create_values
+    self._add_precomputed_values(result_vals_list)
+  File "/app/odoo/orm/models.py", line 4836, in _add_precomputed_values
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 4836, in <genexpr>
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 6458, in new
+    record._update_cache(values, validate=False)
+  File "/app/odoo/orm/models.py", line 6081, in _update_cache
+    value = field.convert_to_cache(value, self, validate)
+  File "/app/odoo/orm/fields_temporal.py", line 285, in convert_to_cache
+    return self.to_datetime(value)
+  File "/app/odoo/orm/fields_temporal.py", line 249, in to_datetime
+    return datetime.strptime(value, DATETIME_FORMAT[:len(value)-2])
+  File "/usr/local/lib/python3.10/_strptime.py", line 568, in _strptime_datetime
+    tt, fraction, gmtoff_fraction = _strptime(data_string, format)
+  File "/usr/local/lib/python3.10/_strptime.py", line 349, in _strptime
+    raise ValueError("time data %r does not match format %r" %
+ValueError: time data '2026-06-16T17:43:00.832Z' does not match format '%Y-%m-%d %H:%M:%S'
+
+  ❌ Failed to migrate sales order: XML-RPC fault: Traceback (most recent call last):
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 162, in xmlrpc_2
+    response = self._xmlrpc(service)
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 134, in _xmlrpc
+    result = dispatch_rpc(service, method, params)
+  File "/app/odoo/http.py", line 449, in dispatch_rpc
+    return dispatch(method, params)
+  File "/app/odoo/service/model.py", line 133, in dispatch
+    res = execute_cr(cr, uid, model, method_, args, kw)
+  File "/app/odoo/service/model.py", line 150, in execute_cr
+    result = retrying(partial(call_kw, recs, method, args, kw), env)
+  File "/app/odoo/service/model.py", line 188, in retrying
+    result = func()
+  File "/app/odoo/service/model.py", line 97, in call_kw
+    result = method(recs, *args, **kwargs)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale_project/models/sale_order.py", line 272, in create
+    created_records = super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/website_sale/models/sale_order.py", line 185, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale/models/sale_order.py", line 1013, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/mail/models/mail_thread.py", line 328, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/odoo/orm/models.py", line 4657, in create
+    new_vals_list = self._prepare_create_values(vals_list)
+  File "/app/odoo/orm/models.py", line 4810, in _prepare_create_values
+    self._add_precomputed_values(result_vals_list)
+  File "/app/odoo/orm/models.py", line 4836, in _add_precomputed_values
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 4836, in <genexpr>
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 6458, in new
+    record._update_cache(values, validate=False)
+  File "/app/odoo/orm/models.py", line 6081, in _update_cache
+    value = field.convert_to_cache(value, self, validate)
+  File "/app/odoo/orm/fields_temporal.py", line 285, in convert_to_cache
+    return self.to_datetime(value)
+  File "/app/odoo/orm/fields_temporal.py", line 249, in to_datetime
+    return datetime.strptime(value, DATETIME_FORMAT[:len(value)-2])
+  File "/usr/local/lib/python3.10/_strptime.py", line 568, in _strptime_datetime
+    tt, fraction, gmtoff_fraction = _strptime(data_string, format)
+  File "/usr/local/lib/python3.10/_strptime.py", line 349, in _strptime
+    raise ValueError("time data %r does not match format %r" %
+ValueError: time data '2026-06-17T17:43:00.832Z' does not match format '%Y-%m-%d %H:%M:%S'
+
+  ❌ Failed to migrate sales order: XML-RPC fault: Traceback (most recent call last):
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 162, in xmlrpc_2
+    response = self._xmlrpc(service)
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 134, in _xmlrpc
+    result = dispatch_rpc(service, method, params)
+  File "/app/odoo/http.py", line 449, in dispatch_rpc
+    return dispatch(method, params)
+  File "/app/odoo/service/model.py", line 133, in dispatch
+    res = execute_cr(cr, uid, model, method_, args, kw)
+  File "/app/odoo/service/model.py", line 150, in execute_cr
+    result = retrying(partial(call_kw, recs, method, args, kw), env)
+  File "/app/odoo/service/model.py", line 188, in retrying
+    result = func()
+  File "/app/odoo/service/model.py", line 97, in call_kw
+    result = method(recs, *args, **kwargs)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale_project/models/sale_order.py", line 272, in create
+    created_records = super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/website_sale/models/sale_order.py", line 185, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale/models/sale_order.py", line 1013, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/mail/models/mail_thread.py", line 328, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/odoo/orm/models.py", line 4657, in create
+    new_vals_list = self._prepare_create_values(vals_list)
+  File "/app/odoo/orm/models.py", line 4810, in _prepare_create_values
+    self._add_precomputed_values(result_vals_list)
+  File "/app/odoo/orm/models.py", line 4836, in _add_precomputed_values
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 4836, in <genexpr>
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 6458, in new
+    record._update_cache(values, validate=False)
+  File "/app/odoo/orm/models.py", line 6081, in _update_cache
+    value = field.convert_to_cache(value, self, validate)
+  File "/app/odoo/orm/fields_temporal.py", line 285, in convert_to_cache
+    return self.to_datetime(value)
+  File "/app/odoo/orm/fields_temporal.py", line 249, in to_datetime
+    return datetime.strptime(value, DATETIME_FORMAT[:len(value)-2])
+  File "/usr/local/lib/python3.10/_strptime.py", line 568, in _strptime_datetime
+    tt, fraction, gmtoff_fraction = _strptime(data_string, format)
+  File "/usr/local/lib/python3.10/_strptime.py", line 349, in _strptime
+    raise ValueError("time data %r does not match format %r" %
+ValueError: time data '2026-06-18T17:43:00.832Z' does not match format '%Y-%m-%d %H:%M:%S'
+
+  ❌ Failed to migrate sales order: XML-RPC fault: Traceback (most recent call last):
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 162, in xmlrpc_2
+    response = self._xmlrpc(service)
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 134, in _xmlrpc
+    result = dispatch_rpc(service, method, params)
+  File "/app/odoo/http.py", line 449, in dispatch_rpc
+    return dispatch(method, params)
+  File "/app/odoo/service/model.py", line 133, in dispatch
+    res = execute_cr(cr, uid, model, method_, args, kw)
+  File "/app/odoo/service/model.py", line 150, in execute_cr
+    result = retrying(partial(call_kw, recs, method, args, kw), env)
+  File "/app/odoo/service/model.py", line 188, in retrying
+    result = func()
+  File "/app/odoo/service/model.py", line 97, in call_kw
+    result = method(recs, *args, **kwargs)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale_project/models/sale_order.py", line 272, in create
+    created_records = super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/website_sale/models/sale_order.py", line 185, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale/models/sale_order.py", line 1013, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/mail/models/mail_thread.py", line 328, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/odoo/orm/models.py", line 4657, in create
+    new_vals_list = self._prepare_create_values(vals_list)
+  File "/app/odoo/orm/models.py", line 4810, in _prepare_create_values
+    self._add_precomputed_values(result_vals_list)
+  File "/app/odoo/orm/models.py", line 4836, in _add_precomputed_values
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 4836, in <genexpr>
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 6458, in new
+    record._update_cache(values, validate=False)
+  File "/app/odoo/orm/models.py", line 6081, in _update_cache
+    value = field.convert_to_cache(value, self, validate)
+  File "/app/odoo/orm/fields_temporal.py", line 285, in convert_to_cache
+    return self.to_datetime(value)
+  File "/app/odoo/orm/fields_temporal.py", line 249, in to_datetime
+    return datetime.strptime(value, DATETIME_FORMAT[:len(value)-2])
+  File "/usr/local/lib/python3.10/_strptime.py", line 568, in _strptime_datetime
+    tt, fraction, gmtoff_fraction = _strptime(data_string, format)
+  File "/usr/local/lib/python3.10/_strptime.py", line 349, in _strptime
+    raise ValueError("time data %r does not match format %r" %
+ValueError: time data '2026-06-19T17:43:00.832Z' does not match format '%Y-%m-%d %H:%M:%S'
+
+  ❌ Failed to migrate sales order: XML-RPC fault: Traceback (most recent call last):
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 162, in xmlrpc_2
+    response = self._xmlrpc(service)
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 134, in _xmlrpc
+    result = dispatch_rpc(service, method, params)
+  File "/app/odoo/http.py", line 449, in dispatch_rpc
+    return dispatch(method, params)
+  File "/app/odoo/service/model.py", line 133, in dispatch
+    res = execute_cr(cr, uid, model, method_, args, kw)
+  File "/app/odoo/service/model.py", line 150, in execute_cr
+    result = retrying(partial(call_kw, recs, method, args, kw), env)
+  File "/app/odoo/service/model.py", line 188, in retrying
+    result = func()
+  File "/app/odoo/service/model.py", line 97, in call_kw
+    result = method(recs, *args, **kwargs)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale_project/models/sale_order.py", line 272, in create
+    created_records = super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/website_sale/models/sale_order.py", line 185, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale/models/sale_order.py", line 1013, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/mail/models/mail_thread.py", line 328, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/odoo/orm/models.py", line 4657, in create
+    new_vals_list = self._prepare_create_values(vals_list)
+  File "/app/odoo/orm/models.py", line 4810, in _prepare_create_values
+    self._add_precomputed_values(result_vals_list)
+  File "/app/odoo/orm/models.py", line 4836, in _add_precomputed_values
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 4836, in <genexpr>
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 6458, in new
+    record._update_cache(values, validate=False)
+  File "/app/odoo/orm/models.py", line 6081, in _update_cache
+    value = field.convert_to_cache(value, self, validate)
+  File "/app/odoo/orm/fields_temporal.py", line 285, in convert_to_cache
+    return self.to_datetime(value)
+  File "/app/odoo/orm/fields_temporal.py", line 249, in to_datetime
+    return datetime.strptime(value, DATETIME_FORMAT[:len(value)-2])
+  File "/usr/local/lib/python3.10/_strptime.py", line 568, in _strptime_datetime
+    tt, fraction, gmtoff_fraction = _strptime(data_string, format)
+  File "/usr/local/lib/python3.10/_strptime.py", line 349, in _strptime
+    raise ValueError("time data %r does not match format %r" %
+ValueError: time data '2026-06-20T17:43:00.832Z' does not match format '%Y-%m-%d %H:%M:%S'
+
+  ❌ Failed to migrate sales order: XML-RPC fault: Traceback (most recent call last):
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 162, in xmlrpc_2
+    response = self._xmlrpc(service)
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 134, in _xmlrpc
+    result = dispatch_rpc(service, method, params)
+  File "/app/odoo/http.py", line 449, in dispatch_rpc
+    return dispatch(method, params)
+  File "/app/odoo/service/model.py", line 133, in dispatch
+    res = execute_cr(cr, uid, model, method_, args, kw)
+  File "/app/odoo/service/model.py", line 150, in execute_cr
+    result = retrying(partial(call_kw, recs, method, args, kw), env)
+  File "/app/odoo/service/model.py", line 188, in retrying
+    result = func()
+  File "/app/odoo/service/model.py", line 97, in call_kw
+    result = method(recs, *args, **kwargs)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale_project/models/sale_order.py", line 272, in create
+    created_records = super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/website_sale/models/sale_order.py", line 185, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale/models/sale_order.py", line 1013, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/mail/models/mail_thread.py", line 328, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/odoo/orm/models.py", line 4657, in create
+    new_vals_list = self._prepare_create_values(vals_list)
+  File "/app/odoo/orm/models.py", line 4810, in _prepare_create_values
+    self._add_precomputed_values(result_vals_list)
+  File "/app/odoo/orm/models.py", line 4836, in _add_precomputed_values
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 4836, in <genexpr>
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 6458, in new
+    record._update_cache(values, validate=False)
+  File "/app/odoo/orm/models.py", line 6081, in _update_cache
+    value = field.convert_to_cache(value, self, validate)
+  File "/app/odoo/orm/fields_temporal.py", line 285, in convert_to_cache
+    return self.to_datetime(value)
+  File "/app/odoo/orm/fields_temporal.py", line 249, in to_datetime
+    return datetime.strptime(value, DATETIME_FORMAT[:len(value)-2])
+  File "/usr/local/lib/python3.10/_strptime.py", line 568, in _strptime_datetime
+    tt, fraction, gmtoff_fraction = _strptime(data_string, format)
+  File "/usr/local/lib/python3.10/_strptime.py", line 349, in _strptime
+    raise ValueError("time data %r does not match format %r" %
+ValueError: time data '2026-06-21T17:43:00.832Z' does not match format '%Y-%m-%d %H:%M:%S'
+
+  ❌ Failed to migrate sales order: XML-RPC fault: Traceback (most recent call last):
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 162, in xmlrpc_2
+    response = self._xmlrpc(service)
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 134, in _xmlrpc
+    result = dispatch_rpc(service, method, params)
+  File "/app/odoo/http.py", line 449, in dispatch_rpc
+    return dispatch(method, params)
+  File "/app/odoo/service/model.py", line 133, in dispatch
+    res = execute_cr(cr, uid, model, method_, args, kw)
+  File "/app/odoo/service/model.py", line 150, in execute_cr
+    result = retrying(partial(call_kw, recs, method, args, kw), env)
+  File "/app/odoo/service/model.py", line 188, in retrying
+    result = func()
+  File "/app/odoo/service/model.py", line 97, in call_kw
+    result = method(recs, *args, **kwargs)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale_project/models/sale_order.py", line 272, in create
+    created_records = super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/website_sale/models/sale_order.py", line 185, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale/models/sale_order.py", line 1013, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/mail/models/mail_thread.py", line 328, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/odoo/orm/models.py", line 4657, in create
+    new_vals_list = self._prepare_create_values(vals_list)
+  File "/app/odoo/orm/models.py", line 4810, in _prepare_create_values
+    self._add_precomputed_values(result_vals_list)
+  File "/app/odoo/orm/models.py", line 4836, in _add_precomputed_values
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 4836, in <genexpr>
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 6458, in new
+    record._update_cache(values, validate=False)
+  File "/app/odoo/orm/models.py", line 6081, in _update_cache
+    value = field.convert_to_cache(value, self, validate)
+  File "/app/odoo/orm/fields_temporal.py", line 285, in convert_to_cache
+    return self.to_datetime(value)
+  File "/app/odoo/orm/fields_temporal.py", line 249, in to_datetime
+    return datetime.strptime(value, DATETIME_FORMAT[:len(value)-2])
+  File "/usr/local/lib/python3.10/_strptime.py", line 568, in _strptime_datetime
+    tt, fraction, gmtoff_fraction = _strptime(data_string, format)
+  File "/usr/local/lib/python3.10/_strptime.py", line 349, in _strptime
+    raise ValueError("time data %r does not match format %r" %
+ValueError: time data '2026-06-22T17:43:00.832Z' does not match format '%Y-%m-%d %H:%M:%S'
+
+  ❌ Failed to migrate sales order: XML-RPC fault: Traceback (most recent call last):
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 162, in xmlrpc_2
+    response = self._xmlrpc(service)
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 134, in _xmlrpc
+    result = dispatch_rpc(service, method, params)
+  File "/app/odoo/http.py", line 449, in dispatch_rpc
+    return dispatch(method, params)
+  File "/app/odoo/service/model.py", line 133, in dispatch
+    res = execute_cr(cr, uid, model, method_, args, kw)
+  File "/app/odoo/service/model.py", line 150, in execute_cr
+    result = retrying(partial(call_kw, recs, method, args, kw), env)
+  File "/app/odoo/service/model.py", line 188, in retrying
+    result = func()
+  File "/app/odoo/service/model.py", line 97, in call_kw
+    result = method(recs, *args, **kwargs)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale_project/models/sale_order.py", line 272, in create
+    created_records = super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/website_sale/models/sale_order.py", line 185, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale/models/sale_order.py", line 1013, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/mail/models/mail_thread.py", line 328, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/odoo/orm/models.py", line 4657, in create
+    new_vals_list = self._prepare_create_values(vals_list)
+  File "/app/odoo/orm/models.py", line 4810, in _prepare_create_values
+    self._add_precomputed_values(result_vals_list)
+  File "/app/odoo/orm/models.py", line 4836, in _add_precomputed_values
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 4836, in <genexpr>
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 6458, in new
+    record._update_cache(values, validate=False)
+  File "/app/odoo/orm/models.py", line 6081, in _update_cache
+    value = field.convert_to_cache(value, self, validate)
+  File "/app/odoo/orm/fields_temporal.py", line 285, in convert_to_cache
+    return self.to_datetime(value)
+  File "/app/odoo/orm/fields_temporal.py", line 249, in to_datetime
+    return datetime.strptime(value, DATETIME_FORMAT[:len(value)-2])
+  File "/usr/local/lib/python3.10/_strptime.py", line 568, in _strptime_datetime
+    tt, fraction, gmtoff_fraction = _strptime(data_string, format)
+  File "/usr/local/lib/python3.10/_strptime.py", line 349, in _strptime
+    raise ValueError("time data %r does not match format %r" %
+ValueError: time data '2026-06-23T17:43:00.832Z' does not match format '%Y-%m-%d %H:%M:%S'
+
+  ❌ Failed to migrate sales order: XML-RPC fault: Traceback (most recent call last):
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 162, in xmlrpc_2
+    response = self._xmlrpc(service)
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 134, in _xmlrpc
+    result = dispatch_rpc(service, method, params)
+  File "/app/odoo/http.py", line 449, in dispatch_rpc
+    return dispatch(method, params)
+  File "/app/odoo/service/model.py", line 133, in dispatch
+    res = execute_cr(cr, uid, model, method_, args, kw)
+  File "/app/odoo/service/model.py", line 150, in execute_cr
+    result = retrying(partial(call_kw, recs, method, args, kw), env)
+  File "/app/odoo/service/model.py", line 188, in retrying
+    result = func()
+  File "/app/odoo/service/model.py", line 97, in call_kw
+    result = method(recs, *args, **kwargs)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale_project/models/sale_order.py", line 272, in create
+    created_records = super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/website_sale/models/sale_order.py", line 185, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale/models/sale_order.py", line 1013, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/mail/models/mail_thread.py", line 328, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/odoo/orm/models.py", line 4657, in create
+    new_vals_list = self._prepare_create_values(vals_list)
+  File "/app/odoo/orm/models.py", line 4810, in _prepare_create_values
+    self._add_precomputed_values(result_vals_list)
+  File "/app/odoo/orm/models.py", line 4836, in _add_precomputed_values
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 4836, in <genexpr>
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 6458, in new
+    record._update_cache(values, validate=False)
+  File "/app/odoo/orm/models.py", line 6081, in _update_cache
+    value = field.convert_to_cache(value, self, validate)
+  File "/app/odoo/orm/fields_temporal.py", line 285, in convert_to_cache
+    return self.to_datetime(value)
+  File "/app/odoo/orm/fields_temporal.py", line 249, in to_datetime
+    return datetime.strptime(value, DATETIME_FORMAT[:len(value)-2])
+  File "/usr/local/lib/python3.10/_strptime.py", line 568, in _strptime_datetime
+    tt, fraction, gmtoff_fraction = _strptime(data_string, format)
+  File "/usr/local/lib/python3.10/_strptime.py", line 349, in _strptime
+    raise ValueError("time data %r does not match format %r" %
+ValueError: time data '2026-06-24T17:43:00.832Z' does not match format '%Y-%m-%d %H:%M:%S'
+
+  ❌ Failed to migrate sales order: XML-RPC fault: Traceback (most recent call last):
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 162, in xmlrpc_2
+    response = self._xmlrpc(service)
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 134, in _xmlrpc
+    result = dispatch_rpc(service, method, params)
+  File "/app/odoo/http.py", line 449, in dispatch_rpc
+    return dispatch(method, params)
+  File "/app/odoo/service/model.py", line 133, in dispatch
+    res = execute_cr(cr, uid, model, method_, args, kw)
+  File "/app/odoo/service/model.py", line 150, in execute_cr
+    result = retrying(partial(call_kw, recs, method, args, kw), env)
+  File "/app/odoo/service/model.py", line 188, in retrying
+    result = func()
+  File "/app/odoo/service/model.py", line 97, in call_kw
+    result = method(recs, *args, **kwargs)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale_project/models/sale_order.py", line 272, in create
+    created_records = super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/website_sale/models/sale_order.py", line 185, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale/models/sale_order.py", line 1013, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/mail/models/mail_thread.py", line 328, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/odoo/orm/models.py", line 4657, in create
+    new_vals_list = self._prepare_create_values(vals_list)
+  File "/app/odoo/orm/models.py", line 4810, in _prepare_create_values
+    self._add_precomputed_values(result_vals_list)
+  File "/app/odoo/orm/models.py", line 4836, in _add_precomputed_values
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 4836, in <genexpr>
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 6458, in new
+    record._update_cache(values, validate=False)
+  File "/app/odoo/orm/models.py", line 6081, in _update_cache
+    value = field.convert_to_cache(value, self, validate)
+  File "/app/odoo/orm/fields_temporal.py", line 285, in convert_to_cache
+    return self.to_datetime(value)
+  File "/app/odoo/orm/fields_temporal.py", line 249, in to_datetime
+    return datetime.strptime(value, DATETIME_FORMAT[:len(value)-2])
+  File "/usr/local/lib/python3.10/_strptime.py", line 568, in _strptime_datetime
+    tt, fraction, gmtoff_fraction = _strptime(data_string, format)
+  File "/usr/local/lib/python3.10/_strptime.py", line 349, in _strptime
+    raise ValueError("time data %r does not match format %r" %
+ValueError: time data '2026-06-25T17:43:00.832Z' does not match format '%Y-%m-%d %H:%M:%S'
+
+  ❌ Failed to migrate sales order: XML-RPC fault: Traceback (most recent call last):
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 162, in xmlrpc_2
+    response = self._xmlrpc(service)
+  File "/app/addons/rpc/controllers/xmlrpc.py", line 134, in _xmlrpc
+    result = dispatch_rpc(service, method, params)
+  File "/app/odoo/http.py", line 449, in dispatch_rpc
+    return dispatch(method, params)
+  File "/app/odoo/service/model.py", line 133, in dispatch
+    res = execute_cr(cr, uid, model, method_, args, kw)
+  File "/app/odoo/service/model.py", line 150, in execute_cr
+    result = retrying(partial(call_kw, recs, method, args, kw), env)
+  File "/app/odoo/service/model.py", line 188, in retrying
+    result = func()
+  File "/app/odoo/service/model.py", line 97, in call_kw
+    result = method(recs, *args, **kwargs)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale_project/models/sale_order.py", line 272, in create
+    created_records = super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/website_sale/models/sale_order.py", line 185, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/sale/models/sale_order.py", line 1013, in create
+    return super().create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/addons/mail/models/mail_thread.py", line 328, in create
+    threads = super(MailThread, self).create(vals_list)
+  File "/app/odoo/orm/decorators.py", line 365, in create
+    return method(self, vals_list)
+  File "/app/odoo/orm/models.py", line 4657, in create
+    new_vals_list = self._prepare_create_values(vals_list)
+  File "/app/odoo/orm/models.py", line 4810, in _prepare_create_values
+    self._add_precomputed_values(result_vals_list)
+  File "/app/odoo/orm/models.py", line 4836, in _add_precomputed_values
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 4836, in <genexpr>
+    records = self.browse().concat(*(self.new(vals) for vals in vals_list_todo))
+  File "/app/odoo/orm/models.py", line 6458, in new
+    record._update_cache(values, validate=False)
+  File "/app/odoo/orm/models.py", line 6081, in _update_cache
+    value = field.convert_to_cache(value, self, validate)
+  File "/app/odoo/orm/fields_temporal.py", line 285, in convert_to_cache
+    return self.to_datetime(value)
+  File "/app/odoo/orm/fields_temporal.py", line 249, in to_datetime
+    return datetime.strptime(value, DATETIME_FORMAT[:len(value)-2])
+  File "/usr/local/lib/python3.10/_strptime.py", line 568, in _strptime_datetime
+    tt, fraction, gmtoff_fraction = _strptime(data_string, format)
+  File "/usr/local/lib/python3.10/_strptime.py", line 349, in _strptime
+    raise ValueError("time data %r does not match format %r" %
+ValueError: time data '2026-06-26T17:43:00.832Z' does not match format '%Y-%m-%d %H:%M:%S'
+
+
+📦 Migrating Warehouse Data...
+  ❌ Failed to migrate picking: XML-RPC fault: The operation cannot be completed: Missing required value for the field 'Source Location' (location_id).
+Model: 'Transfer' (stock.picking)
+- create/update: a mandatory field is not set
+- delete: another model requires the record being deleted, you can archive it instead
+
+  ❌ Failed to migrate picking: XML-RPC fault: The operation cannot be completed: Missing required value for the field 'Source Location' (location_id).
+Model: 'Transfer' (stock.picking)
+- create/update: a mandatory field is not set
+- delete: another model requires the record being deleted, you can archive it instead
+
+  ❌ Failed to migrate picking: XML-RPC fault: The operation cannot be completed: Missing required value for the field 'Source Location' (location_id).
+Model: 'Transfer' (stock.picking)
+- create/update: a mandatory field is not set
+- delete: another model requires the record being deleted, you can archive it instead
+
+  ❌ Failed to migrate picking: XML-RPC fault: The operation cannot be completed: Missing required value for the field 'Source Location' (location_id).
+Model: 'Transfer' (stock.picking)
+- create/update: a mandatory field is not set
+- delete: another model requires the record being deleted, you can archive it instead
+
+  ❌ Failed to migrate picking: XML-RPC fault: The operation cannot be completed: Missing required value for the field 'Source Location' (location_id).
+Model: 'Transfer' (stock.picking)
+- create/update: a mandatory field is not set
+- delete: another model requires the record being deleted, you can archive it instead
+
+  ❌ Failed to migrate picking: XML-RPC fault: The operation cannot be completed: Missing required value for the field 'Source Location' (location_id).
+Model: 'Transfer' (stock.picking)
+- create/update: a mandatory field is not set
+- delete: another model requires the record being deleted, you can archive it instead
+
+  ❌ Failed to migrate picking: XML-RPC fault: The operation cannot be completed: Missing required value for the field 'Source Location' (location_id).
+Model: 'Transfer' (stock.picking)
+- create/update: a mandatory field is not set
+- delete: another model requires the record being deleted, you can archive it instead
+
+  ❌ Failed to migrate picking: XML-RPC fault: The operation cannot be completed: Missing required value for the field 'Source Location' (location_id).
+Model: 'Transfer' (stock.picking)
+- create/update: a mandatory field is not set
+- delete: another model requires the record being deleted, you can archive it instead
+
+  ❌ Failed to migrate picking: XML-RPC fault: The operation cannot be completed: Missing required value for the field 'Source Location' (location_id).
+Model: 'Transfer' (stock.picking)
+- create/update: a mandatory field is not set
+- delete: another model requires the record being deleted, you can archive it instead
+
+  ❌ Failed to migrate picking: XML-RPC fault: The operation cannot be completed: Missing required value for the field 'Source Location' (location_id).
+Model: 'Transfer' (stock.picking)
+- create/update: a mandatory field is not set
+- delete: another model requires the record being deleted, you can archive it instead
+
+  ❌ Failed to migrate picking: XML-RPC fault: The operation cannot be completed: Missing required value for the field 'Source Location' (location_id).
+Model: 'Transfer' (stock.picking)
+- create/update: a mandatory field is not set
+- delete: another model requires the record being deleted, you can archive it instead
+
+  ❌ Failed to migrate picking: XML-RPC fault: The operation cannot be completed: Missing required value for the field 'Source Location' (location_id).
+Model: 'Transfer' (stock.picking)
+- create/update: a mandatory field is not set
+- delete: another model requires the record being deleted, you can archive it instead
+
+
+📦 Migrating Finance Data...
+  ✅ Created invoice: 1 - ap-001
+  ✅ Created invoice: 2 - ap-002
+  ✅ Created invoice: 3 - ap-003
+  ✅ Created invoice: 4 - ap-004
+  ✅ Created invoice: 5 - ap-005
+  ✅ Created invoice: 6 - ap-006
+  ✅ Created invoice: 7 - ap-007
+  ✅ Created invoice: 8 - ap-008
+  ✅ Created invoice: 9 - ap-009
+  ✅ Created invoice: 10 - ap-010
+
+📦 Migrating Purchase Data...
+  ❌ Failed to migrate purchase order: XML-RPC fault: The operation cannot be completed: Missing required value for the field 'Vendor' (partner_id).
+Model: 'Purchase Order' (purchase.order)
+- create/update: a mandatory field is not set
+- delete: another model requires the record being deleted, you can archive it instead
+
+  ❌ Failed to migrate purchase order: XML-RPC fault: The operation cannot be completed: Missing required value for the field 'Vendor' (partner_id).
+Model: 'Purchase Order' (purchase.order)
+- create/update: a mandatory field is not set
+- delete: another model requires the record being deleted, you can archive it instead
+
+  ❌ Failed to migrate purchase order: XML-RPC fault: The operation cannot be completed: Missing required value for the field 'Vendor' (partner_id).
+Model: 'Purchase Order' (purchase.order)
+- create/update: a mandatory field is not set
+- delete: another model requires the record being deleted, you can archive it instead
+
+  ❌ Failed to migrate purchase order: XML-RPC fault: The operation cannot be completed: Missing required value for the field 'Vendor' (partner_id).
+Model: 'Purchase Order' (purchase.order)
+- create/update: a mandatory field is not set
+- delete: another model requires the record being deleted, you can archive it instead
+
+  ❌ Failed to migrate purchase order: XML-RPC fault: The operation cannot be completed: Missing required value for the field 'Vendor' (partner_id).
+Model: 'Purchase Order' (purchase.order)
+- create/update: a mandatory field is not set
+- delete: another model requires the record being deleted, you can archive it instead
+
+  ❌ Failed to migrate purchase order: XML-RPC fault: The operation cannot be completed: Missing required value for the field 'Vendor' (partner_id).
+Model: 'Purchase Order' (purchase.order)
+- create/update: a mandatory field is not set
+- delete: another model requires the record being deleted, you can archive it instead
+
+  ❌ Failed to migrate purchase order: XML-RPC fault: The operation cannot be completed: Missing required value for the field 'Vendor' (partner_id).
+Model: 'Purchase Order' (purchase.order)
+- create/update: a mandatory field is not set
+- delete: another model requires the record being deleted, you can archive it instead
+
+  ❌ Failed to migrate purchase order: XML-RPC fault: The operation cannot be completed: Missing required value for the field 'Vendor' (partner_id).
+Model: 'Purchase Order' (purchase.order)
+- create/update: a mandatory field is not set
+- delete: another model requires the record being deleted, you can archive it instead
+
+  ❌ Failed to migrate purchase order: XML-RPC fault: The operation cannot be completed: Missing required value for the field 'Vendor' (partner_id).
+Model: 'Purchase Order' (purchase.order)
+- create/update: a mandatory field is not set
+- delete: another model requires the record being deleted, you can archive it instead
+
+  ❌ Failed to migrate purchase order: XML-RPC fault: The operation cannot be completed: Missing required value for the field 'Vendor' (partner_id).
+Model: 'Purchase Order' (purchase.order)
+- create/update: a mandatory field is not set
+- delete: another model requires the record being deleted, you can archive it instead
+
+  ❌ Failed to migrate purchase order: XML-RPC fault: The operation cannot be completed: Missing required value for the field 'Vendor' (partner_id).
+Model: 'Purchase Order' (purchase.order)
+- create/update: a mandatory field is not set
+- delete: another model requires the record being deleted, you can archive it instead
+
+  ❌ Failed to migrate purchase order: XML-RPC fault: The operation cannot be completed: Missing required value for the field 'Vendor' (partner_id).
+Model: 'Purchase Order' (purchase.order)
+- create/update: a mandatory field is not set
+- delete: another model requires the record being deleted, you can archive it instead
+
+
+📦 Migrating CRM Data...
+  ✅ Created lead: 1 - Lead-1783911718027
+  ✅ Created lead: 2 - Lead-1783911718461
+  ✅ Created lead: 3 - Lead-1783911718831
+  ✅ Created lead: 4 - Lead-1783911719195
+  ✅ Created lead: 5 - Lead-1783911719563
+  ✅ Created lead: 6 - Lead-1783911719935
+  ✅ Created lead: 7 - Lead-1783911720292
+  ✅ Created lead: 8 - Lead-1783911720656
+  ✅ Created lead: 9 - Lead-1783911721026
+  ✅ Created lead: 10 - Lead-1783911721387
+
+============================================================
+📋 MIGRATION SUMMARY
+============================================================
+
+Sales Orders: 0 migrated, 15 failed
+Warehouse: 0 migrated, 12 failed
+Finance: 10 migrated, 0 failed
+Purchase: 0 migrated, 12 failed
+CRM: 10 migrated, 0 failed
+
+📊 Total: 20 migrated, 39 failed
+
+✅ MIGRATION COMPLETE
+============================================================
+
+ja@ja-pc:~/Documents/addis-crown-v3/production-submodule$ 

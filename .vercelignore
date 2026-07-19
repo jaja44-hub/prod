@@ -7,3 +7,16 @@
 /server
 /odoo-backend
 /node_modules
+/tests
+/collected
+/scripts
+
+# Exclude root-level test and seed files from Vercel deployment
+*.mjs
+seed.js
+test_*.js
+test_*.mjs
+verify-*.mjs
+extract-*.mjs
+comprehensive-*.mjs
+setup-*.mjs
