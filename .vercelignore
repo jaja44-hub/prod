@@ -2,3 +2,6 @@
 /../mono resources/
 /service-account.json
 /resources.md
+
+# Exclude server directory from Vercel deployment (local development only)
+/server
