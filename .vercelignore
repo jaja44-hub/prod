@@ -3,5 +3,7 @@
 /service-account.json
 /resources.md
 
-# Exclude server directory from Vercel deployment (local development only)
+# Exclude directories from Vercel deployment (local development only)
 /server
+/odoo-backend
+/node_modules
