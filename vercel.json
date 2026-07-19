@@ -18,7 +18,6 @@
     { "src": "/api/hr/(.*)", "dest": "/api/hr-employees.js" },
     { "src": "/api/odooProxy", "dest": "/api/odooProxy.js" },
     { "src": "/api/keepAlive", "dest": "/api/keepAlive.js" },
-    { "src": "/api/(.*)", "dest": "/api/index.js" },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
