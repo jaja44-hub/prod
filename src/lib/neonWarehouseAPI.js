@@ -55,8 +55,16 @@ export async function processWarehouseReceipt(receiptId, processingData) {
 }
 
 // Warehouse Workflow (Pick/Pack/Ship)
-export async function getWarehouseWorkflow(tenantId = 'production') {
+export async function getWarehouseWorkflow(tenantId = 'tenant_default') {
   return request('/inventory/warehouse', {
+    headers: {
+      'X-Tenant-ID': tenantId,
+    },
+  });
+}
+
+export async function getCycleCounts(tenantId = 'tenant_default') {
+  return request('/inventory/cycle-counts', {
     headers: {
       'X-Tenant-ID': tenantId,
     },

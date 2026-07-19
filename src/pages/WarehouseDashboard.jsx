@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { getApiClient } from '../lib/apiClient.js';
+import { getWarehouseWorkflow, getCycleCounts } from '../lib/neonWarehouseAPI';
 import PageHeader from '../components/PageHeader';
 import PageCard from '../components/PageCard';
 import useAnalyticsSnapshot from '../hooks/useAnalyticsSnapshot';
@@ -46,11 +46,10 @@ export function WarehouseDashboard() {
       try {
         setLoading(true);
         setError(null);
-        const client = getApiClient();
 
         const [workflow, counts] = await Promise.all([
-          client.warehouse('workflow').catch(() => null),
-          client.inventory('cycleCounts').catch(() => null),
+          getWarehouseWorkflow('tenant_default').catch(() => null),
+          getCycleCounts('tenant_default').catch(() => null),
         ]);
 
         const nextWorkflow = workflow?.data || workflow || null;
