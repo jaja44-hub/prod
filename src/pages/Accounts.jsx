@@ -1,12 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
-import {
-  getOdooAccounts,
-  getOdooJournals,
-  getOdooPayments,
-  BACKEND_WAKEUP_MESSAGE
-} from '../services/ServiceGateway';
+import { getJournalEntries } from '../lib/neonFinanceAPI';
 import ListFilterBar from '../components/ListFilterBar';
 import PageHeader from '../components/PageHeader';
 import PageCard from '../components/PageCard';
@@ -31,8 +26,8 @@ export default function Accounts() {
   const [filters, setFilters] = useState({ search: '', accountType: '', active: true });
 
   const normalizeErrorMessage = (err) => {
-    const raw = err?.response?.data?.error || err?.message || t('error');
-    return raw === BACKEND_WAKEUP_MESSAGE ? t('backendWakingUp') : raw;
+    const raw = err?.error || err?.message || t('error');
+    return raw;
   };
 
   useEffect(() => {
@@ -41,27 +36,24 @@ export default function Accounts() {
       setLoading(true);
       setError('');
       try {
-        if (activeTab === 'accounts') {
-          const result = await getOdooAccounts(100, {
-            search: filters.search || undefined,
-            account_type: filters.accountType || undefined,
-            active: filters.active,
-          });
-          if (mounted) setAccounts(Array.isArray(result) ? result : []);
-        } else if (activeTab === 'journals') {
-          const result = await getOdooJournals(100);
-          if (mounted) setJournals(Array.isArray(result) ? result : []);
-        } else if (activeTab === 'payments') {
-          const result = await getOdooPayments(100);
-          let loadedPayments = Array.isArray(result) ? result : [];
-          if (isET) {
-            const { calculateEthiopianTaxes } = await import('../lib/oracles/settlementOracle');
-            loadedPayments = await Promise.all(loadedPayments.map(async (p) => {
-               const taxData = await calculateEthiopianTaxes(p.amount || 0, true);
-               return { ...p, taxData };
-            }));
+        const result = await getJournalEntries({ tenant_id: 'tenant_default' });
+        if (mounted) {
+          const entries = result.data || result || [];
+          if (activeTab === 'accounts') {
+            setAccounts(entries.filter(e => e.entry_type === 'ACCOUNT'));
+          } else if (activeTab === 'journals') {
+            setJournals(entries.filter(e => e.entry_type === 'JOURNAL'));
+          } else if (activeTab === 'payments') {
+            let loadedPayments = entries.filter(e => e.entry_type === 'PAYMENT');
+            if (isET) {
+              const { calculateEthiopianTaxes } = await import('../lib/oracles/settlementOracle');
+              loadedPayments = await Promise.all(loadedPayments.map(async (p) => {
+                 const taxData = await calculateEthiopianTaxes(p.total_credit || 0, true);
+                 return { ...p, taxData };
+              }));
+            }
+            setPayments(loadedPayments);
           }
-          if (mounted) setPayments(loadedPayments);
         }
       } catch (err) {
         if (mounted) setError(normalizeErrorMessage(err));

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLang } from '../context/LangContext';
-import { getOdooCustomers, getOdooVendors, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway';
+import { getCustomers } from '../lib/neonSalesAPI';
+import { getSuppliers } from '../lib/neonPurchaseAPI';
 import ListFilterBar from '../components/ListFilterBar';
 import PageHeader from '../components/PageHeader';
 import PageCard from '../components/PageCard';
@@ -32,8 +33,8 @@ export default function Customers() {
   ]);
 
   const normalizeErrorMessage = (err) => {
-    const raw = err?.response?.data?.error || err?.message || t('error');
-    return raw === BACKEND_WAKEUP_MESSAGE ? t('backendWakingUp') : raw;
+    const raw = err?.error || err?.message || t('error');
+    return raw;
   };
 
   const loadData = async (currentFilters) => {
@@ -41,11 +42,11 @@ export default function Customers() {
     setError('');
     try {
       if (activeTab === 'customers') {
-        const res = await getOdooCustomers(50, { search: currentFilters.search || undefined });
-        setCustomers(Array.isArray(res) ? res : []);
+        const res = await getCustomers({ tenant_id: 'tenant_default', search: currentFilters.search || undefined });
+        setCustomers(res.data || res || []);
       } else if (activeTab === 'vendors') {
-        const res = await getOdooVendors(50, { search: currentFilters.search || undefined });
-        setVendors(Array.isArray(res) ? res : []);
+        const res = await getSuppliers({ tenant_id: 'tenant_default', search: currentFilters.search || undefined });
+        setVendors(res.data || res || []);
       }
     } catch (err) {
       setError(normalizeErrorMessage(err));

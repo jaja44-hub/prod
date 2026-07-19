@@ -3,12 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
 import {
-  getOdooSalesOrder,
-  createOdooSalesOrder,
-  getOdooCustomers,
-  getOdooProducts,
-  BACKEND_WAKEUP_MESSAGE,
-} from '../services/ServiceGateway';
+  getSalesOrders,
+  createSalesOrder,
+  getCustomers,
+} from '../lib/neonSalesAPI';
 import PageHeader from '../components/PageHeader';
 import PageCard from '../components/PageCard';
 import StateBadge from '../components/StateBadge';
@@ -32,8 +30,8 @@ export default function SalesOrderDetail() {
   });
 
   const normalizeErrorMessage = (err) => {
-    const raw = err?.response?.data?.error || err?.message || t('error');
-    return raw === BACKEND_WAKEUP_MESSAGE ? t('backendWakingUp') : raw;
+    const raw = err?.error || err?.message || t('error');
+    return raw;
   };
 
   useEffect(() => {
@@ -44,25 +42,22 @@ export default function SalesOrderDetail() {
       setError('');
 
       try {
-        const [customerResult, productResult] = await Promise.all([
-          getOdooCustomers(50),
-          getOdooProducts(50),
-        ]);
+        const customerResult = await getCustomers({ tenant_id: 'tenant_default', limit: 50 });
 
         if (!mounted) return;
-        setCustomers(Array.isArray(customerResult) ? customerResult : []);
-        setProducts(Array.isArray(productResult) ? productResult : []);
+        setCustomers(customerResult.data || customerResult || []);
 
         if (id && id !== 'new') {
-          const existingOrder = await getOdooSalesOrder(id);
+          const ordersResult = await getSalesOrders({ tenant_id: 'tenant_default' });
+          const existingOrder = ordersResult.data?.find(o => o.id === id);
           if (!mounted) return;
           setOrder(existingOrder);
           setForm({
-            partner_id: existingOrder?.partner_id?.[0] || '',
-            origin: existingOrder?.origin || '',
-            product_id: existingOrder?.order_lines?.[0]?.product_id?.[0] || '',
-            quantity: existingOrder?.order_lines?.[0]?.product_uom_qty || 1,
-            unitPrice: existingOrder?.order_lines?.[0]?.price_unit || 0,
+            partner_id: existingOrder?.customer_id || '',
+            origin: existingOrder?.notes || '',
+            product_id: '',
+            quantity: 1,
+            unitPrice: existingOrder?.total_amount || 0,
           });
         }
       } catch (err) {
@@ -93,23 +88,20 @@ export default function SalesOrderDetail() {
 
     try {
       if (id === 'new') {
-        const created = await createOdooSalesOrder({
-          partner_id: form.partner_id,
-          origin: form.origin,
-          lines: [
-            {
-              product_id: form.product_id,
-              quantity: form.quantity,
-              unitPrice: form.unitPrice,
-            },
-          ],
-        }, { actorUid: currentUser?.uid });
+        const created = await createSalesOrder({
+          customer_id: form.partner_id,
+          order_date: new Date().toISOString().split('T')[0],
+          delivery_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          total_amount: form.unitPrice * form.quantity,
+          status: 'draft',
+          notes: form.origin,
+        });
 
-        if (!created?.id) {
-          throw new Error('Failed to create sales order in Odoo.');
+        if (!created?.data?.id) {
+          throw new Error('Failed to create sales order.');
         }
 
-        navigate(`/sales/${created.id}`);
+        navigate(`/sales/${created.data.id}`);
         return;
       }
     } catch (err) {

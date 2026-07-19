@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
-import { getOdooProduct, getOdooProductCategories, getOdooStockQuants, getOdooValuationLayers, updateOdooProduct, createOdooProduct, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway';
+import { getInventoryProducts, getInventoryLocations } from '../lib/neonWarehouseAPI';
 import PageHeader from '../components/PageHeader';
 import PageCard from '../components/PageCard';
 import { buildInventoryInsights } from '../lib/inventoryDepth';
@@ -15,15 +15,15 @@ export default function ItemDetail() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [item, setItem] = useState(null);
-  const [categories, setCategories] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [quants, setQuants] = useState([]);
   const [valuationLayers, setValuationLayers] = useState([]);
   const [inventoryInsights, setInventoryInsights] = useState(null);
-  const [form, setForm] = useState({ default_code: '', name: '', list_price: 0, categ_id: undefined });
+  const [form, setForm] = useState({ default_code: '', name: '', list_price: 0, category: '' });
 
   const normalizeErrorMessage = (err) => {
-    const raw = err?.response?.data?.error || err?.message || t('error');
-    return raw === BACKEND_WAKEUP_MESSAGE ? t('backendWakingUp') : raw;
+    const raw = err?.error || err?.message || t('error');
+    return raw;
   };
 
   useEffect(() => {
@@ -32,24 +32,24 @@ export default function ItemDetail() {
       setLoading(true);
       setError('');
       try {
-        const [categoryResult, productResult] = await Promise.all([
-          getOdooProductCategories(100, {}),
-          id && id !== 'new' ? getOdooProduct(id) : Promise.resolve(null),
+        const [locationsResult, productsResult] = await Promise.all([
+          getInventoryLocations({ tenant_id: 'tenant_default' }),
+          id && id !== 'new' ? getInventoryProducts({ tenant_id: 'tenant_default', search: id }) : Promise.resolve(null),
         ]);
         if (mounted) {
-          setCategories(Array.isArray(categoryResult) ? categoryResult : []);
-          if (productResult) {
-            setItem(productResult);
-            setForm({
-              default_code: productResult?.default_code || '',
-              name: productResult?.name || '',
-              list_price: productResult?.list_price || 0,
-              categ_id: productResult?.categ_id?.[0],
-            });
-            const primaryQuant = Array.isArray(productResult?.quants) && productResult.quants.length > 0
-              ? productResult.quants[0]
-              : null;
-            setInventoryInsights(buildInventoryInsights(productResult, primaryQuant || quants[0]));
+          setLocations(locationsResult.data || locationsResult || []);
+          if (productsResult && productsResult.data) {
+            const productItem = productsResult.data.find(p => p.id === id) || productsResult.data[0];
+            if (productItem) {
+              setItem(productItem);
+              setForm({
+                default_code: productItem?.product_code || '',
+                name: productItem?.name || '',
+                list_price: productItem?.selling_price || 0,
+                categ_id: productItem?.category,
+              });
+              setInventoryInsights(buildInventoryInsights(productItem, { stock_quantity: productItem.stock_quantity }));
+            }
           }
         }
       } catch (err) {

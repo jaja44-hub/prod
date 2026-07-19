@@ -23,6 +23,7 @@ import {
 import { useLang } from "../context/LangContext";
 import { useAuth } from "../context/AuthContext";
 import LockedOverlay from "../components/LockedOverlay";
+import { getEmployees } from "../lib/neonHRAPI";
 import * as GW from "../services/ServiceGateway";
 import { PayrollService } from "../services/PayrollService";
 
@@ -51,21 +52,21 @@ export default function HRFortress() {
 
   const reloadEmployees = async () => {
     try {
-      const odooData = await GW.getOdooEmployees(100);
-      const mapped = odooData.map((e) => ({
+      const result = await getEmployees({ tenant_id: 'tenant_default' });
+      const mapped = (result.data || result || []).map((e) => ({
         id: String(e.id),
-        name: e.name,
+        name: `${e.first_name} ${e.last_name}`,
         role: e.job_title || 'Staff',
-        department: e.department_id ? e.department_id[1] : 'General',
-        email: e.work_email,
-        salary: (e.id % 10) * 1500 + 8000, // mock salary for payroll
-        status: 'active',
-        tin_number: e.identification_id || `TIN-${e.id}892`,
-        pension_id: e.pin || `PEN-${e.id}441`
+        department: e.department || 'General',
+        email: e.email,
+        salary: e.salary || 0,
+        status: e.active ? 'active' : 'terminated',
+        tin_number: `TIN-${e.id}892`,
+        pension_id: `PEN-${e.id}441`
       }));
       setEmployees(mapped);
     } catch (err) {
-      console.warn('Odoo HR fallback triggered:', err);
+      console.warn('Neon HR fallback triggered:', err);
       GW.getEmployees().then(setEmployees);
     }
   };

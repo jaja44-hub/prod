@@ -18,6 +18,9 @@
     { "src": "/api/inventory/locations", "dest": "/api/inventory-locations.js" },
     { "src": "/api/inventory/warehouse", "dest": "/api/inventory-warehouse.js" },
     { "src": "/api/crm/activity", "dest": "/api/crm-activity.js" },
+    { "src": "/api/sales/orders", "dest": "/api/sales-orders.js" },
+    { "src": "/api/sales/customers", "dest": "/api/sales-customers.js" },
+    { "src": "/api/hr/employees", "dest": "/api/hr-employees.js" },
     { "src": "/api/(.*)", "dest": "/api/index.js" },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }

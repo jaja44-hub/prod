@@ -6,10 +6,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
-import {
-  getOdooVendors,
-  BACKEND_WAKEUP_MESSAGE
-} from '../services/ServiceGateway';
+import { getSuppliers } from '../lib/neonPurchaseAPI';
 import ListFilterBar from '../components/ListFilterBar';
 import PageHeader from '../components/PageHeader';
 import PageCard from '../components/PageCard';
@@ -30,8 +27,8 @@ export default function Vendors() {
   const [filters, setFilters] = useState({ search: '' });
 
   const normalizeErrorMessage = (err) => {
-    const raw = err?.response?.data?.error || err?.message || t('error');
-    return raw === BACKEND_WAKEUP_MESSAGE ? t('backendWakingUp') : raw;
+    const raw = err?.error || err?.message || t('error');
+    return raw;
   };
 
   useEffect(() => {
@@ -40,10 +37,8 @@ export default function Vendors() {
       setLoading(true);
       setError('');
       try {
-        const result = await getOdooVendors(100, {
-          search: filters.search || undefined,
-        });
-        if (mounted) setVendors(Array.isArray(result) ? result : []);
+        const result = await getSuppliers({ tenant_id: 'tenant_default', search: filters.search || undefined });
+        if (mounted) setVendors(result.data || result || []);
       } catch (err) {
         if (mounted) setError(normalizeErrorMessage(err));
       } finally {
