@@ -8,8 +8,8 @@ export default async function handler(req, res) {
   const resource = segments[0] || '';
 
   try {
-    if (resource === 'pipeline') return handlePipeline(req, res, tenantId);
-    if (resource === 'activity') return handleActivity(req, res, tenantId);
+    if (resource === 'pipeline') return await handlePipeline(req, res, tenantId);
+    if (resource === 'activity') return await handleActivity(req, res, tenantId);
     return jsonError(res, 404, `Unknown CRM route: ${resource || '(empty)'}`);
   } catch (error) {
     console.error('[api/crm]', error);

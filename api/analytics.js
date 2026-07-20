@@ -8,9 +8,9 @@ export default async function handler(req, res) {
   const resource = segments[0] || '';
 
   try {
-    if (resource === 'metrics') return handleMetrics(req, res, tenantId);
-    if (resource === 'decisions') return handleDecisions(req, res, tenantId);
-    if (resource === 'engine') return handleEngine(req, res, tenantId);
+    if (resource === 'metrics') return await handleMetrics(req, res, tenantId);
+    if (resource === 'decisions') return await handleDecisions(req, res, tenantId);
+    if (resource === 'engine') return await handleEngine(req, res, tenantId);
     return jsonError(res, 404, `Unknown analytics route: ${resource || '(empty)'}`);
   } catch (error) {
     console.error('[api/analytics]', error);

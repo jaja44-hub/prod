@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   const resource = segments[0] || '';
 
   try {
-    if (resource === 'employees') return handleEmployees(req, res, tenantId, segments.slice(1));
+    if (resource === 'employees') return await handleEmployees(req, res, tenantId, segments.slice(1));
     return jsonError(res, 404, `Unknown HR route: ${resource || '(empty)'}`);
   } catch (error) {
     console.error('[api/hr]', error);

@@ -8,8 +8,8 @@ export default async function handler(req, res) {
   const resource = segments[0] || '';
 
   try {
-    if (resource === 'orders') return handleOrders(req, res, tenantId, segments.slice(1));
-    if (resource === 'customers') return handleCustomers(req, res, tenantId, segments.slice(1));
+    if (resource === 'orders') return await handleOrders(req, res, tenantId, segments.slice(1));
+    if (resource === 'customers') return await handleCustomers(req, res, tenantId, segments.slice(1));
     return jsonError(res, 404, `Unknown sales route: ${resource || '(empty)'}`);
   } catch (error) {
     console.error('[api/sales]', error);

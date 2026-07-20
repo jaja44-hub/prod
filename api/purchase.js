@@ -16,12 +16,12 @@ export default async function handler(req, res) {
   const resource = segments[0] || '';
 
   try {
-    if (resource === 'orders') return handleOrders(req, res, tenantId, segments.slice(1));
-    if (resource === 'suppliers') return handleSuppliers(req, res, tenantId, segments.slice(1));
-    if (resource === 'requisitions') return handleRequisitions(req, res, tenantId, segments.slice(1));
-    if (resource === 'receipts') return handleReceipts(req, res, tenantId, segments.slice(1));
-    if (resource === 'budget') return handleBudget(req, res, tenantId, segments.slice(1));
-    if (resource === 'suppliers-performance') return handleSupplierPerformance(req, res, tenantId);
+    if (resource === 'orders') return await handleOrders(req, res, tenantId, segments.slice(1));
+    if (resource === 'suppliers') return await handleSuppliers(req, res, tenantId, segments.slice(1));
+    if (resource === 'requisitions') return await handleRequisitions(req, res, tenantId, segments.slice(1));
+    if (resource === 'receipts') return await handleReceipts(req, res, tenantId, segments.slice(1));
+    if (resource === 'budget') return await handleBudget(req, res, tenantId, segments.slice(1));
+    if (resource === 'suppliers-performance') return await handleSupplierPerformance(req, res, tenantId);
     return jsonError(res, 404, `Unknown purchase route: ${resource || '(empty)'}`);
   } catch (error) {
     console.error('[api/purchase]', error);

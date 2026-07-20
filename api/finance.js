@@ -24,11 +24,11 @@ export default async function handler(req, res) {
   const resource = segments[0] || '';
 
   try {
-    if (resource === 'accounts') return handleAccounts(req, res, tenantId);
-    if (resource === 'journal') return handleJournal(req, res, tenantId, segments.slice(1));
-    if (resource === 'aging') return handleAging(req, res, tenantId);
-    if (resource === 'reconciliation') return handleReconciliation(req, res, tenantId);
-    if (resource === 'budget-variance') return handleBudgetVariance(req, res, tenantId);
+    if (resource === 'accounts') return await handleAccounts(req, res, tenantId);
+    if (resource === 'journal') return await handleJournal(req, res, tenantId, segments.slice(1));
+    if (resource === 'aging') return await handleAging(req, res, tenantId);
+    if (resource === 'reconciliation') return await handleReconciliation(req, res, tenantId);
+    if (resource === 'budget-variance') return await handleBudgetVariance(req, res, tenantId);
     return jsonError(res, 404, `Unknown finance route: ${resource || '(empty)'}`);
   } catch (error) {
     console.error('[api/finance]', error);

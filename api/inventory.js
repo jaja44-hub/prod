@@ -8,12 +8,12 @@ export default async function handler(req, res) {
   const resource = segments[0] || '';
 
   try {
-    if (resource === 'products') return handleProducts(req, res, tenantId);
-    if (resource === 'locations') return handleLocations(req, res, tenantId);
-    if (resource === 'warehouse') return handleWarehouse(req, res, tenantId);
-    if (resource === 'cycle-counts') return handleCycleCounts(req, res, tenantId);
-    if (resource === 'movements') return handleMovements(req, res, tenantId);
-    if (resource === 'reorder-suggestion') return handleReorder(req, res, tenantId);
+    if (resource === 'products') return await handleProducts(req, res, tenantId);
+    if (resource === 'locations') return await handleLocations(req, res, tenantId);
+    if (resource === 'warehouse') return await handleWarehouse(req, res, tenantId);
+    if (resource === 'cycle-counts') return await handleCycleCounts(req, res, tenantId);
+    if (resource === 'movements') return await handleMovements(req, res, tenantId);
+    if (resource === 'reorder-suggestion') return await handleReorder(req, res, tenantId);
     return jsonError(res, 404, `Unknown inventory route: ${resource || '(empty)'}`);
   } catch (error) {
     console.error('[api/inventory]', error);

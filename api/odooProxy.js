@@ -174,7 +174,7 @@ export default async function handler(req, res) {
 
     // Multi-Entity Odoo (Ticket 051/Phase 6 stub): resolve database and URL dynamically from tenant config if set
     try {
-      const { getTenantDoc: getTenantFirestoreDoc } = await import('./lib/tenantFirestore.js');
+      const { getTenantDoc: getTenantFirestoreDoc } = await import('../server/api/lib/tenantFirestore.js');
       const tenantDoc = await getTenantFirestoreDoc(tenantId);
       if (tenantDoc?.odooConfig) {
         if (tenantDoc.odooConfig.db) db = tenantDoc.odooConfig.db;
