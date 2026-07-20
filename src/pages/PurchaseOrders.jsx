@@ -55,8 +55,8 @@ export default function PurchaseOrders() {
   const [supplierPerformance, setSupplierPerformance] = useState(null);
 
   const normalizeErrorMessage = (err) => {
-    const raw = err?.error || err?.message || t('error');
-    return raw;
+    const raw = err?.error?.message || err?.error || err?.message || err || t('error');
+    return typeof raw === 'string' ? raw : JSON.stringify(raw);
   };
 
   useEffect(() => {

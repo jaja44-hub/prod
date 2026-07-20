@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LangContext';
-import { getOdooSalesOrders, getOdooSalesOrder, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway';
+// Removed ServiceGateway import
 import ListFilterBar from '../components/ListFilterBar';
 import PageHeader from '../components/PageHeader';
 import PageCard from '../components/PageCard';
@@ -28,8 +28,8 @@ export default function Sales() {
   const { snapshot } = useAnalyticsSnapshot();
 
   const normalizeErrorMessage = (err) => {
-    const raw = err?.response?.data?.error || err?.message || t('error');
-    return raw === BACKEND_WAKEUP_MESSAGE ? t('backendWakingUp') : raw;
+    const raw = err?.error?.message || err?.error || err?.message || err || t('error');
+    return typeof raw === 'string' ? raw : JSON.stringify(raw);
   };
 
   useEffect(() => {
@@ -38,14 +38,17 @@ export default function Sales() {
       setLoading(true);
       setError('');
       try {
-        const result = await getOdooSalesOrders(50, {
-          search: nextFilters.search || undefined,
-          state: nextFilters.state || undefined,
-          dateFrom: nextFilters.dateFrom || undefined,
-          dateTo: nextFilters.dateTo || undefined,
-        });
+        const { getApiClient } = await import('../lib/apiClient.js');
+        const client = getApiClient();
+        
+        const params = new URLSearchParams();
+        params.append('tenant_id', 'tenant_default');
+        if (nextFilters.search) params.append('search', nextFilters.search);
+        if (nextFilters.state) params.append('state', nextFilters.state);
+        
+        const result = await client.sales(`orders?${params.toString()}`).catch(() => null);
         if (!mounted) return;
-        setOrders(Array.isArray(result) ? result : []);
+        setOrders(result?.data && Array.isArray(result.data) ? result.data : []);
       } catch (err) {
         if (!mounted) return;
         setError(normalizeErrorMessage(err));
@@ -62,9 +65,18 @@ export default function Sales() {
     if (detailLoading) return;
     setDetailLoading(true);
     try {
-      const detail = await getOdooSalesOrder(orderItem.id);
-      setSelectedOrder(detail);
-      setSalesLifecycle(buildSalesLifecycle(detail));
+      const { getApiClient } = await import('../lib/apiClient.js');
+      const client = getApiClient();
+      // Neon API doesn't have sales order detail yet, but fallback gracefully
+      const detail = await client.sales(`orders/${orderItem.id}?tenant_id=tenant_default`).catch(() => null);
+      if (detail && detail.data) {
+        setSelectedOrder(detail.data);
+        setSalesLifecycle(buildSalesLifecycle(detail.data));
+      } else {
+        // Fallback for missing endpoint
+        setSelectedOrder(orderItem);
+        setSalesLifecycle(buildSalesLifecycle(orderItem));
+      }
     } catch (err) {
       setError(normalizeErrorMessage(err));
     } finally {

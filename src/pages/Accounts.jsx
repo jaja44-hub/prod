@@ -36,15 +36,19 @@ export default function Accounts() {
       setLoading(true);
       setError('');
       try {
-        const result = await getJournalEntries({ tenant_id: 'tenant_default' });
-        if (mounted) {
-          const entries = result.data || result || [];
-          if (activeTab === 'accounts') {
-            setAccounts(entries.filter(e => e.entry_type === 'ACCOUNT'));
-          } else if (activeTab === 'journals') {
-            setJournals(entries.filter(e => e.entry_type === 'JOURNAL'));
-          } else if (activeTab === 'payments') {
-            let loadedPayments = entries.filter(e => e.entry_type === 'PAYMENT');
+        const { getApiClient } = await import('../lib/apiClient.js');
+        const client = getApiClient();
+        
+        if (activeTab === 'accounts') {
+          const result = await client.finance('accounts?tenant_id=tenant_default').catch(() => null);
+          if (mounted && result) setAccounts(result.data || []);
+        } else if (activeTab === 'journals') {
+          const result = await client.finance('journal?tenant_id=tenant_default&entry_type=JOURNAL').catch(() => null);
+          if (mounted && result) setJournals(result.data || []);
+        } else if (activeTab === 'payments') {
+          const result = await client.finance('journal?tenant_id=tenant_default&entry_type=PAYMENT').catch(() => null);
+          if (mounted && result) {
+            let loadedPayments = result.data || [];
             if (isET) {
               const { calculateEthiopianTaxes } = await import('../lib/oracles/settlementOracle');
               loadedPayments = await Promise.all(loadedPayments.map(async (p) => {

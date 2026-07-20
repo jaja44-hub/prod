@@ -1,4 +1,5 @@
 import xmlrpc from 'xmlrpc';
+import { getTenantDoc as getTenantFirestoreDoc } from '../server/api/lib/tenantFirestore.js';
 import { verifyBearerToken, logSkipAuthWarning } from '../server/api/lib/firebaseAdmin.js';
 import {
   getTenantDomainTermsAsync,
@@ -174,7 +175,6 @@ export default async function handler(req, res) {
 
     // Multi-Entity Odoo (Ticket 051/Phase 6 stub): resolve database and URL dynamically from tenant config if set
     try {
-      const { getTenantDoc: getTenantFirestoreDoc } = await import('../server/api/lib/tenantFirestore.js');
       const tenantDoc = await getTenantFirestoreDoc(tenantId);
       if (tenantDoc?.odooConfig) {
         if (tenantDoc.odooConfig.db) db = tenantDoc.odooConfig.db;

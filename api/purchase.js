@@ -60,12 +60,49 @@ async function handleOrders(req, res, tenantId, rest) {
   if (req.method === 'GET' && rest.length === 1) {
     const result = await pool.query(
       `SELECT id, po_number, po_number AS order_number, supplier_id, supplier_name,
-              po_date, po_date AS order_date, expected_delivery_date, total_amount, status, notes, created_at
+              po_date, po_date AS order_date, expected_delivery_date, total_amount, status, notes, created_at, items
        FROM purchase_orders WHERE tenant_id = $1 AND id = $2`,
       [tenantId, rest[0]]
     );
     if (!result.rows[0]) return jsonError(res, 404, 'Purchase order not found');
     return res.status(200).json({ success: true, data: result.rows[0] });
+  }
+  if (req.method === 'POST' && rest.length === 0) {
+    const { supplier_id, expected_delivery_date, notes, items } = req.body || {};
+    const supplierResult = await pool.query('SELECT name FROM suppliers WHERE id = $1 AND tenant_id = $2', [supplier_id, tenantId]);
+    const supplier_name = supplierResult.rows[0]?.name || 'Unknown Supplier';
+    
+    // Calculate total amount from items (assuming {quantity, unit_price})
+    const total_amount = Array.isArray(items) ? items.reduce((sum, item) => sum + ((item.quantity || 0) * (item.unit_price || 0)), 0) : 0;
+    const po_number = `PO-${Date.now().toString().slice(-6)}`;
+
+    const result = await pool.query(
+      `INSERT INTO purchase_orders (
+        tenant_id, po_number, supplier_id, supplier_name, po_date, 
+        expected_delivery_date, total_amount, status, notes, items
+      ) VALUES ($1, $2, $3, $4, CURRENT_DATE, $5, $6, 'draft', $7, $8) RETURNING *`,
+      [tenantId, po_number, supplier_id, supplier_name, expected_delivery_date, total_amount, notes, JSON.stringify(items || [])]
+    );
+    return res.status(201).json({ success: true, data: result.rows[0] });
+  }
+  if (req.method === 'POST' && rest.length === 2) {
+    const [orderId, action] = rest;
+    if (action === 'approve') {
+      const result = await pool.query(
+        `UPDATE purchase_orders SET status = 'purchase' WHERE tenant_id = $1 AND id = $2 RETURNING *`,
+        [tenantId, orderId]
+      );
+      if (!result.rows[0]) return jsonError(res, 404, 'Purchase order not found');
+      return res.status(200).json({ success: true, data: result.rows[0] });
+    }
+    if (action === 'send') {
+      const result = await pool.query(
+        `UPDATE purchase_orders SET status = 'sent' WHERE tenant_id = $1 AND id = $2 RETURNING *`,
+        [tenantId, orderId]
+      );
+      if (!result.rows[0]) return jsonError(res, 404, 'Purchase order not found');
+      return res.status(200).json({ success: true, data: result.rows[0] });
+    }
   }
   return jsonError(res, 405, 'Method not allowed');
 }
