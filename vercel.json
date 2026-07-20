@@ -4,6 +4,14 @@
   "installCommand": "npm install",
   "outputDirectory": "dist",
   "rewrites": [
+    { "source": "/api/purchase/:path*", "destination": "/api/purchase?path=:path*" },
+    { "source": "/api/inventory/:path*", "destination": "/api/inventory?path=:path*" },
+    { "source": "/api/finance/:path*", "destination": "/api/finance?path=:path*" },
+    { "source": "/api/sales/:path*", "destination": "/api/sales?path=:path*" },
+    { "source": "/api/hr/:path*", "destination": "/api/hr?path=:path*" },
+    { "source": "/api/dashboard/:path*", "destination": "/api/dashboard?path=:path*" },
+    { "source": "/api/crm/:path*", "destination": "/api/crm?path=:path*" },
+    { "source": "/api/analytics/:path*", "destination": "/api/analytics?path=:path*" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "crons": [

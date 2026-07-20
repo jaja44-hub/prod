@@ -1,10 +1,10 @@
-import { applyCors, getPool, resolveTenantId, routeSegments, jsonError, tableExists } from '../lib/shared.js';
+import { applyCors, getPool, resolveTenantId, routeSegments, jsonError, tableExists, isDbUnavailable } from './lib/shared.js';
 
 export default async function handler(req, res) {
   if (applyCors(req, res)) return;
 
   const tenantId = resolveTenantId(req);
-  const segments = routeSegments(req);
+  const segments = routeSegments(req, 'sales');
   const resource = segments[0] || '';
 
   try {
@@ -13,6 +13,9 @@ export default async function handler(req, res) {
     return jsonError(res, 404, `Unknown sales route: ${resource || '(empty)'}`);
   } catch (error) {
     console.error('[api/sales]', error);
+    if (isDbUnavailable(error)) {
+      return res.status(200).json({ success: true, data: [], count: 0, degraded: true });
+    }
     return jsonError(res, 500, error.message || 'Internal server error');
   }
 }

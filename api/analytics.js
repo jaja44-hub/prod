@@ -1,10 +1,10 @@
-import { applyCors, getPool, resolveTenantId, routeSegments, jsonError } from '../lib/shared.js';
+import { applyCors, getPool, resolveTenantId, routeSegments, jsonError } from './lib/shared.js';
 
 export default async function handler(req, res) {
   if (applyCors(req, res)) return;
 
   const tenantId = resolveTenantId(req);
-  const segments = routeSegments(req);
+  const segments = routeSegments(req, 'analytics');
   const resource = segments[0] || '';
 
   try {

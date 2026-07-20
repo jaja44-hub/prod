@@ -1,4 +1,4 @@
-import { applyCors, getPool, resolveTenantId, routeSegments, jsonError, tableExists } from '../lib/shared.js';
+import { applyCors, getPool, resolveTenantId, routeSegments, jsonError, tableExists, isDbUnavailable } from './lib/shared.js';
 
 function bucketAging(lines = []) {
   const now = Date.now();
@@ -20,10 +20,11 @@ export default async function handler(req, res) {
   if (applyCors(req, res)) return;
 
   const tenantId = resolveTenantId(req);
-  const segments = routeSegments(req);
+  const segments = routeSegments(req, 'finance');
   const resource = segments[0] || '';
 
   try {
+    if (resource === 'accounts') return handleAccounts(req, res, tenantId);
     if (resource === 'journal') return handleJournal(req, res, tenantId, segments.slice(1));
     if (resource === 'aging') return handleAging(req, res, tenantId);
     if (resource === 'reconciliation') return handleReconciliation(req, res, tenantId);
@@ -31,8 +32,32 @@ export default async function handler(req, res) {
     return jsonError(res, 404, `Unknown finance route: ${resource || '(empty)'}`);
   } catch (error) {
     console.error('[api/finance]', error);
+    if (isDbUnavailable(error)) {
+      return res.status(200).json({ success: true, data: [], count: 0, degraded: true });
+    }
     return jsonError(res, 500, error.message || 'Internal server error');
   }
+}
+
+async function handleAccounts(req, res, tenantId) {
+  if (req.method !== 'GET') return jsonError(res, 405, 'Method not allowed');
+  const pool = getPool();
+  const { search, active } = req.query;
+  let query = `
+    SELECT id, account_code AS code, account_name AS name, account_type, balance_type, is_active AS active
+    FROM chart_of_accounts WHERE tenant_id = $1`;
+  const params = [tenantId];
+  if (search) {
+    params.push(`%${search}%`);
+    query += ` AND (account_name ILIKE $${params.length} OR account_code ILIKE $${params.length})`;
+  }
+  if (active !== undefined) {
+    params.push(active === 'true');
+    query += ` AND is_active = $${params.length}`;
+  }
+  query += ' ORDER BY account_code ASC LIMIT 200';
+  const result = await pool.query(query, params);
+  return res.status(200).json({ success: true, data: result.rows, count: result.rows.length });
 }
 
 async function handleJournal(req, res, tenantId, rest) {

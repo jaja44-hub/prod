@@ -5,13 +5,14 @@ import {
   routeSegments,
   jsonError,
   tableExists,
-} from '../lib/shared.js';
+  isDbUnavailable,
+} from './lib/shared.js';
 
 export default async function handler(req, res) {
   if (applyCors(req, res)) return;
 
   const tenantId = resolveTenantId(req);
-  const segments = routeSegments(req);
+  const segments = routeSegments(req, 'purchase');
   const resource = segments[0] || '';
 
   try {
@@ -24,6 +25,9 @@ export default async function handler(req, res) {
     return jsonError(res, 404, `Unknown purchase route: ${resource || '(empty)'}`);
   } catch (error) {
     console.error('[api/purchase]', error);
+    if (isDbUnavailable(error)) {
+      return res.status(200).json({ success: true, data: [], count: 0, degraded: true });
+    }
     return jsonError(res, 500, error.message || 'Internal server error');
   }
 }
