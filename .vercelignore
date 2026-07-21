@@ -20,5 +20,10 @@ extract-*.mjs
 comprehensive-*.mjs
 setup-*.mjs
 
+# Exclude API library files and utility scripts from Vercel deployment
+/api/lib
+/api/seed_neon.js
+/api/keepAlive.js
+
 # Keep scripts directory for build-time execution
 # /scripts (commented out - needed for vercel-build)
