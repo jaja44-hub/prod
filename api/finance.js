@@ -41,11 +41,11 @@ export default async function handler(req, res) {
 
 async function handleAccounts(req, res, tenantId) {
   if (req.method !== 'GET') return jsonError(res, 405, 'Method not allowed');
-  const pool = getPool();
+  const pool = getPool('accounting');
   const { search, active } = req.query;
   let query = `
     SELECT id, account_code AS code, account_name AS name, account_type, balance_type, is_active AS active
-    FROM chart_of_accounts WHERE tenant_id = $1`;
+    FROM accounts WHERE tenant_id = $1`;
   const params = [tenantId];
   if (search) {
     params.push(`%${search}%`);
@@ -62,14 +62,11 @@ async function handleAccounts(req, res, tenantId) {
 
 async function handleJournal(req, res, tenantId, rest) {
   if (req.method === 'GET' && rest.length === 0) {
-    if (!(await tableExists('journal_entries'))) {
-      return res.status(200).json({ success: true, data: [], count: 0, note: 'journal_entries table not provisioned' });
-    }
-    const pool = getPool();
+    const pool = getPool('accounting');
     const { entry_type, limit } = req.query;
     let query = `
-      SELECT id, entry_number, entry_date, entry_type, description, status,
-             total_debit, total_credit, reference_type, reference_id, created_at
+      SELECT id, entry_date, entry_type, description, 
+             debit_account_id, credit_account_id, amount, reference_id, created_at
       FROM journal_entries WHERE tenant_id = $1`;
     const params = [tenantId];
     if (entry_type) {

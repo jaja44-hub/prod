@@ -9,7 +9,6 @@
 /node_modules
 /tests
 /collected
-/scripts
 
 # Exclude root-level test and seed files from Vercel deployment
 *.mjs
@@ -20,3 +19,6 @@ verify-*.mjs
 extract-*.mjs
 comprehensive-*.mjs
 setup-*.mjs
+
+# Keep scripts directory for build-time execution
+# /scripts (commented out - needed for vercel-build)

@@ -1,16 +1,36 @@
 import { Pool } from 'pg';
 
-let pool;
+const pools = {};
 
-export function getPool() {
-  if (!pool) {
-    const connectionString = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
+export function getPool(dbType = 'default') {
+  if (!pools[dbType]) {
+    let connectionString;
+    
+    // Multi-database architecture routing
+    switch (dbType) {
+      case 'accounting':
+        connectionString = process.env.neon_accounting_db_url || process.env.NEON_ACCOUNTING_DB_URL;
+        break;
+      case 'procurement':
+        connectionString = process.env.neon_procurement_db_url || process.env.NEON_PROCUREMENT_DB_URL;
+        break;
+      case 'analytics':
+        connectionString = process.env.neon_analytics_db_url || process.env.NEON_ANALYTICS_DB_URL;
+        break;
+      case 'tenantfinance':
+        connectionString = process.env.neon_tenantfinance_db_url || process.env.NEON_TENANTFINANCE_DB_URL;
+        break;
+      default:
+        connectionString = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
+    }
+    
     if (!connectionString) {
-      const err = new Error('DATABASE_URL is not configured');
+      const err = new Error(`DATABASE_URL for ${dbType} is not configured`);
       err.code = 'NO_DATABASE_URL';
       throw err;
     }
-    pool = new Pool({
+    
+    pools[dbType] = new Pool({
       connectionString,
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
       max: 2,
@@ -18,7 +38,7 @@ export function getPool() {
       connectionTimeoutMillis: 8_000,
     });
   }
-  return pool;
+  return pools[dbType];
 }
 
 export function isDbUnavailable(error) {

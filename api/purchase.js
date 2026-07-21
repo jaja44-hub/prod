@@ -33,7 +33,7 @@ export default async function handler(req, res) {
 }
 
 async function handleOrders(req, res, tenantId, rest) {
-  const pool = getPool();
+  const pool = getPool('procurement');
   if (req.method === 'GET' && rest.length === 0) {
     const { status, start_date, end_date } = req.query;
     let query = `
@@ -108,7 +108,7 @@ async function handleOrders(req, res, tenantId, rest) {
 }
 
 async function handleSuppliers(req, res, tenantId, rest) {
-  const pool = getPool();
+  const pool = getPool('procurement');
   if (req.method === 'GET' && rest.length === 0) {
     const { search, active } = req.query;
     let query = `SELECT id, supplier_code, name, email, phone, city, country, active, created_at
@@ -138,7 +138,7 @@ async function handleSuppliers(req, res, tenantId, rest) {
 }
 
 async function handleRequisitions(req, res, tenantId, rest) {
-  const pool = getPool();
+  const pool = getPool('procurement');
   if (req.method === 'GET' && rest.length === 0) {
     const result = await pool.query(
       `SELECT id, requisition_number, requisition_date, requested_by, requested_by_name, status,
@@ -183,7 +183,7 @@ async function handleReceipts(req, res, tenantId, rest) {
 
 async function handleBudget(req, res, tenantId, rest) {
   if (rest[0] === 'utilization' && req.method === 'GET') {
-    const pool = getPool();
+    const pool = getPool('procurement');
     const result = await pool.query(
       `SELECT id, budget_code, name, budgeted_amount, allocated_amount, committed_amount, actual_amount AS spent_amount,
               available_amount, fiscal_year, fiscal_period
