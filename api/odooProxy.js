@@ -187,7 +187,12 @@ export default async function handler(req, res) {
     }
 
     if (!db || !user || !apiKey) {
-      throw new Error('Missing Odoo credentials in environment variables (ODOO_DB, ODOO_USER, ODOO_APIKEY).');
+      console.warn('[Odoo Proxy] Missing Odoo credentials. Gracefully degrading to empty data.');
+      return res.status(200).json({
+        success: true,
+        data: [],
+        meta: { tenantId, note: 'Odoo not configured' },
+      });
     }
 
     const session = await authenticate(db, user, apiKey, customUrl);

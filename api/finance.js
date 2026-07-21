@@ -61,8 +61,11 @@ async function handleAccounts(req, res, tenantId) {
 }
 
 async function handleJournal(req, res, tenantId, rest) {
-  const pool = getPool();
   if (req.method === 'GET' && rest.length === 0) {
+    if (!(await tableExists('journal_entries'))) {
+      return res.status(200).json({ success: true, data: [], count: 0, note: 'journal_entries table not provisioned' });
+    }
+    const pool = getPool();
     const { entry_type, limit } = req.query;
     let query = `
       SELECT id, entry_number, entry_date, entry_type, description, status,
@@ -149,6 +152,9 @@ async function handleReconciliation(req, res, tenantId) {
 
 async function handleBudgetVariance(req, res, tenantId) {
   if (req.method !== 'GET') return jsonError(res, 405, 'Method not allowed');
+  if (!(await tableExists('budgets'))) {
+    return res.status(200).json({ success: true, data: [], count: 0, note: 'budgets table not provisioned' });
+  }
   const pool = getPool();
   const result = await pool.query(
     `SELECT id, budget_code, name, budgeted_amount, allocated_amount, committed_amount, actual_amount AS spent_amount,
