@@ -30,8 +30,8 @@ async function handleOrders(req, res, tenantId, rest) {
   }
   if (req.method === 'GET' && rest.length === 0) {
     const result = await pool.query(
-      `SELECT id, order_number, customer_id, customer_name, order_date, delivery_date,
-              total_amount, status, payment_status, notes, created_at
+      `SELECT id, order_number, customer_name, customer_email, order_date, delivery_date,
+              total_amount, status, payment_status, created_at
        FROM sales_orders WHERE tenant_id = $1 ORDER BY order_date DESC LIMIT 100`,
       [tenantId]
     );

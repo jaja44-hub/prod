@@ -3,7 +3,7 @@ import pg from 'pg';
 const { Client } = pg;
 
 // Use accounting database for sales, CRM, and HR data
-const DB_URL = process.env.NEON_ACCOUNTING_DB_URL || process.env.NEONACCOUNTINGDBURL;
+const DB_URL = process.env.NEON_ACCOUNTING_DB_URL || process.env.NEONACCOUNTINGDBURL || 'postgresql://neondb_owner:npg_sUbwp0cAWdH3@ep-solitary-dew-auii1z3j.c-10.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
 
 async function seedData() {
   const client = new Client({ connectionString: DB_URL });
@@ -26,6 +26,7 @@ async function seedData() {
         salary DECIMAL(12, 2),
         tax_bracket VARCHAR(20),
         status VARCHAR(20) DEFAULT 'active',
+        tenant_id VARCHAR(100) DEFAULT 'tenant_default',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -41,6 +42,7 @@ async function seedData() {
         total_amount DECIMAL(12, 2) NOT NULL,
         status VARCHAR(20) DEFAULT 'pending',
         payment_status VARCHAR(20) DEFAULT 'unpaid',
+        tenant_id VARCHAR(100) DEFAULT 'tenant_default',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -56,6 +58,7 @@ async function seedData() {
         value DECIMAL(12, 2),
         probability INTEGER,
         expected_close_date DATE,
+        tenant_id VARCHAR(100) DEFAULT 'tenant_default',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
