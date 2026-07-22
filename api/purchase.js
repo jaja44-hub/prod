@@ -36,7 +36,7 @@ async function handleOrders(req, res, tenantId, rest) {
   const pool = getPool('procurement');
   if (req.method === 'GET' && rest.length === 0) {
     const { status, start_date, end_date } = req.query;
-    let query = `SELECT id, po_number, supplier_id, expected_date, total_amount, status, created_at FROM purchase_orders WHERE tenant_id = $1`;
+    let query = `SELECT id, order_number, supplier_id, expected_date, total_amount, status, created_at FROM purchase_orders WHERE tenant_id = $1`;
     const params = [tenantId];
     if (status) {
       params.push(status);
@@ -56,7 +56,7 @@ async function handleOrders(req, res, tenantId, rest) {
   }
   if (req.method === 'GET' && rest.length === 1) {
     const result = await pool.query(
-      `SELECT id, po_number, supplier_id, expected_date, total_amount, status, created_at
+      `SELECT id, order_number, supplier_id, expected_date, total_amount, status, created_at
        FROM purchase_orders WHERE tenant_id = $1 AND id = $2`,
       [tenantId, rest[0]]
     );
