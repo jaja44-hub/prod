@@ -1,4 +1,6 @@
 import { applyCors, resolveTenantId, routeSegments, jsonError } from './lib/shared.js';
+import { getPool } from './lib/shared.js';
+import { tableExists } from './lib/shared.js';
 
 export default async function handler(req, res) {
   if (applyCors(req, res)) return;
@@ -10,6 +12,7 @@ export default async function handler(req, res) {
   try {
     if (resource === 'pipeline') return await handlePipeline(req, res, tenantId);
     if (resource === 'activity') return await handleActivity(req, res, tenantId);
+    if (resource === 'opportunities') return await handleOpportunities(req, res, tenantId);
     return jsonError(res, 404, `Unknown CRM route: ${resource || '(empty)'}`);
   } catch (error) {
     console.error('[api/crm]', error);
@@ -65,6 +68,22 @@ async function handleActivity(req, res, tenantId) {
   }
   if (req.method === 'POST') {
     return res.status(201).json({ success: true, data: { logged: true, ...(req.body || {}) } });
+  }
+  return jsonError(res, 405, 'Method not allowed');
+}
+
+async function handleOpportunities(req, res, tenantId) {
+  const pool = getPool('accounting');
+  if (!(await tableExists('crm_opportunities', pool))) {
+    return res.status(200).json({ success: true, data: [], count: 0, note: 'crm_opportunities table not provisioned' });
+  }
+  if (req.method === 'GET') {
+    const result = await pool.query(
+      `SELECT id, opportunity_id, deal_name, account_name, contact_name, stage, value, probability, expected_close_date, created_at
+       FROM crm_opportunities WHERE tenant_id = $1 ORDER BY expected_close_date DESC LIMIT 100`,
+      [tenantId]
+    );
+    return res.status(200).json({ success: true, data: result.rows, count: result.rows.length });
   }
   return jsonError(res, 405, 'Method not allowed');
 }
