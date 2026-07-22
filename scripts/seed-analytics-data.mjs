@@ -24,7 +24,8 @@ async function seedAnalyticsData() {
   for (const loc of locations) {
     await client.query(
       `INSERT INTO inventory_locations (name, location_type, address, tenant_id) 
-       VALUES ($1, $2, $3, 'tenant_default')`,
+       VALUES ($1, $2, $3, 'tenant_default')
+       ON CONFLICT DO NOTHING`,
       [loc.name, loc.location_type, loc.address]
     );
   }
@@ -46,7 +47,8 @@ async function seedAnalyticsData() {
   for (const prod of products) {
     await client.query(
       `INSERT INTO inventory_products (sku, name, description, category, quantity, unit_price, tenant_id) 
-       VALUES ($1, $2, $3, $4, $5, $6, 'tenant_default')`,
+       VALUES ($1, $2, $3, $4, $5, $6, 'tenant_default')
+       ON CONFLICT (sku) DO NOTHING`,
       [prod.sku, prod.name, prod.description, prod.category, prod.quantity, prod.unit_price]
     );
   }
@@ -70,7 +72,8 @@ async function seedAnalyticsData() {
   for (const txn of transactions) {
     await client.query(
       `INSERT INTO inventory_transactions (product_id, location_id, transaction_type, quantity, transaction_date, reference_id, tenant_id) 
-       VALUES ($1, $2, $3, $4, $5, $6, 'tenant_default')`,
+       VALUES ($1, $2, $3, $4, $5, $6, 'tenant_default')
+       ON CONFLICT DO NOTHING`,
       [txn.product_id, txn.location_id, txn.transaction_type, txn.quantity, txn.transaction_date, txn.reference_id]
     );
   }
@@ -88,7 +91,8 @@ async function seedAnalyticsData() {
   for (const cc of cycleCounts) {
     await client.query(
       `INSERT INTO inventory_cycle_counts (location_id, count_date, counted_by, status, tenant_id) 
-       VALUES ($1, $2, $3, $4, 'tenant_default')`,
+       VALUES ($1, $2, $3, $4, 'tenant_default')
+       ON CONFLICT DO NOTHING`,
       [cc.location_id, cc.count_date, cc.counted_by, cc.status]
     );
   }

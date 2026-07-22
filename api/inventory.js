@@ -27,19 +27,19 @@ export default async function handler(req, res) {
 async function handleProducts(req, res, tenantId) {
   if (req.method !== 'GET') return jsonError(res, 405, 'Method not allowed');
   const pool = getPool('analytics');
-  if (!(await tableExists('products', pool))) {
-    return res.status(200).json({ success: true, data: [], count: 0, note: 'products table not provisioned' });
+  if (!(await tableExists('inventory_products', pool))) {
+    return res.status(200).json({ success: true, data: [], count: 0, note: 'inventory_products table not provisioned' });
   }
   const hasTransactions = await tableExists('inventory_transactions');
   const { search } = req.query;
   let query;
   if (hasTransactions) {
     query = `
-      SELECT p.id, p.sku AS product_code, p.name, p.cost_price, p.selling_price,
-             p.reorder_level, p.active, p.created_at,
+      SELECT p.id, p.sku AS product_code, p.name, p.description, p.category,
+             p.quantity, p.unit_price, p.created_at,
              COALESCE(stock.qty, 0) AS stock_quantity,
              COALESCE(stock.qty, 0) AS quantity_available
-      FROM products p
+      FROM inventory_products p
       LEFT JOIN (
         SELECT product_id, SUM(quantity) AS qty
         FROM inventory_transactions
@@ -49,9 +49,9 @@ async function handleProducts(req, res, tenantId) {
       WHERE p.tenant_id = $1`;
   } else {
     query = `
-      SELECT id, sku AS product_code, name, cost_price, selling_price,
-             reorder_level, active, created_at, 0 AS stock_quantity, 0 AS quantity_available
-      FROM products WHERE tenant_id = $1`;
+      SELECT id, sku AS product_code, name, description, category,
+             quantity, unit_price, created_at, 0 AS stock_quantity, 0 AS quantity_available
+      FROM inventory_products WHERE tenant_id = $1`;
   }
   const params = [tenantId];
   if (search) {
@@ -66,12 +66,12 @@ async function handleProducts(req, res, tenantId) {
 async function handleLocations(req, res, tenantId) {
   if (req.method !== 'GET') return jsonError(res, 405, 'Method not allowed');
   const pool = getPool('analytics');
-  if (!(await tableExists('warehouse_locations', pool))) {
-    return res.status(200).json({ success: true, data: [], count: 0, note: 'warehouse_locations not provisioned' });
+  if (!(await tableExists('inventory_locations', pool))) {
+    return res.status(200).json({ success: true, data: [], count: 0, note: 'inventory_locations not provisioned' });
   }
   const result = await pool.query(
-    `SELECT id, location_code, location_name AS name, location_type, active, created_at
-     FROM warehouse_locations WHERE tenant_id = $1 ORDER BY location_name ASC LIMIT 100`,
+    `SELECT id, name, location_type, address, created_at
+     FROM inventory_locations WHERE tenant_id = $1 ORDER BY name ASC LIMIT 100`,
     [tenantId]
   );
   return res.status(200).json({ success: true, data: result.rows, count: result.rows.length });
