@@ -36,10 +36,7 @@ async function handleOrders(req, res, tenantId, rest) {
   const pool = getPool('procurement');
   if (req.method === 'GET' && rest.length === 0) {
     const { status, start_date, end_date } = req.query;
-    let query = `
-      SELECT id, po_number, po_number AS order_number, supplier_id, supplier_name,
-             po_date, po_date AS order_date, expected_delivery_date, total_amount, status, notes, created_at
-      FROM purchase_orders WHERE tenant_id = $1`;
+    let query = `SELECT id, po_number, supplier_id, expected_date, total_amount, status, created_at FROM purchase_orders WHERE tenant_id = $1`;
     const params = [tenantId];
     if (status) {
       params.push(status);
@@ -47,20 +44,19 @@ async function handleOrders(req, res, tenantId, rest) {
     }
     if (start_date) {
       params.push(start_date);
-      query += ` AND po_date >= $${params.length}`;
+      query += ` AND expected_date >= $${params.length}`;
     }
     if (end_date) {
       params.push(end_date);
-      query += ` AND po_date <= $${params.length}`;
+      query += ` AND expected_date <= $${params.length}`;
     }
-    query += ' ORDER BY po_date DESC LIMIT 100';
+    query += ' ORDER BY expected_date DESC LIMIT 100';
     const result = await pool.query(query, params);
     return res.status(200).json({ success: true, data: result.rows, count: result.rows.length });
   }
   if (req.method === 'GET' && rest.length === 1) {
     const result = await pool.query(
-      `SELECT id, po_number, po_number AS order_number, supplier_id, supplier_name,
-              po_date, po_date AS order_date, expected_delivery_date, total_amount, status, notes, created_at, items
+      `SELECT id, po_number, supplier_id, expected_date, total_amount, status, created_at
        FROM purchase_orders WHERE tenant_id = $1 AND id = $2`,
       [tenantId, rest[0]]
     );
