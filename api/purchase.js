@@ -110,17 +110,13 @@ async function handleOrders(req, res, tenantId, rest) {
 async function handleSuppliers(req, res, tenantId, rest) {
   const pool = getPool('procurement');
   if (req.method === 'GET' && rest.length === 0) {
-    const { search, active } = req.query;
-    let query = `SELECT id, supplier_code, name, email, phone, city, country, active, created_at
+    const { search } = req.query;
+    let query = `SELECT id, name, email, phone, address, created_at
                  FROM suppliers WHERE tenant_id = $1`;
     const params = [tenantId];
     if (search) {
       params.push(`%${search}%`);
       query += ` AND (name ILIKE $${params.length} OR email ILIKE $${params.length})`;
-    }
-    if (active !== undefined) {
-      params.push(active === 'true');
-      query += ` AND active = $${params.length}`;
     }
     query += ' ORDER BY name ASC LIMIT 100';
     const result = await pool.query(query, params);
