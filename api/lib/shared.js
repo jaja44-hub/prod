@@ -9,16 +9,16 @@ export function getPool(dbType = 'default') {
     // Multi-database architecture routing
     switch (dbType) {
       case 'accounting':
-        connectionString = process.env.neon_accounting_db_url || process.env.NEON_ACCOUNTING_DB_URL;
+        connectionString = process.env.NEONACCOUNTINGDBURL || process.env.NEON_ACCOUNTING_DB_URL || process.env.neon_accounting_db_url;
         break;
       case 'procurement':
-        connectionString = process.env.neon_procurement_db_url || process.env.NEON_PROCUREMENT_DB_URL;
+        connectionString = process.env.NEONPROCUREMENTDBURL || process.env.NEON_PROCUREMENT_DB_URL || process.env.neon_procurement_db_url;
         break;
       case 'analytics':
-        connectionString = process.env.neon_analytics_db_url || process.env.NEON_ANALYTICS_DB_URL;
+        connectionString = process.env.NEONANALYTICSDBURL || process.env.NEON_ANALYTICS_DB_URL || process.env.neon_analytics_db_url;
         break;
       case 'tenantfinance':
-        connectionString = process.env.neon_tenantfinance_db_url || process.env.NEON_TENANTFINANCE_DB_URL;
+        connectionString = process.env.NEONTENANTFINANCEDBURL || process.env.NEON_TENANTFINANCE_DB_URL || process.env.neon_tenantfinance_db_url;
         break;
       default:
         connectionString = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
