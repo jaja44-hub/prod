@@ -85,7 +85,7 @@ async function handleJournal(req, res, tenantId, rest) {
 
 async function handleAging(req, res, tenantId) {
   if (req.method !== 'GET') return jsonError(res, 405, 'Method not allowed');
-  const pool = getPool();
+  const pool = getPool('accounting');
   let vendorLines = [];
   let customerLines = [];
 
@@ -152,10 +152,10 @@ async function handleReconciliation(req, res, tenantId) {
 
 async function handleBudgetVariance(req, res, tenantId) {
   if (req.method !== 'GET') return jsonError(res, 405, 'Method not allowed');
-  if (!(await tableExists('budgets'))) {
+  const pool = getPool('procurement');
+  if (!(await tableExists('budgets', pool))) {
     return res.status(200).json({ success: true, data: [], count: 0, note: 'budgets table not provisioned' });
   }
-  const pool = getPool();
   const result = await pool.query(
     `SELECT id, budget_code, name, budgeted_amount, allocated_amount, committed_amount, actual_amount AS spent_amount,
             available_amount,

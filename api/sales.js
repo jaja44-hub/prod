@@ -21,8 +21,8 @@ export default async function handler(req, res) {
 }
 
 async function handleOrders(req, res, tenantId, rest) {
-  const pool = getPool();
-  if (!(await tableExists('sales_orders'))) {
+  const pool = getPool('accounting');
+  if (!(await tableExists('sales_orders', pool))) {
     if (req.method === 'GET') {
       return res.status(200).json({ success: true, data: [], count: 0, note: 'sales_orders table not provisioned' });
     }
@@ -41,7 +41,7 @@ async function handleOrders(req, res, tenantId, rest) {
 }
 
 async function handleCustomers(req, res, tenantId, rest) {
-  const pool = getPool();
+  const pool = getPool('accounting');
   if (req.method === 'GET' && rest.length === 0) {
     const { search } = req.query;
     let query = `SELECT id, customer_code, name, email, phone, city, country, credit_limit, active, created_at

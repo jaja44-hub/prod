@@ -20,8 +20,8 @@ export default async function handler(req, res) {
 }
 
 async function handleEmployees(req, res, tenantId, rest) {
-  const pool = getPool();
-  if (!(await tableExists('employees'))) {
+  const pool = getPool('accounting');
+  if (!(await tableExists('employees', pool))) {
     return res.status(200).json({ success: true, data: [], count: 0, note: 'employees table not provisioned' });
   }
   if (req.method === 'GET' && rest.length === 0) {

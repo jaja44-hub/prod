@@ -113,9 +113,10 @@ export function routeSegments(req, mount = '') {
   return [];
 }
 
-export async function tableExists(tableName) {
+export async function tableExists(tableName, pool = null) {
   try {
-    const result = await getPool().query(
+    const targetPool = pool || getPool();
+    const result = await targetPool.query(
       `SELECT EXISTS (
         SELECT 1 FROM information_schema.tables
         WHERE table_schema = 'public' AND table_name = $1

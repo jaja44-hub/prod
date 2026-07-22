@@ -26,10 +26,10 @@ export default async function handler(req, res) {
 
 async function handleProducts(req, res, tenantId) {
   if (req.method !== 'GET') return jsonError(res, 405, 'Method not allowed');
-  if (!(await tableExists('products'))) {
+  const pool = getPool('analytics');
+  if (!(await tableExists('products', pool))) {
     return res.status(200).json({ success: true, data: [], count: 0, note: 'products table not provisioned' });
   }
-  const pool = getPool();
   const hasTransactions = await tableExists('inventory_transactions');
   const { search } = req.query;
   let query;
@@ -65,10 +65,10 @@ async function handleProducts(req, res, tenantId) {
 
 async function handleLocations(req, res, tenantId) {
   if (req.method !== 'GET') return jsonError(res, 405, 'Method not allowed');
-  if (!(await tableExists('warehouse_locations'))) {
+  const pool = getPool('analytics');
+  if (!(await tableExists('warehouse_locations', pool))) {
     return res.status(200).json({ success: true, data: [], count: 0, note: 'warehouse_locations not provisioned' });
   }
-  const pool = getPool();
   const result = await pool.query(
     `SELECT id, location_code, location_name AS name, location_type, active, created_at
      FROM warehouse_locations WHERE tenant_id = $1 ORDER BY location_name ASC LIMIT 100`,
@@ -79,13 +79,13 @@ async function handleLocations(req, res, tenantId) {
 
 async function handleWarehouse(req, res, tenantId) {
   if (req.method === 'GET') {
-    if (!(await tableExists('warehouse_receipts'))) {
+    const pool = getPool('procurement');
+    if (!(await tableExists('warehouse_receipts', pool))) {
       return res.status(200).json({
         success: true,
         data: { workflow: { picks: [], packs: [], shipments: [] }, summary: { readyToPick: 0, totalPacks: 0, totalShipments: 0 } },
       });
     }
-    const pool = getPool();
     const result = await pool.query(
       `SELECT status, COUNT(*)::int AS count FROM warehouse_receipts WHERE tenant_id = $1 GROUP BY status`,
       [tenantId]
@@ -118,10 +118,10 @@ async function handleWarehouse(req, res, tenantId) {
 
 async function handleCycleCounts(req, res, tenantId) {
   if (req.method !== 'GET') return jsonError(res, 405, 'Method not allowed');
-  if (!(await tableExists('inventory_cycle_counts'))) {
+  const pool = getPool('analytics');
+  if (!(await tableExists('inventory_cycle_counts', pool))) {
     return res.status(200).json({ success: true, data: [], count: 0 });
   }
-  const pool = getPool();
   const result = await pool.query(
     `SELECT id, product_id, location_id, counted_quantity, expected_quantity, variance, status, counted_by, counted_at
      FROM inventory_cycle_counts WHERE tenant_id = $1 ORDER BY counted_at DESC NULLS LAST LIMIT 50`,
@@ -132,10 +132,10 @@ async function handleCycleCounts(req, res, tenantId) {
 
 async function handleMovements(req, res, tenantId) {
   if (req.method !== 'GET') return jsonError(res, 405, 'Method not allowed');
-  if (!(await tableExists('inventory_transactions'))) {
+  const pool = getPool('analytics');
+  if (!(await tableExists('inventory_transactions', pool))) {
     return res.status(200).json({ success: true, data: [], count: 0, note: 'inventory_transactions not provisioned' });
   }
-  const pool = getPool();
   const result = await pool.query(
     `SELECT id, product_id, transaction_type, quantity, unit_cost, location_id, reference_type, reference_id, transaction_date, created_at
      FROM inventory_transactions WHERE tenant_id = $1 ORDER BY transaction_date DESC LIMIT 100`,
@@ -146,10 +146,10 @@ async function handleMovements(req, res, tenantId) {
 
 async function handleReorder(req, res, tenantId) {
   if (req.method !== 'POST') return jsonError(res, 405, 'Method not allowed');
-  if (!(await tableExists('products'))) {
+  const pool = getPool('analytics');
+  if (!(await tableExists('products', pool))) {
     return res.status(200).json({ success: true, data: [], count: 0 });
   }
-  const pool = getPool();
   const hasTransactions = await tableExists('inventory_transactions');
   const result = await pool.query(
     hasTransactions
