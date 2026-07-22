@@ -13,6 +13,9 @@ import { MetricTile, ProgressRing, TrendChart, BreakdownList, InsightPills, curr
 export function FinanceDashboard() {
   const [agingData, setAgingData] = useState(null);
   const [reconciliationData, setReconciliationData] = useState(null);
+  const [vatData, setVatData] = useState(null);
+  const [payeData, setPayeData] = useState(null);
+  const [taxLiabilityData, setTaxLiabilityData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { snapshot } = useAnalyticsSnapshot();
@@ -35,6 +38,16 @@ export function FinanceDashboard() {
         const payload = aging?.data || (aging?.report ? aging : null);
         setAgingData(payload);
         setReconciliationData(null);
+
+        // Fetch new tax computation data
+        const vat = await client.finance('vat-returns').catch(() => null);
+        setVatData(vat?.data || null);
+
+        const paye = await client.finance('paye-calculations').catch(() => null);
+        setPayeData(paye?.data || null);
+
+        const taxLiability = await client.finance('tax-liability').catch(() => null);
+        setTaxLiabilityData(taxLiability?.data || null);
       } catch (err) {
         setError(err.message || 'Failed to load finance data');
       } finally {
@@ -190,6 +203,80 @@ export function FinanceDashboard() {
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             <MetricTile label="Matched invoices" value={reconciliationData.report?.results?.length || 0} detail="closed" tone="emerald" />
             <MetricTile label="Unmatched payments" value={reconciliationData.report?.unmatchedPayments?.length || 0} detail="review" tone="amber" />
+          </div>
+        </PageCard>
+      )}
+
+      {vatData && (
+        <PageCard>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">VAT Returns (Ethiopian Tax)</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">15% VAT computation per Proclamation No. 979/2016</p>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-4">
+            <MetricTile label="Output VAT" value={currency(vatData.outputVAT || 0)} detail="collected" tone="violet" />
+            <MetricTile label="Input VAT" value={currency(vatData.inputVAT || 0)} detail="paid" tone="blue" />
+            <MetricTile label="Net Payable" value={currency(vatData.netVATPayable || 0)} detail="liability" tone="emerald" />
+            <MetricTile label="VAT Credit" value={currency(vatData.vatCredit || 0)} detail="carryover" tone="amber" />
+          </div>
+        </PageCard>
+      )}
+
+      {payeData && (
+        <PageCard>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">PAYE Calculations (Ethiopian Tax)</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Income tax deductions per Proclamation No. 715/2011</p>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <MetricTile label="Total PAYE" value={currency(payeData.totalPAYE || 0)} detail="monthly" tone="violet" />
+            <MetricTile label="Employees" value={payeData.employeeCount || 0} detail="active" tone="emerald" />
+          </div>
+          {payeData.employees && payeData.employees.length > 0 && (
+            <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+              <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100">Employee PAYE Breakdown</div>
+              <table className="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
+                <thead className="bg-white/70 dark:bg-slate-900/20">
+                  <tr>
+                    <th className="px-4 py-2 text-left font-medium text-slate-600 dark:text-slate-300">Employee</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-600 dark:text-slate-300">Salary</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-600 dark:text-slate-300">PAYE</th>
+                    <th className="px-4 py-2 text-left font-medium text-slate-600 dark:text-slate-300">Net Salary</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {payeData.employees.slice(0, 10).map((emp) => (
+                    <tr key={emp.employeeId} className="border-t border-slate-200 dark:border-slate-700">
+                      <td className="px-4 py-2 text-slate-700 dark:text-slate-200">{emp.name}</td>
+                      <td className="px-4 py-2 text-slate-700 dark:text-slate-200">{currency(emp.monthlySalary)}</td>
+                      <td className="px-4 py-2 font-semibold text-slate-900 dark:text-slate-100">{currency(emp.paye)}</td>
+                      <td className="px-4 py-2 text-slate-700 dark:text-slate-200">{currency(emp.netSalary)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </PageCard>
+      )}
+
+      {taxLiabilityData && (
+        <PageCard>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Total Tax Liability</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Consolidated tax obligations across all categories</p>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-4">
+            <MetricTile label="VAT Payable" value={currency(taxLiabilityData.vat?.netPayable || 0)} detail="VAT" tone="violet" />
+            <MetricTile label="Withholding Tax" value={currency(taxLiabilityData.withholdingTax || 0)} detail="WHT" tone="blue" />
+            <MetricTile label="PAYE Liability" value={currency(taxLiabilityData.paye || 0)} detail="income tax" tone="emerald" />
+            <MetricTile label="Total Liability" value={currency(taxLiabilityData.totalLiability || 0)} detail="all taxes" tone="amber" />
           </div>
         </PageCard>
       )}

@@ -134,6 +134,27 @@ async function handleSuppliers(req, res, tenantId, rest) {
     if (!result.rows[0]) return jsonError(res, 404, 'Supplier not found');
     return res.status(200).json({ success: true, data: result.rows[0] });
   }
+  if (req.method === 'POST' && rest.length === 0) {
+    const { supplier_code, name, email, phone, city, country, active } = req.body || {};
+    const supplierCode = supplier_code || `SUP-${Date.now().toString().slice(-6)}`;
+    const result = await pool.query(
+      `INSERT INTO suppliers (tenant_id, supplier_code, name, email, phone, city, country, active)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [tenantId, supplierCode, name, email, phone, city, country, active !== false]
+    );
+    return res.status(201).json({ success: true, data: result.rows[0] });
+  }
+  if (req.method === 'PUT' && rest.length === 1) {
+    const { name, email, phone, city, country, active } = req.body || {};
+    const result = await pool.query(
+      `UPDATE suppliers SET name = COALESCE($2, name), email = COALESCE($3, email), phone = COALESCE($4, phone),
+         city = COALESCE($5, city), country = COALESCE($6, country), active = COALESCE($7, active)
+       WHERE tenant_id = $1 AND id = $8 RETURNING *`,
+      [tenantId, name, email, phone, city, country, active, rest[0]]
+    );
+    if (!result.rows[0]) return jsonError(res, 404, 'Supplier not found');
+    return res.status(200).json({ success: true, data: result.rows[0] });
+  }
   return jsonError(res, 405, 'Method not allowed');
 }
 
@@ -156,11 +177,56 @@ async function handleRequisitions(req, res, tenantId, rest) {
     if (!result.rows[0]) return jsonError(res, 404, 'Requisition not found');
     return res.status(200).json({ success: true, data: result.rows[0] });
   }
+  if (req.method === 'POST' && rest.length === 0) {
+    const { requested_by, requested_by_name, total_amount, expected_delivery_date, priority, items } = req.body || {};
+    const requisitionNumber = `REQ-${Date.now().toString().slice(-6)}`;
+    const result = await pool.query(
+      `INSERT INTO purchase_requisitions (
+        tenant_id, requisition_number, requisition_date, requested_by, requested_by_name,
+        total_amount, expected_delivery_date, priority, status, items
+      ) VALUES ($1, $2, CURRENT_DATE, $3, $4, $5, $6, $7, 'pending', $8) RETURNING *`,
+      [tenantId, requisitionNumber, requested_by, requested_by_name, total_amount, expected_delivery_date, priority, JSON.stringify(items || [])]
+    );
+    return res.status(201).json({ success: true, data: result.rows[0] });
+  }
+  if (req.method === 'POST' && rest.length === 2) {
+    const [requisitionId, action] = rest;
+    if (action === 'approve') {
+      // Update budget utilization when requisition is approved
+      const requisition = await pool.query(
+        'SELECT total_amount FROM purchase_requisitions WHERE tenant_id = $1 AND id = $2',
+        [tenantId, requisitionId]
+      );
+      if (!requisition.rows[0]) return jsonError(res, 404, 'Requisition not found');
+      
+      const amount = Number(requisition.rows[0].total_amount) || 0;
+      
+      // Update budget committed amount
+      await pool.query(
+        `UPDATE budgets SET committed_amount = committed_amount + $1 WHERE tenant_id = $2`,
+        [amount, tenantId]
+      );
+      
+      const result = await pool.query(
+        `UPDATE purchase_requisitions SET status = 'approved' WHERE tenant_id = $1 AND id = $2 RETURNING *`,
+        [tenantId, requisitionId]
+      );
+      return res.status(200).json({ success: true, data: result.rows[0] });
+    }
+    if (action === 'reject') {
+      const result = await pool.query(
+        `UPDATE purchase_requisitions SET status = 'rejected' WHERE tenant_id = $1 AND id = $2 RETURNING *`,
+        [tenantId, requisitionId]
+      );
+      if (!result.rows[0]) return jsonError(res, 404, 'Requisition not found');
+      return res.status(200).json({ success: true, data: result.rows[0] });
+    }
+  }
   return jsonError(res, 405, 'Method not allowed');
 }
 
 async function handleReceipts(req, res, tenantId, rest) {
-  const pool = getPool();
+  const pool = getPool('procurement');
   if (req.method === 'GET' && rest.length === 0) {
     const result = await pool.query(
       `SELECT id, receipt_number, po_id, received_by, received_by_name, status,
@@ -177,6 +243,61 @@ async function handleReceipts(req, res, tenantId, rest) {
     );
     if (!result.rows[0]) return jsonError(res, 404, 'Receipt not found');
     return res.status(200).json({ success: true, data: result.rows[0] });
+  }
+  if (req.method === 'POST' && rest.length === 0) {
+    const { po_id, received_by, received_by_name, quantity_received, quantity_accepted, quantity_rejected, notes, items } = req.body || {};
+    const receiptNumber = `RCPT-${Date.now().toString().slice(-6)}`;
+    const result = await pool.query(
+      `INSERT INTO warehouse_receipts (
+        tenant_id, receipt_number, po_id, received_by, received_by_name,
+        quantity_received, quantity_accepted, quantity_rejected, status, notes, items
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10) RETURNING *`,
+      [tenantId, receiptNumber, po_id, received_by, received_by_name, quantity_received, quantity_accepted, quantity_rejected, notes, JSON.stringify(items || [])]
+    );
+    return res.status(201).json({ success: true, data: result.rows[0] });
+  }
+  if (req.method === 'POST' && rest.length === 2) {
+    const [receiptId, action] = rest;
+    if (action === 'complete') {
+      // Update budget actual amount when receipt is completed
+      const receipt = await pool.query(
+        'SELECT po_id, quantity_accepted FROM warehouse_receipts WHERE tenant_id = $1 AND id = $2',
+        [tenantId, receiptId]
+      );
+      if (!receipt.rows[0]) return jsonError(res, 404, 'Receipt not found');
+      
+      const poId = receipt.rows[0].po_id;
+      const quantityAccepted = Number(receipt.rows[0].quantity_accepted) || 0;
+      
+      // Get PO total amount
+      const po = await pool.query(
+        'SELECT total_amount FROM purchase_orders WHERE tenant_id = $1 AND id = $2',
+        [tenantId, poId]
+      );
+      
+      if (po.rows[0]) {
+        const poAmount = Number(po.rows[0].total_amount) || 0;
+        
+        // Update budget actual amount
+        await pool.query(
+          `UPDATE budgets SET actual_amount = actual_amount + $1 WHERE tenant_id = $2`,
+          [poAmount, tenantId]
+        );
+      }
+      
+      const result = await pool.query(
+        `UPDATE warehouse_receipts SET status = 'completed' WHERE tenant_id = $1 AND id = $2 RETURNING *`,
+        [tenantId, receiptId]
+      );
+      
+      // Update PO status to received
+      await pool.query(
+        `UPDATE purchase_orders SET status = 'received' WHERE tenant_id = $1 AND id = $2`,
+        [tenantId, poId]
+      );
+      
+      return res.status(200).json({ success: true, data: result.rows[0] });
+    }
   }
   return jsonError(res, 405, 'Method not allowed');
 }
