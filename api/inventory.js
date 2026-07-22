@@ -123,8 +123,8 @@ async function handleCycleCounts(req, res, tenantId) {
     return res.status(200).json({ success: true, data: [], count: 0 });
   }
   const result = await pool.query(
-    `SELECT id, product_id, location_id, counted_quantity, expected_quantity, variance, status, counted_by, counted_at
-     FROM inventory_cycle_counts WHERE tenant_id = $1 ORDER BY counted_at DESC NULLS LAST LIMIT 50`,
+    `SELECT id, location_id, count_date, counted_by, status, created_at
+     FROM inventory_cycle_counts WHERE tenant_id = $1 ORDER BY count_date DESC NULLS LAST LIMIT 50`,
     [tenantId]
   );
   return res.status(200).json({ success: true, data: result.rows, count: result.rows.length });
