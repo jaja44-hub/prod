@@ -36,28 +36,28 @@ async function handleOrders(req, res, tenantId, rest) {
   const pool = getPool('procurement');
   if (req.method === 'GET' && rest.length === 0) {
     const { status, start_date, end_date } = req.query;
-    let query = `SELECT id, order_number, supplier_id, expected_date, total_amount, status, created_at FROM purchase_orders WHERE tenant_id = $1`;
+    let query = `SELECT po.id, po.order_number as po_number, po.supplier_id, s.name as supplier_name, po.expected_date as po_date, po.total_amount, po.status, po.created_at FROM purchase_orders po LEFT JOIN suppliers s ON po.supplier_id = s.id WHERE po.tenant_id = $1`;
     const params = [tenantId];
     if (status) {
       params.push(status);
-      query += ` AND status = $${params.length}`;
+      query += ` AND po.status = $${params.length}`;
     }
     if (start_date) {
       params.push(start_date);
-      query += ` AND expected_date >= $${params.length}`;
+      query += ` AND po.expected_date >= $${params.length}`;
     }
     if (end_date) {
       params.push(end_date);
-      query += ` AND expected_date <= $${params.length}`;
+      query += ` AND po.expected_date <= $${params.length}`;
     }
-    query += ' ORDER BY expected_date DESC LIMIT 100';
+    query += ' ORDER BY po.expected_date DESC LIMIT 100';
     const result = await pool.query(query, params);
     return res.status(200).json({ success: true, data: result.rows, count: result.rows.length });
   }
   if (req.method === 'GET' && rest.length === 1) {
     const result = await pool.query(
-      `SELECT id, order_number, supplier_id, expected_date, total_amount, status, created_at
-       FROM purchase_orders WHERE tenant_id = $1 AND id = $2`,
+      `SELECT po.id, po.order_number as po_number, po.supplier_id, s.name as supplier_name, po.expected_date as po_date, po.total_amount, po.status, po.created_at
+       FROM purchase_orders po LEFT JOIN suppliers s ON po.supplier_id = s.id WHERE po.tenant_id = $1 AND po.id = $2`,
       [tenantId, rest[0]]
     );
     if (!result.rows[0]) return jsonError(res, 404, 'Purchase order not found');
@@ -107,7 +107,7 @@ async function handleSuppliers(req, res, tenantId, rest) {
   const pool = getPool('procurement');
   if (req.method === 'GET' && rest.length === 0) {
     const { search } = req.query;
-    let query = `SELECT id, name, email, phone, address, created_at
+    let query = `SELECT DISTINCT ON (name) id, name, email, phone, address, created_at
                  FROM suppliers WHERE tenant_id = $1`;
     const params = [tenantId];
     if (search) {
