@@ -15,7 +15,7 @@ export function useAnalyticsSnapshot() {
         setError(null);
         
         const API_BASE = process.env.REACT_APP_API_BASE || (window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api');
-        const response = await fetch(`${API_BASE}/dashboard/metrics?tenant_id=tenant_default`);
+        const response = await fetch(`${API_BASE}/analytics/snapshot?tenant_id=tenant_default`);
         
         if (!response.ok) {
           throw new Error('Failed to fetch dashboard metrics');
@@ -28,58 +28,25 @@ export function useAnalyticsSnapshot() {
         // Transform the metrics data into the expected snapshot format
         const snapshot = {
           summary: {
-            totalRevenue: data.data?.revenue || 0,
-            totalOrders: data.data?.orders || 0,
-            totalPipelineValue: data.data?.pipelineValue || 0,
-            warehouseHealth: data.data?.warehouseReadyToPick || 0
+            totalRevenue: data.data?.modules?.finance?.metrics?.totalRevenue || 0,
+            totalOrders: 0,
+            totalPipelineValue: 0,
+            warehouseHealth: 0
           },
           modules: {
-            sales: {
-              name: 'Sales',
-              score: data.data?.salesScore || 70,
-              metrics: {
-                revenue: data.data?.revenue || 0,
-                orders: data.data?.orders || 0,
-                averageOrderValue: data.data?.orders > 0 ? data.data.revenue / data.data.orders : 0
-              }
-            },
-            crm: {
-              name: 'CRM',
-              score: data.data?.crmScore || 62,
-              metrics: {
-                leads: 0,
-                opportunities: 0,
-                pipelineValue: data.data?.pipelineValue || 0
-              }
-            },
-            purchase: {
-              name: 'Purchase',
-              score: data.data?.purchaseScore || 58,
-              metrics: {
-                vendors: 0,
-                onTimePct: 0,
-                avgQtyAccuracy: 0
-              }
-            },
-            warehouse: {
-              name: 'Warehouse',
-              score: data.data?.warehouseScore || 65,
-              metrics: {
-                readyToPick: data.data?.warehouseReadyToPick || 0,
-                packedCount: 0,
-                shipmentsInTransit: 0
-              }
-            },
+            sales: { name: 'Sales', score: 70, metrics: { revenue: 0, orders: 0, averageOrderValue: 0 } },
+            crm: { name: 'CRM', score: 62, metrics: { leads: 0, opportunities: 0, pipelineValue: 0 } },
+            purchase: { name: 'Purchase', score: 58, metrics: { vendors: 0, onTimePct: 0, avgQtyAccuracy: 0 } },
+            warehouse: { name: 'Warehouse', score: 65, metrics: { readyToPick: 0, packedCount: 0, shipmentsInTransit: 0 } },
             finance: {
               name: 'Finance',
-              score: data.data?.financeScore || 72,
-              metrics: {
-                totalReceivable: data.data?.receivables || 0,
-                totalPayable: data.data?.payables || 0,
-                margin: 0
-              }
+              score: data.data?.modules?.finance?.score || 75,
+              metrics: data.data?.modules?.finance?.metrics || { totalReceivable: 0, totalPayable: 0, totalRevenue: 0, totalExpense: 0, netProfit: 0, margin: 0 },
+              breakdown: data.data?.modules?.finance?.breakdown || [],
+              chartData: data.data?.modules?.finance?.chartData || []
             }
-          }
+          },
+          insights: data.data?.insights || []
         };
         
         setSnapshot(snapshot);
