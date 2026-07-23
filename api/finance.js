@@ -45,18 +45,14 @@ export default async function handler(req, res) {
 async function handleAccounts(req, res, tenantId) {
   if (req.method !== 'GET') return jsonError(res, 405, 'Method not allowed');
   const pool = getPool('accounting');
-  const { search, active } = req.query;
+  const { search } = req.query;
   let query = `
-    SELECT id, account_code AS code, account_name AS name, account_type, balance_type, is_active AS active
+    SELECT id, account_code AS code, account_name AS name, account_type, balance
     FROM accounts WHERE tenant_id = $1`;
   const params = [tenantId];
   if (search) {
     params.push(`%${search}%`);
     query += ` AND (account_name ILIKE $${params.length} OR account_code ILIKE $${params.length})`;
-  }
-  if (active !== undefined) {
-    params.push(active === 'true');
-    query += ` AND is_active = $${params.length}`;
   }
   query += ' ORDER BY account_code ASC LIMIT 200';
   const result = await pool.query(query, params);
