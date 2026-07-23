@@ -40,8 +40,11 @@ export default function Accounts() {
         const client = getApiClient();
         
         if (activeTab === 'accounts') {
-          const result = await client.finance('accounts?tenant_id=tenant_default').catch(() => null);
-          if (mounted && result) setAccounts(result.data || []);
+          const result = await client.finance('accounts?tenant_id=tenant_default').catch((e) => { console.error('Accounts fetch error:', e); return null; });
+          if (mounted && result) {
+            console.log('Accounts result:', result);
+            setAccounts(result.data || []);
+          }
         } else if (activeTab === 'journals') {
           const result = await client.finance('journal?tenant_id=tenant_default&entry_type=JOURNAL').catch(() => null);
           if (mounted && result) setJournals(result.data || []);
