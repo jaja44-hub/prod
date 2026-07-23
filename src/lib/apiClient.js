@@ -266,8 +266,19 @@ export class ApiClient {
       return this.get('/api/crm/activity', { service: 'crm' });
     } else if (action === 'log_activity') {
       return this.post('/api/crm/activity', payload, { service: 'crm' });
+    } else if (action === 'opportunities') {
+      return this.get('/api/crm/opportunities', { service: 'crm' });
     }
     throw new Error(`Unknown CRM action: ${action}`);
+  }
+
+  async sales(action, payload = null) {
+    if (action.startsWith('orders')) {
+      return this.get(`/api/sales/${action}`, { service: 'sales' });
+    } else if (action.startsWith('customers')) {
+      return this.get(`/api/sales/${action}`, { service: 'sales' });
+    }
+    throw new Error(`Unknown sales action: ${action}`);
   }
 
   async warehouse(action, payload = null) {

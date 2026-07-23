@@ -1,25 +1,35 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-
-const MOCK_ORDERS = [
-  { id: 'ORD-1001', customer: 'Alem Builders', total: 12500, status: 'confirmed', date: '2026-06-10' },
-  { id: 'ORD-1002', customer: 'Beta Constr.', total: 5400, status: 'pending', date: '2026-06-11' },
-  { id: 'ORD-1003', customer: 'Gamma Real Estate', total: 9200, status: 'shipped', date: '2026-06-09' },
-];
+import { getSalesOrders } from '../lib/neonSalesAPI';
 
 export default function Sales() {
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await getSalesOrders({ tenant_id: 'tenant_default' });
+        setOrders(res.data || []);
+      } catch (err) {
+        setOrders([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   const filtered = useMemo(() => {
-    return MOCK_ORDERS.filter(o => {
+    return orders.filter(o => {
       if (statusFilter !== 'all' && o.status !== statusFilter) return false;
       if (!query) return true;
-      return o.customer.toLowerCase().includes(query.toLowerCase()) || o.id.toLowerCase().includes(query.toLowerCase());
+      return (o.customer_name || '').toLowerCase().includes(query.toLowerCase()) || (o.order_number || '').toLowerCase().includes(query.toLowerCase());
     });
-  }, [query, statusFilter]);
+  }, [query, statusFilter, orders]);
 
-  const totalToday = MOCK_ORDERS.reduce((s, o) => s + o.total, 0);
+  const totalToday = orders.reduce((s, o) => s + parseFloat(o.total_amount || 0), 0);
 
   return (
     <div>
