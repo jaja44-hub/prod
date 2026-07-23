@@ -16,6 +16,9 @@ export default async function handler(req, res) {
     await procurementPool.query(`ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(100) DEFAULT 'tenant_default'`);
     await procurementPool.query(`ALTER TABLE purchase_orders ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(100) DEFAULT 'tenant_default'`);
     
+    const accountingPool = getPool('accounting');
+    await accountingPool.query(`CREATE TABLE IF NOT EXISTS customers (id SERIAL PRIMARY KEY, customer_code VARCHAR(50) UNIQUE NOT NULL, name VARCHAR(200) NOT NULL, email VARCHAR(100), phone VARCHAR(50), city VARCHAR(100), country VARCHAR(100), credit_limit DECIMAL(12, 2), active BOOLEAN DEFAULT true, tenant_id VARCHAR(100) DEFAULT 'tenant_default', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
+    
     return res.status(200).json({ success: true, message: 'Schema fixed' });
   } catch (error) {
     console.error('Schema fix error:', error);

@@ -63,6 +63,22 @@ async function seedData() {
       )
     `);
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS customers (
+        id SERIAL PRIMARY KEY,
+        customer_code VARCHAR(50) UNIQUE NOT NULL,
+        name VARCHAR(200) NOT NULL,
+        email VARCHAR(100),
+        phone VARCHAR(50),
+        city VARCHAR(100),
+        country VARCHAR(100),
+        credit_limit DECIMAL(12, 2),
+        active BOOLEAN DEFAULT true,
+        tenant_id VARCHAR(100) DEFAULT 'tenant_default',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     console.log('Tables created successfully');
 
     // Seed employees (Ethiopian-contextualized)
@@ -136,6 +152,18 @@ async function seedData() {
       );
     }
     console.log(`Seeded ${opportunities.length} CRM opportunities`);
+
+    const customers = [
+      ['CUST-001', 'Ethio Telecom', 'procurement@ethiotelecom.et', '+251-11-555-0000', 'Addis Ababa', 'Ethiopia', 500000.00, true],
+      ['CUST-002', 'Commercial Bank of Ethiopia', 'purchasing@cbe.com.et', '+251-11-555-1111', 'Addis Ababa', 'Ethiopia', 750000.00, true],
+      ['CUST-003', 'Ethiopian Airlines', 'supply@ethiopianairlines.com', '+251-11-665-0000', 'Addis Ababa', 'Ethiopia', 1000000.00, true],
+      ['CUST-004', 'MIDROC Ethiopia', 'orders@midroc.com.et', '+251-11-555-2222', 'Addis Ababa', 'Ethiopia', 600000.00, true],
+      ['CUST-005', 'BGI Ethiopia', 'procurement@bgi.com.et', '+251-11-555-3333', 'Addis Ababa', 'Ethiopia', 400000.00, true],
+    ];
+    for (const cust of customers) {
+      await client.query(`INSERT INTO customers (customer_code, name, email, phone, city, country, credit_limit, active) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT DO NOTHING`, cust);
+    }
+    console.log(`Seeded ${customers.length} customers`);
 
     console.log('✅ Sales, HR, and CRM data seeded successfully');
   } catch (error) {
