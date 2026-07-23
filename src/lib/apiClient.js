@@ -253,6 +253,16 @@ export class ApiClient {
       return this.get('/api/finance/aging', { service: 'finance' });
     } else if (action === 'reconciliation') {
       return this.post('/api/finance/reconciliation', payload, { service: 'finance' });
+    } else if (action.startsWith('accounts')) {
+      return this.get(`/api/finance/${action}`, { service: 'finance' });
+    } else if (action.startsWith('journal')) {
+      return this.get(`/api/finance/${action}`, { service: 'finance' });
+    } else if (action === 'vat-returns') {
+      return this.get('/api/finance/vat-returns', { service: 'finance' });
+    } else if (action === 'paye-calculations') {
+      return this.get('/api/finance/paye-calculations', { service: 'finance' });
+    } else if (action === 'tax-liability') {
+      return this.get('/api/finance/tax-liability', { service: 'finance' });
     }
     throw new Error(`Unknown finance action: ${action}`);
   }
