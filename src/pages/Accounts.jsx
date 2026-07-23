@@ -17,7 +17,7 @@ export default function Accounts() {
   const { currentUser, loading: authLoading, tenantConfig } = useAuth();
   const { snapshot: analyticsSnapshot } = useAnalyticsSnapshot();
   const isET = tenantConfig?.complianceProfile === 'ethiopia_primary';
-  const [activeTab, setActiveTab] = useState('accounts'); // 'accounts', 'journals', 'payments'
+  const [activeTab, setActiveTab] = useState('accounts');
   const [accounts, setAccounts] = useState([]);
   const [journals, setJournals] = useState([]);
   const [payments, setPayments] = useState([]);
@@ -75,6 +75,7 @@ export default function Accounts() {
     { key: 'code', header: t('code'), render: (r) => r.code || '—' },
     { key: 'name', header: t('accounts') },
     { key: 'account_type', header: t('accountType'), render: (r) => r.account_type || '—' },
+    { key: 'balance', header: 'Balance', className: 'erp-num', render: (r) => r.balance != null ? formatEtb(r.balance) : '—' },
   ];
 
   const journalColumns = [
