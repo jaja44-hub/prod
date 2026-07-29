@@ -285,14 +285,14 @@ async function testGeneratedColumns() {
     for (const { table, columns } of tablesWithGeneratedColumns) {
       for (const column of columns) {
         const result = await pool.query(`
-          SELECT column_default
+          SELECT is_generated, generation_expression
           FROM information_schema.columns
           WHERE table_schema = 'public'
             AND table_name = $1
             AND column_name = $2
         `, [table, column]);
         
-        if (result.rows.length === 0 || !result.rows[0].column_default) {
+        if (result.rows.length === 0 || result.rows[0].is_generated !== 'ALWAYS') {
           allGeneratedColumnsValid = false;
           console.log(`  ${table}.${column} is not a generated column`);
         }
@@ -345,7 +345,7 @@ async function testAPIFilesExist() {
     let allFilesExist = true;
     
     for (const file of apiFiles) {
-      const filePath = path.join(process.cwd(), '..', file);
+      const filePath = path.join(__dirname, '..', '..', file);
       if (!fs.existsSync(filePath)) {
         allFilesExist = false;
         console.log(`  Missing: ${file}`);
@@ -369,7 +369,7 @@ async function testBudgetAvailableAmount() {
       WHERE table_schema = 'public'
         AND table_name = 'budgets'
         AND column_name = 'available_amount'
-        AND column_default LIKE '%STORED%'
+        AND is_generated = 'ALWAYS'
     `);
     const count = parseInt(result.rows[0].count);
     const passed = count > 0;
@@ -480,7 +480,7 @@ async function testMigrationScriptUpdated() {
     const fs = require('fs');
     const path = require('path');
     
-    const migrationPath = path.join(process.cwd(), '..', 'server/migrations/run-migrations.js');
+    const migrationPath = path.join(__dirname, '..', 'migrations', 'run-migrations.js');
     const migrationContent = fs.readFileSync(migrationPath, 'utf8');
     
     const passed = migrationContent.includes('003_purchase_module.sql');

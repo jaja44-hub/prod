@@ -4,17 +4,31 @@
  */
 
 const { Pool } = require('pg');
+const budgetService = require('./budget');
 
 // Database connection pool
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || process.env.NEON_DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+ connectionString: process.env.DATABASE_URL || process.env.NEON_DATABASE_URL,
+ ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
+function normalizePaymentTerms(paymentTerms) {
+ if (paymentTerms == null) {
+   return null;
+ }
+
+ const parsed = Number(paymentTerms);
+ if (!Number.isNaN(parsed)) {
+   return parsed;
+ }
+
+ const digits = String(paymentTerms).match(/\d+/);
+ return digits ? parseInt(digits[0], 10) : null;
+}
+
 /**
- * Generate PO number
- */
-async function generatePONumber(tenantId) {
+* Generate PO number
+*/async function generatePONumber(tenantId) {
   const query = `
     SELECT COALESCE(MAX(CAST(SUBSTRING(po_number FROM 11) AS INTEGER)), 0) + 1 as next_number
     FROM purchase_orders
@@ -45,7 +59,8 @@ async function createPOFromRequisition(requisitionId, poData) {
     shipping_address,
     expected_delivery_date,
     notes,
-    internal_notes
+    internal_notes,
+    budget_id
   } = poData;
 
   const client = await pool.connect();
@@ -87,11 +102,11 @@ async function createPOFromRequisition(requisitionId, poData) {
       (tenant_id, po_number, requisition_id, supplier_id, supplier_name, supplier_address,
        supplier_contact, supplier_phone, supplier_email, category_id, payment_terms,
        delivery_terms, shipping_method, shipping_address, expected_delivery_date,
-       notes, internal_notes)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+       notes, internal_notes, budget_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
       RETURNING *
     `;
-    
+     
     const poValues = [
       requisition.tenant_id,
       poNumber,
@@ -103,13 +118,14 @@ async function createPOFromRequisition(requisitionId, poData) {
       supplier.phone,
       supplier.email,
       requisition.category_id,
-      payment_terms || supplier.payment_terms,
+      normalizePaymentTerms(payment_terms) || supplier.payment_terms,
       delivery_terms,
       shipping_method,
       shipping_address,
       expected_delivery_date,
       notes,
-      internal_notes
+      internal_notes,
+      budget_id || null
     ];
     
     const poResult = await client.query(poQuery, poValues);
@@ -190,6 +206,7 @@ async function createPO(poData) {
     expected_delivery_date,
     notes,
     internal_notes,
+    budget_id,
     items
   } = poData;
 
@@ -218,11 +235,11 @@ async function createPO(poData) {
       (tenant_id, po_number, supplier_id, supplier_name, supplier_address,
        supplier_contact, supplier_phone, supplier_email, category_id, payment_terms,
        delivery_terms, shipping_method, shipping_address, expected_delivery_date,
-       notes, internal_notes)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+       notes, internal_notes, budget_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
       RETURNING *
     `;
-    
+     
     const poValues = [
       tenant_id,
       poNumber,
@@ -233,13 +250,14 @@ async function createPO(poData) {
       supplier.phone,
       supplier.email,
       category_id,
-      payment_terms || supplier.payment_terms,
+      normalizePaymentTerms(payment_terms) || supplier.payment_terms,
       delivery_terms,
       shipping_method,
       shipping_address,
       expected_delivery_date,
       notes,
-      internal_notes
+      internal_notes,
+      budget_id || null
     ];
     
     const poResult = await client.query(poQuery, poValues);
@@ -452,7 +470,9 @@ async function sendPOToSupplier(poId, senderData) {
 async function acknowledgePO(poId) {
   const query = `
     UPDATE purchase_orders
-    SET supplier_acknowledged = true, supplier_acknowledged_at = CURRENT_TIMESTAMP
+    SET supplier_acknowledged = true,
+        supplier_acknowledged_at = CURRENT_TIMESTAMP,
+        status = 'supplier_acknowledged'
     WHERE id = $1 AND sent_to_supplier = true
     RETURNING *
   `;
@@ -481,11 +501,15 @@ async function getPO(poId) {
       ec.name as category_name,
       ec.code as category_code,
       s.supplier_code,
+      b.budget_code as budget_code,
+      b.name as budget_name,
+      b.available_amount as budget_available_amount,
       wi.status as workflow_status,
       wi.current_stage as workflow_stage
     FROM purchase_orders po
     LEFT JOIN esic_categories ec ON po.category_id = ec.id
     LEFT JOIN suppliers s ON po.supplier_id = s.id
+    LEFT JOIN budgets b ON po.budget_id = b.id
     LEFT JOIN approval_workflow_instances wi ON po.workflow_instance_id = wi.id
     WHERE po.id = $1
   `;
@@ -514,7 +538,7 @@ async function getPO(poId) {
     const itemsResult = await pool.query(itemsQuery, [poId]);
     
     return {
-      po: result.rows[0],
+      ...result.rows[0],
       items: itemsResult.rows
     };
   } catch (error) {
@@ -616,6 +640,7 @@ async function updatePO(poId, updateData) {
     expected_delivery_date,
     notes,
     internal_notes,
+    budget_id,
     items
   } = updateData;
 
@@ -633,19 +658,21 @@ async function updatePO(poId, updateData) {
           shipping_address = COALESCE($4, shipping_address),
           expected_delivery_date = COALESCE($5, expected_delivery_date),
           notes = COALESCE($6, notes),
-          internal_notes = COALESCE($7, internal_notes)
-      WHERE id = $8 AND status = 'draft'
+          internal_notes = COALESCE($7, internal_notes),
+          budget_id = COALESCE($8, budget_id)
+      WHERE id = $9 AND status = 'draft'
       RETURNING *
     `;
-    
+     
     const updateValues = [
-      payment_terms,
+      normalizePaymentTerms(payment_terms),
       delivery_terms,
       shipping_method,
       shipping_address,
       expected_delivery_date,
       notes,
       internal_notes,
+      budget_id || null,
       poId
     ];
     

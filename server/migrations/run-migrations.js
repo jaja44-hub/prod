@@ -64,7 +64,8 @@ async function runAllMigrations() {
   const migrations = [
     '001_core_infrastructure.sql',
     '002_seed_esic_categories.sql',
-    '003_purchase_module.sql'
+    '003_purchase_module.sql',
+    '016_align_procurement_schema.sql'
   ];
   
   const results = [];

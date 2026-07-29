@@ -6,8 +6,10 @@ import {
   getPurchaseOrders,
   getPurchaseOrder,
   createPurchaseOrder,
+  submitPurchaseOrder,
   approvePurchaseOrder,
   sendPurchaseOrderToSupplier,
+  acknowledgePurchaseOrder,
   getSuppliers,
   getSupplierPerformanceReport,
   checkBudgetAvailability,
@@ -116,6 +118,22 @@ export default function PurchaseOrders() {
     }
   }
 
+  async function handleSubmitOrder(orderId) {
+    if (detailLoading) return;
+    setDetailLoading(true);
+    try {
+      await submitPurchaseOrder(orderId, { submitter_id: currentUser?.uid, submitter_name: currentUser?.displayName || 'System' });
+      const result = await getPurchaseOrder(orderId);
+      setSelectedOrder(result.data);
+      const ordersResult = await getPurchaseOrders({ tenant_id: 'tenant_default' });
+      setOrders(Array.isArray(ordersResult.data) ? ordersResult.data : []);
+    } catch (err) {
+      setError(normalizeErrorMessage(err));
+    } finally {
+      setDetailLoading(false);
+    }
+  }
+ 
   async function handleConfirmOrder(orderId) {
     if (detailLoading) return;
     setDetailLoading(true);
@@ -131,12 +149,28 @@ export default function PurchaseOrders() {
       setDetailLoading(false);
     }
   }
-
+ 
   async function handleSendOrder(orderId) {
     if (detailLoading) return;
     setDetailLoading(true);
     try {
       await sendPurchaseOrderToSupplier(orderId, { sender_id: currentUser?.uid, sender_name: currentUser?.displayName || 'System' });
+      const result = await getPurchaseOrder(orderId);
+      setSelectedOrder(result.data);
+      const ordersResult = await getPurchaseOrders({ tenant_id: 'tenant_default' });
+      setOrders(Array.isArray(ordersResult.data) ? ordersResult.data : []);
+    } catch (err) {
+      setError(normalizeErrorMessage(err));
+    } finally {
+      setDetailLoading(false);
+    }
+  }
+ 
+  async function handleAcknowledgeOrder(orderId) {
+    if (detailLoading) return;
+    setDetailLoading(true);
+    try {
+      await acknowledgePurchaseOrder(orderId);
       const result = await getPurchaseOrder(orderId);
       setSelectedOrder(result.data);
       const ordersResult = await getPurchaseOrders({ tenant_id: 'tenant_default' });
@@ -212,6 +246,7 @@ export default function PurchaseOrders() {
   const columns = [
     { key: 'po_number', header: t('order'), render: (r) => r.po_number || '—' },
     { key: 'supplier_name', header: t('partner'), render: (r) => r.supplier_name || '—' },
+    { key: 'budget_id', header: t('budgetId'), render: (r) => r.budget_id || '—' },
     { key: 'po_date', header: t('dateOrder'), render: (r) => r.po_date || '—' },
     { key: 'total_amount', header: t('amount'), className: 'erp-num', render: (r) => r.total_amount != null ? formatEtb(r.total_amount) : '—' },
     { key: 'status', header: t('state'), render: (r) => <StateBadge state={r.status} label={r.status || '—'} /> },
@@ -232,7 +267,7 @@ export default function PurchaseOrders() {
         title={t('purchaseOrders')}
         subtitle={t('purchaseOrdersDescription')}
         actions={
-          <button onClick={() => setShowCreateForm(true)} className="btn-primary">
+          <button onClick={() => navigate('/purchases/new')} className="btn-primary">
             + {t('createPurchaseOrder')}
           </button>
         }
@@ -321,10 +356,12 @@ export default function PurchaseOrders() {
           fields={['search', 'state', 'dateRange']}
           stateOptions={[
             { value: 'draft', label: t('stateDraft') },
+            { value: 'pending', label: t('statePending') },
+            { value: 'approved', label: t('stateApproved') },
             { value: 'sent', label: t('stateSent') },
-            { value: 'to approve', label: t('stateToApprove') },
-            { value: 'purchase', label: t('statePurchase') },
-            { value: 'done', label: t('stateDone') },
+            { value: 'supplier_acknowledged', label: t('stateSupplierAcknowledged') },
+            { value: 'partially_received', label: t('statePartiallyReceived') },
+            { value: 'received', label: t('stateReceived') },
             { value: 'cancel', label: t('stateCancel') },
           ]}
           loading={loading}
@@ -476,33 +513,53 @@ export default function PurchaseOrders() {
               </table>
             </div>
 
-            <div className="flex justify-between items-center mt-6">
-              <div className="flex space-x-2">
-                {['draft', 'submitted'].includes(selectedOrder.status) && (
-                  <>
-                    <button
-                      onClick={() => handleConfirmOrder(selectedOrder.id)}
-                      disabled={detailLoading}
-                      className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded text-sm font-semibold disabled:opacity-50"
-                    >
-                      {t('confirm') || 'Approve Order'}
-                    </button>
-                    <button
-                      onClick={() => handleSendOrder(selectedOrder.id)}
-                      disabled={detailLoading}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-sm font-semibold disabled:opacity-50"
-                    >
-                      {t('send') || 'Send to Supplier'}
-                    </button>
-                  </>
+            <div className="flex flex-col gap-3 mt-6">
+              <div className="flex flex-wrap gap-2">
+                {selectedOrder.status === 'draft' && (
+                  <button
+                    onClick={() => handleSubmitOrder(selectedOrder.id)}
+                    disabled={detailLoading}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-semibold disabled:opacity-50"
+                  >
+                    {t('submitForApproval') || 'Submit for Approval'}
+                  </button>
+                )}
+                {selectedOrder.status === 'pending' && (
+                  <button
+                    onClick={() => handleConfirmOrder(selectedOrder.id)}
+                    disabled={detailLoading}
+                    className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded text-sm font-semibold disabled:opacity-50"
+                  >
+                    {t('approvePurchaseOrder') || 'Approve Purchase Order'}
+                  </button>
+                )}
+                {selectedOrder.status === 'approved' && (
+                  <button
+                    onClick={() => handleSendOrder(selectedOrder.id)}
+                    disabled={detailLoading}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-sm font-semibold disabled:opacity-50"
+                  >
+                    {t('sendToSupplier') || 'Send to Supplier'}
+                  </button>
+                )}
+                {selectedOrder.status === 'sent' && (
+                  <button
+                    onClick={() => handleAcknowledgeOrder(selectedOrder.id)}
+                    disabled={detailLoading}
+                    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded text-sm font-semibold disabled:opacity-50"
+                  >
+                    {t('acknowledgeSupplierReceipt') || 'Acknowledge Supplier Receipt'}
+                  </button>
                 )}
               </div>
-              <button
-                onClick={() => setSelectedOrder(null)}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded text-sm font-semibold"
-              >
-                {t('clear') || 'Close'}
-              </button>
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setSelectedOrder(null)}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded text-sm font-semibold"
+                >
+                  {t('clear') || 'Close'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

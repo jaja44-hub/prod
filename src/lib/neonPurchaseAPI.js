@@ -132,6 +132,12 @@ export async function sendPurchaseOrderToSupplier(id, senderData) {
   });
 }
 
+export async function acknowledgePurchaseOrder(id) {
+  return request(`/purchase/orders/${id}/acknowledge`, {
+    method: 'POST',
+  });
+}
+
 // Suppliers
 export async function getSuppliers(filters = {}) {
   const params = new URLSearchParams();
