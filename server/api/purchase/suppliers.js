@@ -63,7 +63,7 @@ async function createSupplier(supplierData) {
     notes
   } = supplierData;
 
-  const supplierCode = await generateSupplierCode(tenantId);
+  const supplierCode = await generateSupplierCode(tenant_id);
 
   const query = `
     INSERT INTO suppliers 
