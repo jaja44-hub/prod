@@ -1,6 +1,7 @@
 import {
   applyCors,
   getPool,
+  requireAuth,
   resolveTenantId,
   routeSegments,
   jsonError,
@@ -11,7 +12,9 @@ import {
 export default async function handler(req, res) {
   if (applyCors(req, res)) return;
 
-  const tenantId = resolveTenantId(req);
+  const auth = await requireAuth(req, res);
+  if (!auth.ok) return;
+  const tenantId = auth.tenantId;
   const segments = routeSegments(req, 'purchase');
   const resource = segments[0] || '';
 

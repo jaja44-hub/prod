@@ -2,7 +2,12 @@
 import pg from 'pg';
 const { Client } = pg;
 
-const ANALYTICS_DB_URL = 'postgresql://neondb_owner:npg_7QnYZpGf6PAo@ep-silent-breeze-auk7is8u.c-10.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+const ANALYTICS_DB_URL = process.env.NEON_ANALYTICS_DB_URL;
+
+if (!ANALYTICS_DB_URL) {
+  console.error('Set NEON_ANALYTICS_DB_URL in .env.local before running this script (no hardcoded credentials).');
+  process.exit(1);
+}
 
 async function seedAnalyticsData() {
   const client = new Client({ connectionString: ANALYTICS_DB_URL });

@@ -2,8 +2,12 @@
 import pg from 'pg';
 const { Client } = pg;
 
-// Use accounting database for sales, CRM, and HR data
-const DB_URL = process.env.NEON_ACCOUNTING_DB_URL || process.env.NEONACCOUNTINGDBURL || 'postgresql://neondb_owner:npg_sUbwp0cAWdH3@ep-solitary-dew-auii1z3j.c-10.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+// Use accounting database for sales, CRM, and HR data (env-driven, no hardcoded credentials)
+const DB_URL = process.env.NEON_ACCOUNTING_DB_URL || process.env.NEONACCOUNTINGDBURL;
+if (!DB_URL) {
+  console.error('Set NEON_ACCOUNTING_DB_URL in .env.local before running this script.');
+  process.exit(1);
+}
 
 async function seedData() {
   const client = new Client({ connectionString: DB_URL });

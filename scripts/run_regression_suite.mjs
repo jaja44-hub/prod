@@ -6,7 +6,8 @@ const scriptsToRun = [
   'test_module_registry.mjs',
   'test_api_client_fallback.mjs',
   'test_analytics_engine.mjs',
-  'test_analytics_snapshot.mjs'
+  'test_analytics_snapshot.mjs',
+  'test_auth_guard.mjs'
 ];
 
 let failed = false;

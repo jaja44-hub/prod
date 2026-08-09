@@ -2,7 +2,12 @@
 import pg from 'pg';
 const { Client } = pg;
 
-const TENANTFINANCE_DB_URL = 'postgresql://neondb_owner:npg_0bBxKfP6ZVaE@ep-sparkling-voice-au9j0rv1.c-10.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+const TENANTFINANCE_DB_URL = process.env.NEON_TENANTFINANCE_DB_URL;
+
+if (!TENANTFINANCE_DB_URL) {
+  console.error('Set NEON_TENANTFINANCE_DB_URL in .env.local before running this script (no hardcoded credentials).');
+  process.exit(1);
+}
 
 async function seedTenantFinanceData() {
   const client = new Client({ connectionString: TENANTFINANCE_DB_URL });

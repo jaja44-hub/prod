@@ -1,11 +1,11 @@
-import { applyCors, resolveTenantId, routeSegments, jsonError } from './lib/shared.js';
-import { getPool } from './lib/shared.js';
-import { tableExists } from './lib/shared.js';
+import { applyCors, getPool, requireAuth, resolveTenantId, routeSegments, jsonError, tableExists } from './lib/shared.js';
 
 export default async function handler(req, res) {
   if (applyCors(req, res)) return;
 
-  const tenantId = resolveTenantId(req);
+  const auth = await requireAuth(req, res);
+  if (!auth.ok) return;
+  const tenantId = auth.tenantId;
   const segments = routeSegments(req, 'crm');
   const resource = segments[0] || '';
 

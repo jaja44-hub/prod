@@ -1,4 +1,4 @@
-import { applyCors, getPool, resolveTenantId, routeSegments, jsonError, tableExists, isDbUnavailable } from './lib/shared.js';
+import { applyCors, getPool, requireAuth, resolveTenantId, routeSegments, jsonError, tableExists, isDbUnavailable } from './lib/shared.js';
 
 async function safeScalar(pool, query, params, field, fallback = 0) {
   try {
@@ -13,7 +13,9 @@ async function safeScalar(pool, query, params, field, fallback = 0) {
 export default async function handler(req, res) {
   if (applyCors(req, res)) return;
 
-  const tenantId = resolveTenantId(req);
+  const auth = await requireAuth(req, res);
+  if (!auth.ok) return;
+  const tenantId = auth.tenantId;
   const segments = routeSegments(req, 'dashboard');
   const resource = segments[0] || 'metrics';
 

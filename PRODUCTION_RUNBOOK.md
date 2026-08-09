@@ -58,13 +58,19 @@ Connectors Module (api/connectors/)
 
 ### Function Limits
 
-**Total Vercel Functions: 12**
-- Finance: 2 functions (aging, reconciliation)
-- CRM: 2 functions (pipeline, activity)
-- Warehouse: 1 function (warehouse)
-- Analytics: 2 functions (metrics, decisions)
-- Connectors: 2 functions (contracts, retries)
-- Utility: 3 functions (auth, health, admin)
+**Total Vercel Functions: 8** (verified for S6 — consolidated, under the 12-function Hobby limit)
+- `api/analytics.js`   - Analytics / Command Center (metrics, decisions, engine, snapshot, health, activity)
+- `api/crm.js`         - CRM (pipeline, activity, opportunities)
+- `api/dashboard.js`   - Dashboard metrics
+- `api/finance.js`     - Finance (accounts, journal, aging, reconciliation, budget-variance, vat-returns, paye, tax-liability)
+- `api/hr.js`          - HR (employees)
+- `api/inventory.js`   - Inventory / Warehouse (products, transactions, locations)
+- `api/purchase.js`    - Purchase (orders, suppliers, requisitions, receipts, budget, quotes)
+- `api/sales.js`       - Sales (orders, customers)
+
+`vercel.json` declares exactly 8 rewrites (`/api/:module/:path*` → `/api/:module?path=:path*`) and 8
+function entries. Each handler enforces per-handler Firebase auth (`requireAuth`, S6.2) and routes
+to the correct per-module Neon pool (S6.3).
 
 ### API Response Format
 
@@ -140,14 +146,28 @@ All endpoints return:
 
 ### Prerequisites
 ```bash
-# Environment Variables (set in Vercel)
+# Environment Variables (set in Vercel) — see VERCEL_ENV_SETUP.md for the full list
 NODE_ENV=production
 VITE_FIREBASE_PROJECT_ID=<project-id>
 VITE_FIREBASE_API_KEY=<api-key>
 VITE_FIREBASE_AUTH_DOMAIN=<auth-domain>
 VITE_FIREBASE_STORAGE_BUCKET=<storage-bucket>
-FIREBASE_SERVICE_ACCOUNT=<service-account-json>
+FIREBASE_SERVICE_ACCOUNT=<service-account-json>   # REQUIRED for API writes (S6.2 per-handler auth)
+
+# Multi-database Neon pools (all five — S6.3)
+DATABASE_URL=<main-db-url>
+NEON_DATABASE_URL=<main-db-fallback>
+NEON_ACCOUNTING_DB_URL=<accounting-db-url>
+NEON_PROCUREMENT_DB_URL=<procurement-db-url>
+NEON_ANALYTICS_DB_URL=<analytics-db-url>
+NEON_TENANTFINANCE_DB_URL=<tenantfinance-db-url>
 ```
+
+> **S6 (hardening) notes:** Vercel functions are consolidated to **8** entries
+> (`api/{analytics,crm,dashboard,finance,hr,inventory,purchase,sales}.js`), well under the
+> 12-function Hobby limit. Every handler enforces per-handler Firebase auth (`requireAuth`):
+> mutations without a valid ID token → HTTP 401; anonymous GET reads fall back to the legacy
+> tenant id. `FIREBASE_SERVICE_ACCOUNT` must be set in Vercel or all writes fail closed.
 
 ### Build Process
 ```bash
@@ -162,24 +182,41 @@ npm run vercel-build
 # 2. vite build
 ```
 
-### Deployment Steps
-1. **Prepare Release**
+### Deployment Steps (release runbook)
+1. **Pipeline gates must be green** before tag:
    ```bash
-   npm run build
-   npm test
+   npm run ci-check      # no banned-layer markers in production source
+   npm test              # regression suite (module registry, API client, analytics engine, snapshot, auth guard)
+   node --env-file=.env.local test-api.mjs   # live smoke: inventory products 200 + real rows
+   npm run build         # production bundle
+   ```
+2. **Prepare Release**
+   ```bash
    git tag -a v1.0.0 -m "Production release"
    ```
-
-2. **Deploy to Vercel**
+3. **Deploy to Vercel**
    ```bash
    git push origin main --tags
    # Vercel automatically deploys on push
    ```
-
-3. **Verify Deployment**
+4. **Verify Deployment**
    - Monitor at: https://vercel.com/dashboard
    - Check logs: https://vercel.com/dashboard/logs
    - Validate production: https://addis-crown.vercel.app
+   - Run the post-deploy smoke (S6.5): create a real PO online and confirm finance ties out.
+
+### Database Backup & Recovery (S6.1)
+```bash
+# Per-DB backup for all 5 local databases (titled, timestamped, pg_dump)
+node scripts/backup-local.mjs            # all 5 DBs
+node scripts/backup-local.mjs accounting  # single DB
+
+# Restore drill — proves a backup restores (snapshot → temp DB → verify → cleanup)
+node scripts/restore-drill.mjs           # default accounting
+node scripts/restore-drill.mjs procurement
+```
+Backups are written to `backups/` (gitignored, never committed). A rollback on Vercel is a
+re-deploy from the previous commit; a DB restore uses `pg_restore` from the matching `.dump`.
 
 ### Rollback Procedure
 

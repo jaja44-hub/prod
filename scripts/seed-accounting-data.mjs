@@ -2,7 +2,12 @@
 import pg from 'pg';
 const { Client } = pg;
 
-const ACCOUNTING_DB_URL = 'postgresql://neondb_owner:npg_sUbwp0cAWdH3@ep-solitary-dew-auii1z3j.c-10.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+const ACCOUNTING_DB_URL = process.env.NEON_ACCOUNTING_DB_URL;
+
+if (!ACCOUNTING_DB_URL) {
+  console.error('Set NEON_ACCOUNTING_DB_URL in .env.local before running this script (no hardcoded credentials).');
+  process.exit(1);
+}
 
 async function seedAccountingData() {
   const client = new Client({ connectionString: ACCOUNTING_DB_URL });

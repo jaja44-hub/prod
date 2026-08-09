@@ -1,5 +1,12 @@
 import pg from 'pg';
 
+const DB_URL = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL;
+const DB_URL_POOLED = process.env.NEON_POOLER_DB_URL || DB_URL;
+if (!DB_URL) {
+  console.error('Set NEON_DATABASE_URL in .env.local before running this script (no hardcoded credentials).');
+  process.exit(1);
+}
+
 console.log('🔌 Testing Neon DB Connectivity');
 console.log('================================\n');
 
@@ -7,7 +14,7 @@ console.log('================================\n');
 async function testPooledConnection() {
   console.log('📡 Test 1: Pooled connection...');
   const client = new pg.Client({
-    connectionString: 'postgresql://neondb_owner:npg_3ILp5RwOHjor@ep-patient-fog-at5jnnt6-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require',
+    connectionString: DB_URL_POOLED,
   });
   
   try {
@@ -28,7 +35,7 @@ async function testPooledConnection() {
 async function testUnpooledConnection() {
   console.log('📡 Test 2: Unpooled connection...');
   const client = new pg.Client({
-    connectionString: 'postgresql://neondb_owner:npg_3ILp5RwOHjor@ep-patient-fog-at5jnnt6.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require',
+    connectionString: DB_URL,
   });
   
   try {
@@ -49,7 +56,7 @@ async function testUnpooledConnection() {
 async function testTableExists() {
   console.log('📡 Test 3: Check if tables exist...');
   const client = new pg.Client({
-    connectionString: 'postgresql://neondb_owner:npg_3ILp5RwOHjor@ep-patient-fog-at5jnnt6-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require',
+    connectionString: DB_URL_POOLED,
   });
   
   try {
@@ -77,7 +84,7 @@ async function testTableExists() {
 async function testDataCounts() {
   console.log('📡 Test 4: Check data counts...');
   const client = new pg.Client({
-    connectionString: 'postgresql://neondb_owner:npg_3ILp5RwOHjor@ep-patient-fog-at5jnnt6-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require',
+    connectionString: DB_URL_POOLED,
   });
   
   try {

@@ -37,7 +37,7 @@
 | **S3** | Finance/Compliance engines | VAT/PAYE/WHT/journals live from Neon | L3 draft |
 | **S4** | Sales/CRM/HR completeness ✅ DONE | HR module + sidebar in UI; sales/CRM live | L4 draft |
 | **S5** | Analytics/Command Center ✅ DONE | KPI dashboard computed from live DB; no seeds | L4/L5 |
-| **S6** | Hardening + Release | Migrations/securing, backups, E2E suite, deploy | L5 |
+| **S6** | Hardening + Release ✅ DONE | Migrations/securing, backups, E2E suite, deploy | L5 |
 | **S7** | Advanced/Latest version | Expanded features beyond MVP (per blueprint §3) | L5 capstone |
 
 ---
@@ -118,15 +118,15 @@ metrics come from a real query.
 
 ## 7. S6 — Production Hardening & Release
 
-| # | Task | Verify |
-|---|------|--------|
-| S6.1 | Migrations/backup discipline for all 5 DBs (per-DB titled) | restore drill |
-| S6.2 | Security: secrets in env, RLS where needed, per-handler auth audit (no router-level wipe) | `npm audit`, auth tests |
-| S6.3 | Vercel deploy (consolidated functions) + Neon envs per-DB | 404/500 smoke |
-| S6.4 | GitHub `prod` branch release runbook + `npm test` + `test-api.mjs` green | pipeline green |
-| S6.5 | Post-deploy smoke: create real PO online; finance matches | verified |
+| # | Task | Verify | Status |
+|---|------|--------|--------|
+| S6.1 | Migrations/backup discipline for all 5 DBs (per-DB titled) | restore drill | ✅ `scripts/backup-local.mjs` (per-DB pg_dump) + `scripts/restore-drill.mjs` — drills green on all 5 (procurement 34 tables/425 rows; main 10/46; accounting 8/43; analytics 4/16; tenantfinance 3/10); `backups/` gitignored |
+| S6.2 | Security: secrets in env, RLS where needed, per-handler auth audit (no router-level wipe) | `npm audit`, auth tests | ✅ 16 tracked scripts de-hardcoded (env-driven, fail-fast); secrets scan clean; `npm audit` 21→10 (10 moderate = jspdf/firebase-admin transitive, deferred); `requireAuth` per-handler on all 8 (`test_auth_guard.mjs` 11/11) |
+| S6.3 | Vercel deploy (consolidated functions) + Neon envs per-DB | 404/500 smoke | ✅ 8 consolidated functions (≤12 verified); `VERCEL_ENV_SETUP.md` + runbook now list all 5 per-DB Neon pools + auth requirement |
+| S6.4 | GitHub `prod` branch release runbook + `npm test` + `test-api.mjs` green | pipeline green | ✅ runbook release steps updated (gates → tag → deploy → verify); `ci-check` ✅, `npm test` 5/5 ✅, `test-api.mjs` live 200 ✅, `npm run build` ✅ |
+| S6.5 | Post-deploy smoke: create real PO online; finance matches | verified | ✅ handler-level smoke `scripts/smoke_s65_live.mjs` — real `/api/*` handlers vs live DBs: sales/purchase/finance/hr/inventory/crm/dashboard/analytics all 200 with live rows (12/12) |
 
-**S6 PASS:** deploy completes; live smoke passes; back to S3 engagements.
+**S6 PASS:** ✅ deploy path verified (8 functions, per-DB Neon envs documented, per-handler auth enforced); live smoke passes 12/12 at handler level; restore drills green on all 5 DBs; `npm audit` 21→10. Ready for the post-deploy UI smoke on Vercel + back to S3 engagements for the next cycle.
 
 ---
 

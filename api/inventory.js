@@ -1,9 +1,11 @@
-import { applyCors, getPool, resolveTenantId, routeSegments, jsonError, tableExists, isDbUnavailable } from './lib/shared.js';
+import { applyCors, getPool, requireAuth, resolveTenantId, routeSegments, jsonError, tableExists, isDbUnavailable } from './lib/shared.js';
 
 export default async function handler(req, res) {
   if (applyCors(req, res)) return;
 
-  const tenantId = resolveTenantId(req);
+  const auth = await requireAuth(req, res);
+  if (!auth.ok) return;
+  const tenantId = auth.tenantId;
   const segments = routeSegments(req, 'inventory');
   const resource = segments[0] || '';
 
@@ -42,7 +44,7 @@ async function handleProducts(req, res, tenantId) {
   let query;
   if (hasTransactions) {
     query = `
-      SELECT p.id, p.sku AS product_code, p.name, p.description, p.category,
+      SELECT p.id, p.sku AS product_code, p.name,
              p.quantity, p.unit_price, p.created_at,
              COALESCE(stock.qty, 0) AS stock_quantity,
              COALESCE(stock.qty, 0) AS quantity_available
@@ -52,11 +54,11 @@ async function handleProducts(req, res, tenantId) {
         FROM inventory_transactions
         WHERE tenant_id = $1
         GROUP BY product_id
-      ) stock ON stock.product_id = p.id
+      ) stock ON stock.product_id = p.id::text
       WHERE p.tenant_id = $1`;
   } else {
     query = `
-      SELECT id, sku AS product_code, name, description, category,
+      SELECT id, sku AS product_code, name,
              quantity, unit_price, created_at, 0 AS stock_quantity, 0 AS quantity_available
       FROM inventory_products WHERE tenant_id = $1`;
   }

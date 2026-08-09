@@ -2,7 +2,12 @@
 import pg from 'pg';
 const { Client } = pg;
 
-const OLD_DB_URL = 'postgresql://neondb_owner:npg_sUbwp0cAWdH3@ep-solitary-dew-auii1z3j.c-10.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+const OLD_DB_URL = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL;
+
+if (!OLD_DB_URL) {
+  console.error('Set NEON_DATABASE_URL in .env.local before running this script (no hardcoded credentials).');
+  process.exit(1);
+}
 
 async function checkTables() {
   const client = new Client({ connectionString: OLD_DB_URL });

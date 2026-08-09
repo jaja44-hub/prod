@@ -2,10 +2,15 @@
 import pg from 'pg';
 const { Client } = pg;
 
-const ACCOUNTING_DB_URL = 'postgresql://neondb_owner:npg_sUbwp0cAWdH3@ep-solitary-dew-auii1z3j.c-10.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
-const PROCUREMENT_DB_URL = 'postgresql://neondb_owner:npg_gt5VHKpS8RDk@ep-red-dust-avdqp1ld.c-11.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
-const ANALYTICS_DB_URL = 'postgresql://neondb_owner:npg_7QnYZpGf6PAo@ep-silent-breeze-auk7is8u.c-10.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
-const TENANTFINANCE_DB_URL = 'postgresql://neondb_owner:npg_0bBxKfP6ZVaE@ep-sparkling-voice-au9j0rv1.c-10.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+const ACCOUNTING_DB_URL = process.env.NEON_ACCOUNTING_DB_URL;
+const PROCUREMENT_DB_URL = process.env.NEON_PROCUREMENT_DB_URL;
+const ANALYTICS_DB_URL = process.env.NEON_ANALYTICS_DB_URL;
+const TENANTFINANCE_DB_URL = process.env.NEON_TENANTFINANCE_DB_URL;
+
+if (!ACCOUNTING_DB_URL || !PROCUREMENT_DB_URL || !ANALYTICS_DB_URL || !TENANTFINANCE_DB_URL) {
+  console.error('Set NEON_ACCOUNTING/PROCUREMENT/ANALYTICS/TENANTFINANCE_DB_URL in .env.local before running this script (no hardcoded credentials).');
+  process.exit(1);
+}
 
 async function migrateTable(tableName, sourceUrl, targetUrl) {
   console.log(`Migrating ${tableName}...`);

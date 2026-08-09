@@ -2,7 +2,12 @@
 import pg from 'pg';
 const { Client } = pg;
 
-const PROCUREMENT_DB_URL = 'postgresql://neondb_owner:npg_gt5VHKpS8RDk@ep-red-dust-avdqp1ld.c-11.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+const PROCUREMENT_DB_URL = process.env.NEON_PROCUREMENT_DB_URL;
+
+if (!PROCUREMENT_DB_URL) {
+  console.error('Set NEON_PROCUREMENT_DB_URL in .env.local before running this script (no hardcoded credentials).');
+  process.exit(1);
+}
 
 async function seedProcurementData() {
   const client = new Client({ connectionString: PROCUREMENT_DB_URL });
