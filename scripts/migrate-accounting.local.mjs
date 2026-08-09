@@ -49,6 +49,7 @@ const client = new pg.Client({
 
 const APPLY = [
   '018_align_accounting_schema.sql', // the accounting "living ideal" alignment (S3)
+  '019_hr_employees_enrichment.sql', // S4 HR employees enrichment (email/department/position/hire_date)
 ];
 
 const IDEMPOTENT_OK = [

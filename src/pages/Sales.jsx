@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LangContext';
@@ -11,7 +11,6 @@ import StateBadge from '../components/StateBadge';
 import BackendStatusBanner from '../components/BackendStatusBanner';
 import { formatEtb } from '../lib/formatEtb';
 import { buildSalesLifecycle } from '../lib/salesPurchaseDepth';
-import useAnalyticsSnapshot from '../hooks/useAnalyticsSnapshot';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 export default function Sales() {
@@ -25,12 +24,33 @@ export default function Sales() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [salesLifecycle, setSalesLifecycle] = useState(null);
-  const { snapshot } = useAnalyticsSnapshot();
 
   const normalizeErrorMessage = (err) => {
     const raw = err?.error?.message || err?.error || err?.message || err || t('error');
     return typeof raw === 'string' ? raw : JSON.stringify(raw);
   };
+
+  // ── Live sales KPIs derived from the orders list (no hardcoded fallback) ──
+  const liveSales = useMemo(() => {
+    const rows = Array.isArray(orders) ? orders : [];
+    const totalRevenue = rows.reduce((sum, o) => sum + (Number(o.total_amount ?? o.amount_total) || 0), 0);
+    const orderCount = rows.length;
+    const averageValue = orderCount > 0 ? totalRevenue / orderCount : 0;
+
+    // Revenue trend bucketed by month from live order dates.
+    const byMonth = new Map();
+    for (const o of rows) {
+      const d = new Date(o.order_date || o.date_order);
+      if (Number.isNaN(d.getTime())) continue;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      byMonth.set(key, (byMonth.get(key) || 0) + (Number(o.total_amount ?? o.amount_total) || 0));
+    }
+    const trend = [...byMonth.entries()]
+      .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+      .map(([key, value]) => ({ name: key.slice(2), value: Math.round(value) }));
+
+    return { totalRevenue, orderCount, averageValue, trend };
+  }, [orders]);
 
   useEffect(() => {
     let mounted = true;
@@ -85,11 +105,17 @@ export default function Sales() {
   }
 
   const columns = [
-    { key: 'name', header: t('order'), render: (r) => r.name || '—' },
-    { key: 'partner_id', header: t('partner'), render: (r) => r.partner_id?.[1] || '—' },
-    { key: 'amount_total', header: t('amount'), className: 'erp-num', render: (r) => r.amount_total != null ? formatEtb(r.amount_total) : '—' },
-    { key: 'state', header: t('state'), render: (r) => <StateBadge state={r.state} label={r.state ? t(`state${r.state.charAt(0).toUpperCase() + r.state.slice(1)}`) || r.state : '—'} /> },
-    { key: 'date_order', header: t('dateOrder'), render: (r) => r.date_order || '—' },
+    { key: 'order', header: t('order'), render: (r) => r.order_number || r.name || '—' },
+    { key: 'partner', header: t('partner'), render: (r) => r.customer_name || r.partner_id?.[1] || '—' },
+    { key: 'amount', header: t('amount'), className: 'erp-num', render: (r) => {
+      const v = Number(r.total_amount ?? r.amount_total);
+      return v != null && !Number.isNaN(v) ? formatEtb(v) : '—';
+    } },
+    { key: 'state', header: t('state'), render: (r) => {
+      const state = r.status || r.state;
+      return <StateBadge state={state} label={state ? t(`state${state.charAt(0).toUpperCase() + state.slice(1)}`) || state : '—'} />;
+    } },
+    { key: 'date', header: t('dateOrder'), render: (r) => r.order_date || r.date_order || '—' },
     { key: 'actions', header: '', render: (r) => (
       <button
         onClick={() => handleViewOrder(r)}
@@ -113,7 +139,7 @@ export default function Sales() {
         }
       />
 
-      {snapshot?.modules?.sales && (
+      {orders.length > 0 && (
         <div className="mb-8 grid gap-4 lg:grid-cols-3">
           <div className="lg:col-span-1 flex flex-col gap-4">
             <div className="rounded-xl border border-white/20 bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 p-6 backdrop-blur-xl shadow-lg dark:border-white/10 dark:from-violet-900/30 dark:to-fuchsia-900/20">
@@ -126,22 +152,22 @@ export default function Sales() {
                 </span>
               </div>
               <div className="text-3xl font-bold text-slate-900 dark:text-white">
-                {formatEtb(snapshot.modules.sales.metrics?.revenue ?? 0)}
+                {formatEtb(liveSales.totalRevenue)}
               </div>
               <div className="mt-2 text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                 <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
-                +12.5% from last month
+                {t('liveFromLedger') || 'Live from sales orders'}
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4 flex-1">
               <div className="rounded-xl border border-white/20 bg-white/40 p-5 backdrop-blur-lg shadow-sm dark:border-slate-700/50 dark:bg-slate-800/40">
                 <div className="text-sm text-slate-500 dark:text-slate-400">Total Orders</div>
-                <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{snapshot.modules.sales.metrics?.orders ?? 0}</div>
+                <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{liveSales.orderCount}</div>
               </div>
               <div className="rounded-xl border border-white/20 bg-white/40 p-5 backdrop-blur-lg shadow-sm dark:border-slate-700/50 dark:bg-slate-800/40">
                 <div className="text-sm text-slate-500 dark:text-slate-400">Avg Value</div>
-                <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{formatEtb(snapshot.modules.sales.metrics?.averageOrderValue ?? 0).replace(' ETB', '')}</div>
+                <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{formatEtb(liveSales.averageValue).replace(' ETB', '')}</div>
               </div>
             </div>
           </div>
@@ -150,12 +176,12 @@ export default function Sales() {
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Revenue Trend</h2>
               <div className="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
-                Module Health: {snapshot.modules.sales.score}%
+                Live ({liveSales.orderCount} orders)
               </div>
             </div>
             <div className="flex-1 min-h-[200px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={snapshot.modules.sales.chartData || []} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <AreaChart data={liveSales.trend} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
@@ -228,31 +254,31 @@ export default function Sales() {
               ✕
             </button>
             <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
-              {selectedOrder.name} - {t('salesOrderState') || 'Order Detail'}
+              {selectedOrder.order_number || selectedOrder.name} - {t('salesOrderState') || 'Order Detail'}
             </h2>
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
                 <span className="text-xs text-gray-500 block">{t('customer')}</span>
                 <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {selectedOrder.partner_id?.[1] || '—'}
+                  {selectedOrder.customer_name || selectedOrder.partner_id?.[1] || '—'}
                 </span>
               </div>
               <div>
                 <span className="text-xs text-gray-500 block">{t('dateOrder')}</span>
                 <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {selectedOrder.date_order || '—'}
+                  {selectedOrder.order_date || selectedOrder.date_order || '—'}
                 </span>
               </div>
               <div>
                 <span className="text-xs text-gray-500 block">{t('state')}</span>
                 <span className="text-sm block">
-                  <StateBadge state={selectedOrder.state} label={selectedOrder.state} />
+                  <StateBadge state={selectedOrder.status || selectedOrder.state} label={selectedOrder.status || selectedOrder.state || '—'} />
                 </span>
               </div>
               <div>
                 <span className="text-xs text-gray-500 block">{t('amount')}</span>
                 <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {formatEtb(selectedOrder.amount_total)}
+                  {formatEtb(Number(selectedOrder.total_amount ?? selectedOrder.amount_total) || 0)}
                 </span>
               </div>
             </div>

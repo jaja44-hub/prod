@@ -21,13 +21,62 @@ export default async function handler(req, res) {
 }
 
 async function handlePipeline(req, res, tenantId) {
+  const pool = getPool();
   if (req.method === 'GET') {
+    const opportunitiesResult = await pool.query(
+      `SELECT id, name, customer_name, expected_value, status, created_at
+       FROM crm_opportunities WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT 100`,
+      [tenantId]
+    );
+    const leadsResult = await pool.query(
+      `SELECT id, customer_code, name, email, phone, city, country, active, created_at
+       FROM customers WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT 50`,
+      [tenantId]
+    );
+
+    const opportunities = opportunitiesResult.rows.map((row) => ({
+      id: row.id,
+      opportunityId: `opp-${row.id}`,
+      dealName: row.name || 'Untitled opportunity',
+      accountName: row.customer_name || 'Unknown account',
+      contactName: row.customer_name || 'Unknown contact',
+      stage: row.status || 'new',
+      value: Number(row.expected_value) || 0,
+      probability: 0,
+      expectedCloseDate: row.created_at,
+      createdAt: row.created_at,
+    }));
+
+    const leads = leadsResult.rows.map((row) => ({
+      id: row.id,
+      customerCode: row.customer_code,
+      name: row.name,
+      email: row.email,
+      phone: row.phone,
+      city: row.city,
+      country: row.country,
+      active: row.active,
+      createdAt: row.created_at,
+    }));
+
+    const stageCounts = {};
+    let totalPipelineValue = 0;
+    for (const opp of opportunities) {
+      const stage = String(opp.stage || 'new');
+      stageCounts[stage] = (stageCounts[stage] || 0) + 1;
+      totalPipelineValue += Number(opp.value) || 0;
+    }
+
     return res.status(200).json({
       success: true,
       tenantId,
-      leads: [],
-      opportunities: [],
-      summary: { leadCount: 0, opportunityCount: 0, totalPipelineValue: 0, stageCounts: {} },
+      pipeline: { leads, opportunities },
+      summary: {
+        leadCount: leads.length,
+        opportunityCount: opportunities.length,
+        totalPipelineValue,
+        stageCounts,
+      },
     });
   }
   if (req.method === 'POST') {
@@ -49,21 +98,35 @@ async function handlePipeline(req, res, tenantId) {
 }
 
 async function handleActivity(req, res, tenantId) {
+  const pool = getPool();
   if (req.method === 'GET') {
-    const now = new Date().toISOString();
+    const opportunitiesResult = await pool.query(
+      `SELECT id, name, customer_name, status, expected_value, created_at
+       FROM crm_opportunities WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT 5`,
+      [tenantId]
+    );
+    const moduleEvents = opportunitiesResult.rows.map((row, idx) => ({
+      id: `evt-crm-${row.id || idx + 1}`,
+      moduleId: 'crm',
+      action: `${row.name || row.customer_name || 'Opportunity'} is in ${row.status || 'new'} stage`,
+      sourceModel: 'crm.opportunity',
+      sourceId: String(row.id || idx + 1),
+      ts: row.created_at || new Date().toISOString(),
+    }));
+    const timeline = opportunitiesResult.rows.map((row, idx) => ({
+      activityId: `tl-${row.id || idx + 1}`,
+      type: 'crm.opportunity',
+      subject: `${row.name || row.customer_name || 'Opportunity'} moving through ${row.status || 'new'} stage`,
+      linkedTo: String(row.id || idx + 1),
+      contact: row.customer_name || 'CRM',
+      occurredAt: row.created_at || new Date().toISOString(),
+    }));
     return res.status(200).json({
       success: true,
       tenantId,
-      moduleEvents: [
-        { id: 'evt-wh-1', moduleId: 'warehouse', action: '12 picks queued across WH-A and WH-B', sourceModel: 'inventory.picking', sourceId: 'ship-501', ts: now },
-        { id: 'evt-fin-1', moduleId: 'finance', action: 'AR/AP aging refreshed for production tenant', sourceModel: 'accounting.move', sourceId: 'ap-001', ts: now },
-        { id: 'evt-sales-1', moduleId: 'sales', action: '15 active sales orders contributing to revenue', sourceModel: 'sales.order', sourceId: 'ord-101', ts: now },
-        { id: 'evt-pur-1', moduleId: 'purchase', action: '12 purchase receipts tracked across 6 vendors', sourceModel: 'purchase.order', sourceId: 'PO-1001', ts: now },
-      ],
-      timeline: [
-        { activityId: 'tl-1', type: 'crm.lead', subject: '12 opportunities in active pipeline stages', linkedTo: 'opp-101', contact: 'CRM', occurredAt: now },
-      ],
-      activities: [],
+      moduleEvents,
+      timeline,
+      activities: timeline,
     });
   }
   if (req.method === 'POST') {
@@ -73,14 +136,14 @@ async function handleActivity(req, res, tenantId) {
 }
 
 async function handleOpportunities(req, res, tenantId) {
-  const pool = getPool('accounting');
+  const pool = getPool();
   if (!(await tableExists('crm_opportunities', pool))) {
     return res.status(200).json({ success: true, data: [], count: 0, note: 'crm_opportunities table not provisioned' });
   }
   if (req.method === 'GET') {
     const result = await pool.query(
-      `SELECT id, opportunity_id, deal_name, account_name, contact_name, stage, value, probability, expected_close_date, created_at
-       FROM crm_opportunities WHERE tenant_id = $1 ORDER BY expected_close_date DESC LIMIT 100`,
+      `SELECT id, name, customer_name, expected_value, status, created_at
+       FROM crm_opportunities WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT 100`,
       [tenantId]
     );
     return res.status(200).json({ success: true, data: result.rows, count: result.rows.length });

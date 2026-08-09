@@ -48,9 +48,9 @@ const MODULE_ACCESS = {
 
 // planTier: 1 = enterprise, 2 = pro, 3 = starter
 const TIER_MODULES = {
-  1: ['dashboard', 'inventory', 'sales', 'purchase', 'finance'],
-  2: ['dashboard', 'inventory', 'sales', 'purchase'],
-  3: ['dashboard', 'inventory', 'sales'],
+  1: ['dashboard', 'inventory', 'sales', 'purchase', 'finance', 'hr'],
+  2: ['dashboard', 'inventory', 'sales', 'purchase', 'hr'],
+  3: ['dashboard', 'inventory', 'sales', 'hr'],
 };
 
 export function modulesForPlanTier(planTier) {

@@ -56,11 +56,11 @@ export default function HRFortress() {
       const mapped = (result.data || result || []).map((e) => ({
         id: String(e.id),
         name: `${e.first_name} ${e.last_name}`,
-        role: e.job_title || 'Staff',
+        role: e.position || e.job_title || 'Staff',
         department: e.department || 'General',
         email: e.email,
-        salary: e.salary || 0,
-        status: e.active ? 'active' : 'terminated',
+        salary: Number(e.salary) || 0,
+        status: e.status || (e.active ? 'active' : 'terminated'),
         tin_number: `TIN-${e.id}892`,
         pension_id: `PEN-${e.id}441`
       }));

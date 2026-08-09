@@ -21,7 +21,7 @@ export default async function handler(req, res) {
 }
 
 async function handleOrders(req, res, tenantId, rest) {
-  const pool = getPool('accounting');
+  const pool = getPool();
   if (!(await tableExists('sales_orders', pool))) {
     if (req.method === 'GET') {
       return res.status(200).json({ success: true, data: [], count: 0, note: 'sales_orders table not provisioned' });
@@ -30,8 +30,8 @@ async function handleOrders(req, res, tenantId, rest) {
   }
   if (req.method === 'GET' && rest.length === 0) {
     const result = await pool.query(
-      `SELECT id, order_number, customer_name, customer_email, order_date, delivery_date,
-              total_amount, status, payment_status, created_at
+      `SELECT id, order_number, customer_id, customer_name, order_date, delivery_date,
+              total_amount, status, payment_status, notes, created_at
        FROM sales_orders WHERE tenant_id = $1 ORDER BY order_date DESC LIMIT 100`,
       [tenantId]
     );
@@ -41,7 +41,7 @@ async function handleOrders(req, res, tenantId, rest) {
 }
 
 async function handleCustomers(req, res, tenantId, rest) {
-  const pool = getPool('accounting');
+  const pool = getPool();
   if (req.method === 'GET' && rest.length === 0) {
     const { search } = req.query;
     let query = `SELECT id, customer_code, name, email, phone, city, country, credit_limit, active, created_at

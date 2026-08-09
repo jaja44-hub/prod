@@ -22,12 +22,13 @@ export default async function handler(req, res) {
   }
 
   try {
+    const mainPool = getPool();
     const accountingPool = getPool('accounting');
     const procurementPool = getPool('procurement');
 
-    // Sales revenue from sales_orders table
+    // Sales revenue from sales_orders table (main DB)
     const revenue = await safeScalar(
-      accountingPool,
+      mainPool,
       `SELECT COALESCE(SUM(total_amount), 0) AS total_revenue FROM sales_orders
        WHERE tenant_id = $1 AND status IN ('delivered', 'shipped')`,
       [tenantId],
@@ -37,20 +38,20 @@ export default async function handler(req, res) {
 
     // Total sales orders
     const salesOrders = await safeScalar(
-      accountingPool,
+      mainPool,
       `SELECT COUNT(*)::int AS total_orders FROM sales_orders WHERE tenant_id = $1`,
       [tenantId],
       'total_orders',
       0
     );
 
-    // CRM pipeline value from opportunities
+    // CRM pipeline value from opportunities (main DB)
     let pipelineValue = 0;
-    if (await tableExists('crm_opportunities')) {
+    if (await tableExists('crm_opportunities', mainPool)) {
       pipelineValue = await safeScalar(
-        accountingPool,
-        `SELECT COALESCE(SUM(value), 0) AS pipeline_value FROM crm_opportunities
-         WHERE tenant_id = $1 AND stage IN ('Qualification', 'Proposal', 'Negotiation')`,
+        mainPool,
+        `SELECT COALESCE(SUM(expected_value), 0) AS pipeline_value FROM crm_opportunities
+         WHERE tenant_id = $1 AND LOWER(status) IN ('prospecting', 'proposal', 'qualification')`,
         [tenantId],
         'pipeline_value',
         0

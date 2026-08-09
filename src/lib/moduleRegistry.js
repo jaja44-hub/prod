@@ -38,7 +38,7 @@ export const MODULE_REGISTRY = {
     id: 'hr',
     routes: ['/hr', '/employees', '/payroll'],
     minPlanTier: 3,
-    status: 'future',
+    status: 'active',
     roleAccess: ['hr_head', 'ceo'],
   },
 };

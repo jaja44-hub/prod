@@ -1,9 +1,9 @@
 export function buildSalesLifecycle(order = {}) {
-  const state = String(order?.state || '').toLowerCase();
-  const amount = Number(order?.amount_total || 0);
+  const state = String(order?.status || order?.state || '').toLowerCase();
+  const amount = Number(order?.total_amount ?? order?.amount_total ?? 0);
   const hasLines = Array.isArray(order?.order_lines) && order.order_lines.length > 0;
   const followUpNeeded = ['draft', 'sent'].includes(state) || amount <= 0;
-  const revenueReady = ['sale', 'done'].includes(state);
+  const revenueReady = ['sale', 'done', 'delivered'].includes(state);
 
   return {
     state,
@@ -16,8 +16,8 @@ export function buildSalesLifecycle(order = {}) {
 }
 
 export function buildPurchaseLifecycle(order = {}) {
-  const state = String(order?.state || '').toLowerCase();
-  const amount = Number(order?.amount_total || 0);
+  const state = String(order?.status || order?.state || '').toLowerCase();
+  const amount = Number(order?.total_amount ?? order?.amount_total ?? 0);
   const hasLines = Array.isArray(order?.order_lines) && order.order_lines.length > 0;
   const approvalNeeded = ['draft', 'sent', 'to approve'].includes(state);
   const receiptPending = ['purchase', 'to approve'].includes(state);
