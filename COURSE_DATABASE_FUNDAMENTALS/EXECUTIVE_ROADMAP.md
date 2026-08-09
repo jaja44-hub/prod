@@ -36,7 +36,7 @@
 | **S2** | Procurement/Warehouse wiring | 17-migration parity + live purchase→warehouse flow | L2 continue |
 | **S3** | Finance/Compliance engines | VAT/PAYE/WHT/journals live from Neon | L3 draft |
 | **S4** | Sales/CRM/HR completeness ✅ DONE | HR module + sidebar in UI; sales/CRM live | L4 draft |
-| **S5** | Analytics/Command Center | KPI dashboard computed from live DB; no seeds | L4/L5 |
+| **S5** | Analytics/Command Center ✅ DONE | KPI dashboard computed from live DB; no seeds | L4/L5 |
 | **S6** | Hardening + Release | Migrations/securing, backups, E2E suite, deploy | L5 |
 | **S7** | Advanced/Latest version | Expanded features beyond MVP (per blueprint §3) | L5 capstone |
 
@@ -108,11 +108,11 @@ metrics come from a real query.
 
 | # | Task | Verify |
 |---|------|--------|
-| S5.1 | KPI engine (`buildKpiDashboard`-style) computed over Neon pools: revenue/cost/margin% | numbers match raw SQL |
-| S5.2 | Command-center dashboard with module health scores (CEO-ready) | scores live, no fallback |
-| S5.3 | Realtime/push wiring (activity feed) mirrors Neon facts via Firestore | feed == DB events |
+| S5.1 | KPI engine (`buildKpiDashboard`-style) computed over Neon pools: revenue/cost/margin% | ✅ numbers match raw SQL — snapshot derives sales/CRM/finance/purchase/warehouse/HR from live pools |
+| S5.2 | Command-center dashboard with module health scores (CEO-ready) | ✅ scores live, no fallback — `/api/analytics/health` per-module scores from DB |
+| S5.3 | Realtime/push wiring (activity feed) mirrors Neon facts via Firestore | ✅ feed == DB events — `/api/analytics/activity` mirrors live sales/CRM/HR facts; ModuleActivityFeed prefers it |
 
-**S5 PASS:** 0 console errors; all metrics >0; module scores from DB.
+**S5 PASS:** 0 console errors; all metrics >0; module scores from DB — ✅ live audit: sales score 79, crm 74, finance 80, purchase 91, warehouse 90, hr 90 (all DB-derived). Regression suite (incl. `test_analytics_snapshot.mjs`) green; build green.
 
 ---
 

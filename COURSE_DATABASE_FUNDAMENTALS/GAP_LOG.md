@@ -34,6 +34,9 @@
 | (pending) | GAP-012 | HR module added to sidebar routes; `canViewModule`/registry now expose HR; regression updated | S4 (2026-08-10) | regression green |
 | (pending) | — | Accounting `employees` enrichment (019): added `email`/`department`/`position`/`hire_date` + backfill → `/api/hr/employees` live (was querying missing columns → Firestore fallback) | S4 (2026-08-10) | live audit 3 employees |
 | (pending) | — | Sales page KPI cards now derive revenue/orders/avg from live orders list (removed hardcoded snapshot zeros) + Neon-field column mapping | S4 (2026-08-10) | build green |
+| (pending) | — | S5 live KPI engine: `/api/analytics/snapshot` now computes all 6 module KPIs+scores from live pools (was finance-only with hardcoded score 75); removed client-side hardcoded snapshot zeros/scores | S5 (2026-08-10) | live audit + regression |
+| (pending) | — | Command center module health: `/api/analytics/health` CEO-ready scores from DB | S5 (2026-08-10) | test_analytics_snapshot passes |
+| (pending) | — | Realtime activity feed mirrors DB facts: `/api/analytics/activity` (sales/CRM/HR), ModuleActivityFeed prefers it | S5 (2026-08-10) | live audit |
 
 ---
 

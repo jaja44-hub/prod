@@ -22,6 +22,7 @@ const MODULE_COLORS = {
   purchase: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
   finance: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
   crm: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+  hr: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
 };
 
 function mapTimelineToEvents(timeline = []) {
@@ -45,6 +46,21 @@ export default function ModuleActivityFeed() {
   useEffect(() => {
     let isMounted = true;
 
+    const loadDbActivity = async () => {
+      try {
+        // S5.3 — primary feed mirrors live DB facts (sales/CRM/HR from Neon).
+        const client = getApiClient();
+        const response = await client.analytics('activity').catch(() => null);
+        const events = Array.isArray(response?.events) ? response.events : Array.isArray(response?.timeline) ? response.timeline : [];
+        if (isMounted && events.length > 0) {
+          setEvents(events);
+          setLoading(false);
+        }
+      } catch {
+        // fall through to CRM/Firestore sources
+      }
+    };
+
     const loadSeededActivity = async () => {
       try {
         const client = getApiClient();
@@ -63,6 +79,7 @@ export default function ModuleActivityFeed() {
       }
     };
 
+    loadDbActivity();
     loadSeededActivity();
 
     if (!db) {

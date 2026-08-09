@@ -5,7 +5,8 @@ import fs from 'fs';
 const scriptsToRun = [
   'test_module_registry.mjs',
   'test_api_client_fallback.mjs',
-  'test_analytics_engine.mjs'
+  'test_analytics_engine.mjs',
+  'test_analytics_snapshot.mjs'
 ];
 
 let failed = false;
