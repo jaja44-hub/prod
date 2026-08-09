@@ -228,7 +228,9 @@ async function handleCycleCounts(req, res, tenantId) {
 
 async function handleMovements(req, res, tenantId) {
   if (req.method !== 'GET') return jsonError(res, 405, 'Method not allowed');
-  const pool = getPool('analytics');
+  // Stock ledger lives in the procurement DB (post-purchase-receipt) — read the
+  // single source of truth here (per-DB discipline; S2.3).
+  const pool = getPool('procurement');
   if (!(await tableExists('inventory_transactions', pool))) {
     return res.status(200).json({ success: true, data: [], count: 0, note: 'inventory_transactions not provisioned' });
   }
@@ -242,7 +244,8 @@ async function handleMovements(req, res, tenantId) {
 
 async function handleReorder(req, res, tenantId) {
   if (req.method !== 'POST') return jsonError(res, 405, 'Method not allowed');
-  const pool = getPool('analytics');
+  // Products + live stock live in the procurement DB — read reorder signals there.
+  const pool = getPool('procurement');
   if (!(await tableExists('products', pool))) {
     return res.status(200).json({ success: true, data: [], count: 0 });
   }

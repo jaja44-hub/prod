@@ -536,14 +536,32 @@ UPDATE suppliers
 SET supplier_code = CONCAT('SUP-', EXTRACT(YEAR FROM CURRENT_DATE)::TEXT, '-', LPAD(id::TEXT, 6, '0'))
 WHERE supplier_code IS NULL;
 
-UPDATE purchase_orders
-SET po_number = COALESCE(order_number, CONCAT('PO-', id::TEXT)),
-    po_date = COALESCE(order_date, CURRENT_DATE)
-WHERE po_number IS NULL;
+-- Backfill legacy purchase_orders columns only if the legacy names still exist.
+-- Guarded so the migration is idempotent: after a first successful run the
+-- legacy `order_number`/`order_date` columns are dropped by the alignment below.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+             WHERE table_schema = 'public' AND table_name = 'purchase_orders'
+               AND column_name = 'order_number') THEN
+    UPDATE purchase_orders
+    SET po_number = COALESCE(order_number, CONCAT('PO-', id::TEXT)),
+        po_date = COALESCE(order_date, CURRENT_DATE)
+    WHERE po_number IS NULL;
+  END IF;
+END $$;
 
-UPDATE purchase_requisitions
-SET requisition_date = COALESCE(request_date, CURRENT_DATE)
-WHERE requisition_date IS NULL;
+-- Backfill legacy purchase_requisitions date only if the legacy name still exists.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+             WHERE table_schema = 'public' AND table_name = 'purchase_requisitions'
+               AND column_name = 'request_date') THEN
+    UPDATE purchase_requisitions
+    SET requisition_date = COALESCE(request_date, CURRENT_DATE)
+    WHERE requisition_date IS NULL;
+  END IF;
+END $$;
 
 ALTER TABLE suppliers ALTER COLUMN supplier_code SET NOT NULL;
 ALTER TABLE suppliers ALTER COLUMN country SET NOT NULL;

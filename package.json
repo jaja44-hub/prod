@@ -14,6 +14,10 @@
     "seed:auth": "node ./scripts/seed_rbac_users.mjs",
     "seed:tenants": "node ./scripts/seed_tenant_schema.mjs",
     "test:module-registry": "node ./scripts/test_module_registry.mjs",
+    "migrate:procurement:local": "node ./scripts/migrate-procurement.local.mjs",
+    "seed:procurement:local": "node ./scripts/seed-procurement.local.mjs",
+    "test:procurement:local": "node ./scripts/test-procurement.local.mjs",
+    "test:purchase-flow:local": "node ./scripts/test-purchase-flow.local.mjs",
     "add:auth-domain": "node ./scripts/add-authorized-domain.mjs"
   },
   "dependencies": {
