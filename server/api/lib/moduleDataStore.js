@@ -9,9 +9,8 @@ export async function getTenantDataset(tenantId = 'production', datasetKey) {
   const cached = memoryFallback.get(key);
   if (cached) return cached;
 
-  // Seed builder removed - data must come from Odoo/Neon DB
-  // No fallbacks allowed for Session 8 validation
-  throw new Error(`No data found for datasetKey: ${datasetKey}. Data must be sourced from Odoo/Neon DB.`);
+  // Seed builder removed — data must come from Neon DB
+  throw new Error(`No data found for datasetKey: ${datasetKey}. Data must be sourced from Neon DB.`);
 }
 
 export async function saveTenantDataset(tenantId = 'production', datasetKey, payload = {}) {
@@ -24,7 +23,7 @@ export async function saveTenantDataset(tenantId = 'production', datasetKey, pay
   };
   memoryFallback.set(cacheKey(tenantId, datasetKey), record);
 
-  // Firestore write removed - data now persisted in Odoo
+  // Firestore write removed — data now persisted in Neon DB
   // Keep memory cache for performance
   return record;
 }

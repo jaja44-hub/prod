@@ -29,8 +29,8 @@ function mapTimelineToEvents(timeline = []) {
     id: entry.activityId,
     moduleId: 'crm',
     action: entry.subject,
-    odooModel: entry.type,
-    odooId: entry.linkedTo || entry.contact,
+    sourceModel: entry.type,
+    sourceId: entry.linkedTo || entry.contact,
     ts: entry.occurredAt,
   }));
 }
@@ -116,7 +116,7 @@ export default function ModuleActivityFeed() {
                 </td>
                 <td className="text-sm text-gray-700 dark:text-gray-300">{ev.action || '—'}</td>
                 <td className="text-xs text-gray-400 truncate max-w-[12rem]">
-                  {ev.odooModel ? `${ev.odooModel} #${ev.odooId || '?'}` : '—'}
+                  {ev.sourceModel ? `${ev.sourceModel} #${ev.sourceId || '?'}` : '—'}
                 </td>
               </tr>
             );

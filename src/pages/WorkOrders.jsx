@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLang } from '../context/LangContext';
-import { getOdooManufacturingOrders, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway';
 import ListFilterBar from '../components/ListFilterBar';
 import PageHeader from '../components/PageHeader';
 import PageCard from '../components/PageCard';
@@ -23,25 +22,17 @@ export default function WorkOrders() {
 
   const normalizeErrorMessage = (err) => {
     const raw = err?.response?.data?.error || err?.message || t('error');
-    return raw === BACKEND_WAKEUP_MESSAGE ? t('backendWakingUp') : raw;
+    return raw;
   };
 
   const loadOrders = async (currentFilters) => {
     setLoading(true);
     setError('');
-    try {
-      const result = await getOdooManufacturingOrders(50, { state: currentFilters.state || undefined });
-      setOrders(Array.isArray(result) ? result : []);
-    } catch (err) {
-      const message = err?.response?.data?.error || err?.message || 'Failed to load manufacturing orders.';
-      if (message.toLowerCase().includes('mrp.production') || message.toLowerCase().includes('manufacturing module')) {
-        setError(t('manufacturingModuleInactive'));
-      } else {
-        setError(message === BACKEND_WAKEUP_MESSAGE ? t('backendWakingUp') : message);
-      }
-    } finally {
-      setLoading(false);
-    }
+    // Manufacturing (MRP) work orders have no Neon backend yet — render the
+    // module-inactive state rather than a stale/mock list.
+    setOrders([]);
+    setError(t('manufacturingModuleInactive'));
+    setLoading(false);
   };
 
   useEffect(() => {

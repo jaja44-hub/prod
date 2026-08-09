@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLang } from '../context/LangContext';
-import { getOdooProducts } from '../services/ServiceGateway';
+import { getApiClient } from '../lib/apiClient';
 import PageHeader from '../components/PageHeader';
 import PageCard from '../components/PageCard';
 import StateBadge from '../components/StateBadge';
@@ -25,10 +25,8 @@ export default function BarcodeMVP() {
 
     setLoading(true);
     try {
-      const products = await getOdooProducts(1, ['id', 'name', 'default_code', 'qty_available'], {
-        search: code
-      });
-
+      const result = await getApiClient().get(`/api/inventory/products?search=${encodeURIComponent(code)}`, { service: 'inventory' });
+      const products = result?.data || [];
       const matchedProduct = Array.isArray(products) && products.length > 0 ? products[0] : null;
 
       const newScan = {
@@ -38,7 +36,7 @@ export default function BarcodeMVP() {
         mode,
         status: matchedProduct ? 'success' : 'warning',
         product: matchedProduct 
-          ? `${matchedProduct.name} (${matchedProduct.qty_available} units in stock)`
+          ? `${matchedProduct.name} (${Number(matchedProduct.quantity_available ?? matchedProduct.stock_quantity ?? 0)} units in stock)`
           : 'Unknown Product / SKU'
       };
 
@@ -64,7 +62,7 @@ export default function BarcodeMVP() {
     <section>
       <PageHeader
         title="Barcode Operations"
-        subtitle="Scan barcodes or enter SKUs to retrieve Odoo stock metadata."
+        subtitle="Scan barcodes or enter SKUs to retrieve inventory stock metadata."
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -25,7 +25,6 @@ import Vendors from './pages/Vendors';
 import Employees from './pages/Employees';
 import Accounts from './pages/Accounts';
 import MainLayout from './layouts/MainLayout';
-import OdooTest from './components/OdooTest';
 import RoleGuard, { PlatformAdminGuard } from './components/RoleGuard';
 import ComingSoon from './pages/ComingSoon';
 import PlatformAdmin from './pages/PlatformAdmin';
@@ -118,10 +117,7 @@ function App() {
         {/* Operations & Analytics */}
         <Route path='/barcode' element={<RoleGuard><BarcodeMVP /></RoleGuard>} />
         <Route path='/qc' element={<RoleGuard><QCModule /></RoleGuard>} />
-        <Route path='/analytics' element={<RoleGuard><Analytics /></RoleGuard>} />
-
-        {/* Dev/test */}
-        <Route path='/test' element={<OdooTest />} />
+        <Route path='/analytics' element={<RoleGuard><Analytics /></RoleGuard>} /> 
 
         {/* Catch-all for unbuilt modules like /qc, /logistics, /payroll, etc. */}
         <Route path='*' element={<RoleGuard><ComingSoon /></RoleGuard>} />

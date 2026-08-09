@@ -25,7 +25,14 @@ export default async function handler(req, res) {
 }
 
 async function handleProducts(req, res, tenantId) {
+  const segments = routeSegments(req, 'inventory');
+  const productId = segments[1] ? Number(segments[1]) : null;
+
+  if (req.method === 'POST' && !productId) return await createProduct(req, res, tenantId);
+  if (req.method === 'PUT' && productId) return await updateProduct(req, res, tenantId, productId);
+  if (req.method === 'GET' && productId) return await getSingleProduct(req, res, tenantId, productId);
   if (req.method !== 'GET') return jsonError(res, 405, 'Method not allowed');
+
   const pool = getPool('analytics');
   if (!(await tableExists('inventory_products', pool))) {
     return res.status(200).json({ success: true, data: [], count: 0, note: 'inventory_products table not provisioned' });
@@ -61,6 +68,95 @@ async function handleProducts(req, res, tenantId) {
   query += ' ORDER BY name ASC LIMIT 100';
   const result = await pool.query(query, params);
   return res.status(200).json({ success: true, data: result.rows, count: result.rows.length });
+}
+
+async function getSingleProduct(req, res, tenantId, productId) {
+  const pool = getPool('analytics');
+  if (!(await tableExists('inventory_products', pool))) {
+    return res.status(200).json({ success: true, data: null });
+  }
+  const result = await pool.query(
+    `SELECT id, sku AS product_code, name, description, category, quantity, unit_price, created_at
+     FROM inventory_products WHERE tenant_id = $1 AND id = $2`,
+    [tenantId, productId]
+  );
+  if (result.rows.length === 0) return jsonError(res, 404, 'Product not found');
+  return res.status(200).json({ success: true, data: result.rows[0] });
+}
+
+async function createProduct(req, res, tenantId) {
+  const { product_code: sku, name, description = '', category = '', quantity = 0, unit_price = 0 } = req.body || {};
+  if (!name) return jsonError(res, 400, 'Product name is required');
+  const pool = getPool('analytics');
+  if (!(await tableExists('inventory_products', pool))) {
+    return res.status(200).json({ success: true, data: [], count: 0, note: 'inventory_products table not provisioned' });
+  }
+  const cols = await productColumns(pool);
+  const insertCols = ['tenant_id', 'name', 'quantity', 'unit_price'];
+  const values = [tenantId, name, Number(quantity || 0), Number(unit_price || 0)];
+  if (sku !== undefined) { insertCols.push('sku'); values.push(sku); }
+  if (cols.has('category') && category) { insertCols.push('category'); values.push(category); }
+  if (cols.has('description') && description) { insertCols.push('description'); values.push(description); }
+  const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
+  const result = await pool.query(
+    `INSERT INTO inventory_products (${insertCols.map((c) => `"${c}"`).join(', ')})
+     VALUES (${placeholders})
+     RETURNING id, sku AS product_code, name, description, category, quantity, unit_price`,
+    values
+  );
+  return res.status(201).json({ success: true, data: result.rows[0] });
+}
+
+async function updateProduct(req, res, tenantId, productId) {
+  const { product_code: sku, name, description, category, quantity, unit_price } = req.body || {};
+  if (!name && !sku && description === undefined && category === undefined && quantity === undefined && unit_price === undefined) {
+    return jsonError(res, 400, 'No fields to update');
+  }
+  const pool = getPool('analytics');
+  if (!(await tableExists('inventory_products', pool))) {
+    return res.status(200).json({ success: true, data: [], count: 0, note: 'inventory_products table not provisioned' });
+  }
+  const cols = await productColumns(pool);
+  const sets = [];
+  const params = [];
+  const push = (col, val) => {
+    if (val === undefined) return;
+    if (!cols.has(col)) return;
+    params.push(val);
+    sets.push(`"${col}" = $${params.length}`);
+  };
+  if (name !== undefined) push('name', name);
+  if (sku !== undefined) push('sku', sku);
+  push('category', category);
+  push('description', description);
+  push('quantity', quantity === undefined ? undefined : Number(quantity));
+  push('unit_price', unit_price === undefined ? undefined : Number(unit_price));
+  if (sets.length === 0) return jsonError(res, 400, 'No fields to update');
+  if (cols.has('updated_at')) {
+    params.push(new Date());
+    sets.push(`updated_at = $${params.length}`);
+  }
+  params.push(tenantId, productId);
+  const result = await pool.query(
+    `UPDATE inventory_products SET ${sets.join(', ')}
+     WHERE tenant_id = $${params.length - 1} AND id = $${params.length}
+     RETURNING id, sku AS product_code, name, description, category, quantity, unit_price`,
+    params
+  );
+  if (result.rows.length === 0) return jsonError(res, 404, 'Product not found');
+  return res.status(200).json({ success: true, data: result.rows[0] });
+}
+
+async function productColumns(pool, table = 'inventory_products') {
+  try {
+    const res = await pool.query(
+      `SELECT column_name FROM information_schema.columns WHERE table_name = $1`,
+      [table]
+    );
+    return new Set(res.rows.map((r) => r.column_name));
+  } catch {
+    return new Set();
+  }
 }
 
 async function handleLocations(req, res, tenantId) {

@@ -93,17 +93,12 @@ export async function executeWithTimeout(promise, timeoutMs = 5000) {
   }
 }
 
-export function buildRetryConfig(serviceType = 'odoo') {
+export function buildRetryConfig(serviceType = 'api') {
   const configs = {
-    odoo: {
-      maxAttempts: 3,
-      baseDelayMs: 200,
-      shouldRetry: (error) => error.statusCode >= 500 || error.message.includes('timeout'),
-    },
     api: {
       maxAttempts: 3,
       baseDelayMs: 100,
-      shouldRetry: (error) => error.statusCode >= 500,
+      shouldRetry: (error) => error.statusCode >= 500 || error.message.includes('timeout'),
     },
   };
   return configs[serviceType] || configs.api;

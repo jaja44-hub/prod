@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
-import { getOdooSalesOrders, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway';
+import { getApiClient } from '../lib/apiClient';
 
 export default function RecentSalesOrdersWidget() {
   const { t } = useLang();
@@ -14,7 +14,7 @@ export default function RecentSalesOrdersWidget() {
 
   const normalizeErrorMessage = (err) => {
     const raw = err?.response?.data?.error || err?.message || t('error');
-    return raw === BACKEND_WAKEUP_MESSAGE ? t('backendWakingUp') : raw;
+    return raw;
   };
 
   useEffect(() => {
@@ -24,9 +24,18 @@ export default function RecentSalesOrdersWidget() {
       setLoading(true);
       setError('');
       try {
-        const result = await getOdooSalesOrders(5);
+        const result = await getApiClient().get('/api/sales/orders', { service: 'sales' });
+        const rows = result?.data || [];
+        const normalized = rows.map((r) => ({
+          id: r.id,
+          name: r.order_number || r.name,
+          partner_name: r.customer_name || 'Unknown',
+          amount_total: Number(r.total_amount ?? r.amount_total ?? 0),
+          state: r.status || r.state || '',
+          date_order: r.order_date || r.created_at || '',
+        }));
         if (!mounted) return;
-        setOrders(Array.isArray(result) ? result : []);
+        setOrders(Array.isArray(normalized) ? normalized : []);
       } catch (err) {
         if (!mounted) return;
         setError(normalizeErrorMessage(err));
@@ -68,8 +77,18 @@ export default function RecentSalesOrdersWidget() {
             onClick={() => {
               setLoading(true);
               setError('');
-              getOdooSalesOrders(5)
-                .then((result) => setOrders(Array.isArray(result) ? result : []))
+              getApiClient().get('/api/sales/orders', { service: 'sales' })
+                .then((result) => {
+                  const rows = result?.data || [];
+                  setOrders(rows.map((r) => ({
+                    id: r.id,
+                    name: r.order_number || r.name,
+                    partner_name: r.customer_name || 'Unknown',
+                    amount_total: Number(r.total_amount ?? r.amount_total ?? 0),
+                    state: r.status || r.state || '',
+                    date_order: r.order_date || r.created_at || '',
+                  })));
+                })
                 .catch((err) => setError(normalizeErrorMessage(err)))
                 .finally(() => setLoading(false));
             }}
@@ -96,10 +115,10 @@ export default function RecentSalesOrdersWidget() {
               {orders.map((order) => (
                 <tr key={order.id} className="border-b last:border-b-0 border-slate-100 dark:border-slate-700">
                   <td className="py-3 pr-4 font-medium text-slate-900 dark:text-slate-100">{order.name || '—'}</td>
-                  <td className="py-3 pr-4 text-gray-500 dark:text-gray-300">{order.partner_id?.[1] || '—'}</td>
+                  <td className="py-3 pr-4 text-gray-500 dark:text-gray-300">{order.partner_name || '—'}</td>
                   <td className="py-3 pr-4 text-gray-700 dark:text-gray-200">{order.amount_total != null ? order.amount_total.toLocaleString() : '—'}</td>
                   <td className="py-3 pr-4 text-gray-700 dark:text-gray-200">{order.state || '—'}</td>
-                  <td className="py-3 pr-4 text-gray-700 dark:text-gray-200">{order.date_order || order.date || '—'}</td>
+                  <td className="py-3 pr-4 text-gray-700 dark:text-gray-200">{order.date_order || '—'}</td>
                 </tr>
               ))}
             </tbody>

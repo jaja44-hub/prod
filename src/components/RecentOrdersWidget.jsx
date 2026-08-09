@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLang } from '../context/LangContext';
-import { getOdooSalesOrders, getOdooManufacturingOrders } from '../services/ServiceGateway';
+import { getApiClient } from '../lib/apiClient';
 
 export default function RecentOrdersWidget() {
   const { t } = useLang();
@@ -12,13 +12,20 @@ export default function RecentOrdersWidget() {
     let mounted = true;
     async function fetchOrders() {
       try {
-        const [salesRes, mrpRes] = await Promise.all([
-          getOdooSalesOrders(5),
-          getOdooManufacturingOrders(5)
+        const [salesRes] = await Promise.all([
+          getApiClient().get('/api/sales/orders', { service: 'sales' }).catch(() => ({ data: [] })),
         ]);
+        const salesOrders = Array.isArray(salesRes?.data) ? salesRes.data : [];
+        const salesRows = salesOrders.map((r) => ({
+          id: r.id,
+          name: r.order_number || r.name,
+          partner_name: r.customer_name || 'Unknown',
+          amount_total: Number(r.total_amount ?? r.amount_total ?? 0),
+        }));
         if (mounted) {
-          setSales(Array.isArray(salesRes) ? salesRes : []);
-          setMrp(Array.isArray(mrpRes) ? mrpRes : []);
+          setSales(salesRows);
+          // Manufacturing (MRP) has no Neon backend — empty until provisioned.
+          setMrp([]);
         }
       } catch (err) {
         console.error('Failed to fetch recent orders:', err);
@@ -49,7 +56,7 @@ export default function RecentOrdersWidget() {
             {sales.map((order) => (
               <li key={order.id} className="flex justify-between items-center text-sm border-b border-gray-100 dark:border-gray-700 pb-2">
                 <span className="font-medium text-slate-800 dark:text-slate-200">{order.name}</span>
-                <span className="text-gray-500 truncate w-32">{order.partner_id?.[1] || 'Unknown'}</span>
+                <span className="text-gray-500 truncate w-32">{order.customer_name || 'Unknown'}</span>
                 <span className="text-emerald-600 font-semibold">${order.amount_total?.toLocaleString() || 0}</span>
               </li>
             ))}
@@ -68,7 +75,7 @@ export default function RecentOrdersWidget() {
             </div>
           </div>
         ) : mrp.length === 0 ? (
-          <p className="text-gray-500 text-sm">{t('noResults')}</p>
+          <p className="text-gray-500 text-sm">{t('manufacturingModuleInactive') || t('noResults')}</p>
         ) : (
           <ul className="space-y-3">
             {mrp.map((order) => (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLang } from '../context/LangContext';
-import { getOdooManufacturingOrders, getOdooPurchaseOrders } from '../services/ServiceGateway';
+import { getApiClient } from '../lib/apiClient';
 import PageHeader from '../components/PageHeader';
 import PageCard from '../components/PageCard';
 import DataTable from '../components/DataTable';
@@ -18,35 +18,29 @@ export default function QCModule() {
       setLoading(true);
       setError('');
       try {
-        const [moList, poList] = await Promise.all([
-          getOdooManufacturingOrders(10, {}).catch(() => []),
-          getOdooPurchaseOrders(10, {}).catch(() => []),
+        // Manufacturing (MRP) has no Neon backend yet — purchase receipt checks only.
+        const [poResult] = await Promise.all([
+          getApiClient().get('/api/purchase/orders', { service: 'purchase' }).catch(() => ({ data: [] })),
         ]);
+        const poList = poResult?.data || [];
 
         if (!active) return;
 
-        const mappedMOs = (Array.isArray(moList) ? moList : []).map(mo => ({
-          id: `QC-MO-${mo.id}`,
-          reference: mo.name || `MO #${mo.id}`,
-          product: mo.product_id?.[1] || 'Unknown Product',
-          date: mo.date_planned_start?.split(' ')[0] || new Date().toISOString().split('T')[0],
-          status: mo.state === 'done' ? 'passed' : mo.state === 'cancel' ? 'failed' : 'pending',
-          type: 'Manufacturing Order'
-        }));
+        const mappedMOs = [];
 
         const mappedPOs = (Array.isArray(poList) ? poList : []).map(po => ({
           id: `QC-PO-${po.id}`,
-          reference: po.name || `PO #${po.id}`,
+          reference: po.po_number || po.name || `PO #${po.id}`,
           product: 'Incoming Material Check',
-          date: po.date_order?.split(' ')[0] || new Date().toISOString().split('T')[0],
-          status: po.state === 'purchase' ? 'passed' : po.state === 'cancel' ? 'failed' : 'pending',
+          date: (po.po_date || po.expected_date || po.created_at || '').split(' ')[0] || new Date().toISOString().split('T')[0],
+          status: po.status === 'purchase' ? 'passed' : po.status === 'cancel' ? 'failed' : 'pending',
           type: 'Purchase Receipt'
         }));
 
         setInspections([...mappedMOs, ...mappedPOs]);
       } catch (err) {
         if (active) {
-          setError(err?.message || 'Failed to fetch Odoo quality checkpoints.');
+          setError(err?.message || 'Failed to fetch quality checkpoints.');
         }
       } finally {
         if (active) {

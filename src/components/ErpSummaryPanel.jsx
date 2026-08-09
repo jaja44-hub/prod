@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
-import { getOdooProducts, getOdooCustomers, getOdooVendors, getOdooPurchaseOrders, getOdooPayments } from '../services/ServiceGateway';
+import { getApiClient } from '../lib/apiClient';
 import { buildFinanceLifecycle } from '../lib/financeDepth';
 import { buildCrossModulePosture } from '../lib/orchestrationDepth';
 
@@ -33,15 +33,19 @@ function ErpSummaryPanel() {
       setError(false);
       setErrorDetail('');
       try {
-        const [products, customers, vendors, purchaseOrders, payments] = await Promise.all([
-          getOdooProducts(500, ['id']),
-          getOdooCustomers(500),
-          getOdooVendors(500),
-          getOdooPurchaseOrders(500),
-          getOdooPayments(100),
+        const client = getApiClient();
+        const [products, customers, vendors, purchaseOrders, journal] = await Promise.all([
+          client.get('/api/inventory/products').catch(() => ({ data: [] })),
+          client.get('/api/sales/customers').catch(() => ({ data: [] })),
+          client.get('/api/purchase/suppliers').catch(() => ({ data: [] })),
+          client.get('/api/purchase/orders').catch(() => ({ data: [] })),
+          client.get('/api/finance/journal').catch(() => ({ data: [] })),
         ]);
         if (!mounted) return;
-        const finance = buildFinanceLifecycle(Array.isArray(payments) ? payments : []);
+        const payments = (Array.isArray(journal?.data) ? journal.data : [])
+          .filter((row) => /payment/i.test(row?.entry_type || (row?.description || '')))
+          .map((row) => ({ amount: Number(row.amount || 0), state: String(row.status || row.entry_type || 'posted').toLowerCase() }));
+        const finance = buildFinanceLifecycle(payments);
         const orchestrationPosture = buildCrossModulePosture({
           inventorySummary: { status: 'healthy', reorderRequired: false },
           salesLifecycle: { followUpNeeded: false, revenueReady: true },
@@ -49,11 +53,11 @@ function ErpSummaryPanel() {
           financeLifecycle: finance,
         });
         setStats({
-          products: Array.isArray(products) ? products.length : 0,
-          customers: Array.isArray(customers) ? customers.length : 0,
-          vendors: Array.isArray(vendors) ? vendors.length : 0,
-          purchaseOrders: Array.isArray(purchaseOrders)
-            ? purchaseOrders.filter((order) => ['draft', 'sent', 'purchase'].includes(order.state)).length
+          products: Array.isArray(products?.data) ? products.data.length : 0,
+          customers: Array.isArray(customers?.data) ? customers.data.length : 0,
+          vendors: Array.isArray(vendors?.data) ? vendors.data.length : 0,
+          purchaseOrders: Array.isArray(purchaseOrders?.data)
+            ? purchaseOrders.data.filter((order) => ['draft', 'sent', 'purchase'].includes(order.status)).length
             : 0,
         });
         setFinanceLifecycle(finance);
@@ -80,10 +84,7 @@ function ErpSummaryPanel() {
     if (msg.includes('waking up') || msg.includes('502') || msg.includes('503')) {
       return t('backendWakingUp');
     }
-    if (msg.includes('unauthorized') || msg.includes('401')) {
-      return t('odooAuthError');
-    }
-    return t('odooConnectionError');
+    return t('connectionError');
   })();
 
   return (

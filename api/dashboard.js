@@ -1,4 +1,4 @@
-import { applyCors, getPool, resolveTenantId, routeSegments, jsonError, tableExists, isDbUnavailable, FALLBACK_DASHBOARD_METRICS } from './lib/shared.js';
+import { applyCors, getPool, resolveTenantId, routeSegments, jsonError, tableExists, isDbUnavailable } from './lib/shared.js';
 
 async function safeScalar(pool, query, params, field, fallback = 0) {
   try {
@@ -138,7 +138,21 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('[api/dashboard]', error);
     if (isDbUnavailable(error)) {
-      return res.status(200).json({ success: true, data: FALLBACK_DASHBOARD_METRICS, degraded: true });
+      // No mock data — UI renders zeros until the real query succeeds.
+      const empty = {
+        revenue: 0,
+        orders: 0,
+        pipelineValue: 0,
+        warehouseReadyToPick: 0,
+        receivables: 0,
+        payables: 0,
+        salesScore: 0,
+        crmScore: 0,
+        purchaseScore: 0,
+        warehouseScore: 0,
+        financeScore: 0,
+      };
+      return res.status(200).json({ success: true, data: empty, degraded: true });
     }
     return jsonError(res, 500, error.message || 'Internal server error');
   }

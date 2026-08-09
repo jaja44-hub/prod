@@ -9,10 +9,10 @@ function ensureStorage() {
   if (!fs.existsSync(STORAGE_PATH)) fs.writeFileSync(STORAGE_PATH, JSON.stringify({}), 'utf8');
 }
 
-async function tryServiceGateway() {
+async function tryTenantGateway() {
   try {
     const sg = await import('../../../src/services/ServiceGateway.js');
-    if (sg && typeof sg.saveDocument === 'function' && typeof sg.getDocuments === 'function') return sg;
+    if (sg && typeof sg.saveTenantDoc === 'function' && typeof sg.listTenantCollection === 'function') return sg;
   } catch (e) {
     // ignore
   }
@@ -20,9 +20,9 @@ async function tryServiceGateway() {
 }
 
 export async function saveDocument(collection, id, doc) {
-  const sg = await tryServiceGateway();
+  const sg = await tryTenantGateway();
   if (sg) {
-    try { return await sg.saveDocument(collection, id, doc); } catch (e) { /* fallback to file */ }
+    try { return await sg.saveTenantDoc(collection, doc); } catch (e) { /* fallback to file */ }
   }
   ensureStorage();
   const raw = fs.readFileSync(STORAGE_PATH, 'utf8');
@@ -34,9 +34,9 @@ export async function saveDocument(collection, id, doc) {
 }
 
 export async function getDocuments(collection) {
-  const sg = await tryServiceGateway();
+  const sg = await tryTenantGateway();
   if (sg) {
-    try { return await sg.getDocuments(collection); } catch (e) { /* fallback */ }
+    try { return await sg.listTenantCollection(collection); } catch (e) { /* fallback */ }
   }
   ensureStorage();
   const raw = fs.readFileSync(STORAGE_PATH, 'utf8');

@@ -1,67 +1,54 @@
 import { verifyBearerToken } from '../lib/firebaseAdmin.js';
 import { enforceModuleAccess } from '../lib/policyOrchestrator.js';
-import { getSalesAnalytics } from '../lib/neonAgingQueries.js';
+import { getPool, tableExists } from '../../../api/lib/shared.js';
 
-function createId(prefix = 'so') {
-  return `${prefix}-${Math.random().toString(36).slice(2, 8)}-${Date.now()}`;
-}
-
-export async function seedSalesOrders(tenantId = 'production') {
-  // Sales orders from Neon DB with graceful fallback when NEON_DATABASE_URL is not configured
-  try {
-    const neonSales = await getSalesAnalytics(tenantId);
-    return neonSales.map(sale => ({
-      id: sale.order_id,
-      name: sale.order_name,
-      orderId: sale.order_id,
-      partnerId: sale.partner_id,
-      partnerName: sale.partner_name,
-      amount_total: Number(sale.amount_total),
-      amountTotal: Number(sale.amount_total),
-      state: sale.state,
-      dateOrder: sale.date_order,
-      tenantId,
-    }));
-  } catch (err) {
-    // Neon DB not configured or unavailable — return empty so dashboard renders
-    console.warn('[sales/orders] Neon DB unavailable, returning empty orders:', err?.message || err);
+export async function getOrders(tenantId = 'production') {
+  const pool = getPool('accounting');
+  if (!(await tableExists('sales_orders', pool))) {
     return [];
   }
+  const result = await pool.query(
+    `SELECT id, order_number, customer_name, customer_email, order_date,
+            total_amount, status, payment_status, created_at
+     FROM sales_orders WHERE tenant_id = $1 ORDER BY order_date DESC LIMIT 100`,
+    [tenantId]
+  );
+  return result.rows.map((row) => ({
+    id: row.id,
+    name: row.order_number,
+    orderNumber: row.order_number,
+    customerName: row.customer_name,
+    totalAmount: Number(row.total_amount || 0),
+    state: row.status,
+    orderDate: row.order_date,
+    createdAt: row.created_at,
+    tenantId,
+  }));
 }
 
 export async function createOrder(tenantId = 'production', payload = {}) {
-  try {
-    let ServiceGateway = null;
-    try { ServiceGateway = await import('../../../src/services/ServiceGateway.js'); } catch { ServiceGateway = null; }
-    const created = ServiceGateway?.createOdooSalesOrder ? await ServiceGateway.createOdooSalesOrder({ partner_id: payload.partnerId, origin: payload.origin || '', lines: payload.lines || [] }, { actorUid: payload.actorUid }) : null;
-    if (created) return { source: 'odoo', order: created };
-    throw new Error('Odoo create not available');
-  } catch {
-    const id = createId('ord');
-    const record = {
-      id,
-      name: payload.name || `Order ${id}`,
-      partnerId: payload.partnerId || null,
-      lines: payload.lines || [],
-      amount_total: payload.lines ? payload.lines.reduce((s, l) => s + Number(l.quantity || 0) * Number(l.unitPrice || 0), 0) : 0,
-      amountTotal: payload.lines ? payload.lines.reduce((s, l) => s + Number(l.quantity || 0) * Number(l.unitPrice || 0), 0) : 0,
-      state: 'draft',
-      tenantId,
-      createdAt: new Date().toISOString(),
-    };
-    const dataset = await getTenantDataset(tenantId, 'sales_orders', buildSalesOrdersSeed);
-    const records = [...(dataset.records || []), record];
-    await saveTenantDataset(tenantId, 'sales_orders', { ...dataset, records });
-    try {
-      const SG = (await import('../../../src/services/ServiceGateway.js')).default;
-      if (SG?.logAuditEvent) await SG.logAuditEvent({ entityType: 'sales', action: 'order.create', entityId: id, tenantId, success: true });
-    } catch { /* ignore */ }
-    return { source: 'firestore', order: record };
+  const pool = getPool('accounting');
+  if (!(await tableExists('sales_orders', pool))) {
+    throw new Error('sales_orders table not provisioned');
   }
-}
-
-export async function getOrders(tenantId = 'production') {
-  return seedSalesOrders(tenantId);
+  const total = (payload.lines || []).reduce(
+    (s, l) => s + Number(l.quantity || 0) * Number(l.unitPrice || 0),
+    0
+  );
+  const result = await pool.query(
+    `INSERT INTO sales_orders (tenant_id, order_number, customer_name, order_date, total_amount, status)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING id, order_number, customer_name, order_date, total_amount, status, created_at`,
+    [
+      tenantId,
+      payload.orderNumber || `SO-${Date.now()}`,
+      payload.customerName || null,
+      payload.orderDate || new Date().toISOString(),
+      total,
+      payload.status || 'draft',
+    ]
+  );
+  return { source: 'neon', order: result.rows[0], id: result.rows[0].id };
 }
 
 export default async function handler(req, res) {

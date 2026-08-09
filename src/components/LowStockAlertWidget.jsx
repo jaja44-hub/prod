@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
-import { getOdooProducts, BACKEND_WAKEUP_MESSAGE } from '../services/ServiceGateway';
+import { getApiClient } from '../lib/apiClient';
 
 const LOW_STOCK_THRESHOLD = 10;
 
@@ -16,7 +16,7 @@ export default function LowStockAlertWidget() {
 
   const normalizeErrorMessage = (err) => {
     const raw = err?.response?.data?.error || err?.message || t('error');
-    return raw === BACKEND_WAKEUP_MESSAGE ? t('backendWakingUp') : raw;
+    return raw;
   };
 
   useEffect(() => {
@@ -26,9 +26,16 @@ export default function LowStockAlertWidget() {
       setLoading(true);
       setError('');
       try {
-        const result = await getOdooProducts(100, ['id', 'name', 'default_code', 'qty_available']);
+        const result = await getApiClient().get('/api/inventory/products', { service: 'inventory' });
+        const rows = result?.data || [];
+        const normalized = rows.map((p) => ({
+          id: p.id,
+          name: p.name,
+          product_code: p.product_code || p.sku,
+          qty_available: Number(p.quantity_available ?? p.stock_quantity ?? p.quantity ?? 0),
+        }));
         if (!mounted) return;
-        setProducts(Array.isArray(result) ? result : []);
+        setProducts(Array.isArray(normalized) ? normalized : []);
       } catch (err) {
         if (!mounted) return;
         setError(normalizeErrorMessage(err));
@@ -73,8 +80,16 @@ export default function LowStockAlertWidget() {
             onClick={() => {
               setLoading(true);
               setError('');
-              getOdooProducts(100, ['id', 'name', 'default_code', 'qty_available'])
-                .then((result) => setProducts(Array.isArray(result) ? result : []))
+              getApiClient().get('/api/inventory/products', { service: 'inventory' })
+                .then((result) => {
+                  const rows = result?.data || [];
+                  setProducts(rows.map((p) => ({
+                    id: p.id,
+                    name: p.name,
+                    product_code: p.product_code || p.sku,
+                    qty_available: Number(p.quantity_available ?? p.stock_quantity ?? p.quantity ?? 0),
+                  })));
+                })
                 .catch((err) => setError(normalizeErrorMessage(err)))
                 .finally(() => setLoading(false));
             }}
@@ -98,7 +113,7 @@ export default function LowStockAlertWidget() {
             <tbody>
               {lowStockItems.map((product) => (
                 <tr key={product.id} className="border-b last:border-b-0 border-slate-100 dark:border-slate-700">
-                  <td className="py-3 pr-4 text-gray-700 dark:text-gray-200">{product.default_code || '—'}</td>
+                  <td className="py-3 pr-4 text-gray-700 dark:text-gray-200">{product.product_code || '—'}</td>
                   <td className="py-3 pr-4 font-medium text-slate-900 dark:text-slate-100">{product.name || '—'}</td>
                   <td className="py-3 pr-4 text-gray-700 dark:text-gray-200">{product.qty_available != null ? product.qty_available : '—'}</td>
                 </tr>

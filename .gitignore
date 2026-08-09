@@ -1,6 +1,7 @@
 # Ignore service account and local secrets
 service-account.json
 .env
+.env.local
 resources.md
 dev notes/
 node_modules/

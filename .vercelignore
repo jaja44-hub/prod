@@ -22,7 +22,6 @@ setup-*.mjs
 
 # Exclude API utility scripts from Vercel deployment (keep lib for shared dependencies)
 /api/seed_neon.js
-/api/keepAlive.js
 
 # Keep scripts directory for build-time execution
 # /scripts (commented out - needed for vercel-build)

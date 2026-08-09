@@ -1,5 +1,6 @@
 import { verifyBearerToken } from '../lib/firebaseAdmin.js';
 import { enforceModuleAccess } from '../lib/policyOrchestrator.js';
+import { getPool, tableExists } from '../../../api/lib/shared.js';
 
 const rfqStore = new Map();
 
@@ -15,21 +16,21 @@ export async function createRFQ(tenantId = 'production', payload = {}) {
 export async function createPOFromRFQ(rfqId, tenantId = 'production', actorUid = 'system') {
   const rfq = rfqStore.get(rfqId);
   if (!rfq || rfq.tenantId !== tenantId) throw new Error('RFQ not found');
-  // try Odoo PO writeback
-  try {
-    let ServiceGateway = null;
-    try { ServiceGateway = await import('../../../src/services/ServiceGateway.js'); } catch (e) { ServiceGateway = null; }
-    const payload = { partner_id: rfq.vendorId, origin: rfq.rfqId, lines: rfq.lines.map((l) => ({ product_id: l.productId, quantity: l.quantity, unitPrice: l.unitPrice })) };
-    const created = ServiceGateway?.createOdooPurchaseOrder ? await ServiceGateway.createOdooPurchaseOrder(payload, { actorUid }) : null;
-    rfq.status = 'converted';
-    rfq.convertedTo = { odooId: created?.id || null }; 
-    return { rfq, po: created };
-  } catch (err) {
-    const po = { id: `po-${Date.now()}`, partnerId: rfq.vendorId, lines: rfq.lines, amount: rfq.lines.reduce((s,l)=> s + Number(l.quantity||0)*Number(l.unitPrice||0),0), state: 'draft' };
-    rfq.status = 'converted';
-    rfq.convertedTo = { odooId: po.id, stub: true };
-    return { rfq, po };
+  // Persist converted RFQ as a purchase order in Neon
+  const pool = getPool('procurement');
+  if (!(await tableExists('purchase_orders', pool))) {
+    throw new Error('purchase_orders table not provisioned');
   }
+  const total = rfq.lines.reduce((s, l) => s + Number(l.quantity || 0) * Number(l.unitPrice || 0), 0);
+  const result = await pool.query(
+    `INSERT INTO purchase_orders (tenant_id, order_number, supplier_id, expected_date, total_amount, status)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING id, order_number, supplier_id, expected_date, total_amount, status, created_at`,
+    [tenantId, `PO-${Date.now()}`, rfq.vendorId || null, rfq.deliveryDate || new Date().toISOString(), total, 'purchase']
+  );
+  rfq.status = 'converted';
+  rfq.convertedTo = { neonId: result.rows[0].id, poId: result.rows[0].order_number };
+  return { rfq, po: result.rows[0] };
 }
 
 export default async function handler(req, res) {

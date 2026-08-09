@@ -1,46 +1,16 @@
-import pg from 'pg';
+import { getPool } from '../../../api/lib/shared.js';
 
-const { Pool } = pg;
-
-let pool = null;
-
-function getNeonPool() {
-  if (pool) return pool;
-  
-  const connectionString = process.env.NEON_DATABASE_URL;
-  if (!connectionString) {
-    console.warn('[neonClient] NEON_DATABASE_URL not configured');
-    return null;
-  }
-  
-  pool = new Pool({
-    connectionString,
-    ssl: {
-      rejectUnauthorized: false,
-    },
-    max: 10,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
-  });
-  
-  pool.on('error', (err) => {
-    console.error('[neonClient] Unexpected error on idle client', err);
-  });
-  
-  return pool;
-}
+/**
+ * Re-exported legacy adapter over api/lib/shared.js getPool()
+ * (S1.5 SSOT: server DB clients now share the single pool factory).
+ * Default DB type maps to the primary Neon/DATABASE_URL connection —
+ * the same behavior as the pre-S1.5 neonClient.
+ */
 
 export async function queryNeon(text, params = []) {
-  const pool = getNeonPool();
-  if (!pool) {
-    throw new Error('Neon DB not configured');
-  }
-  
-  const start = Date.now();
+  const pool = getPool('default');
   try {
     const res = await pool.query(text, params);
-    const duration = Date.now() - start;
-    console.log('[neonClient] Executed query', { text: text.substring(0, 50), duration, rows: res.rowCount });
     return res;
   } catch (err) {
     console.error('[neonClient] Query failed', err);
@@ -49,16 +19,12 @@ export async function queryNeon(text, params = []) {
 }
 
 export async function getNeonClient() {
-  const pool = getNeonPool();
-  if (!pool) return null;
+  const pool = getPool('default');
   return pool.connect();
 }
 
 export async function closeNeonPool() {
-  if (pool) {
-    await pool.end();
-    pool = null;
-  }
+  // Pools are owned by the shared SSOT and kept alive for serverless reuse.
 }
 
 export default {

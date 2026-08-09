@@ -4,16 +4,13 @@ import fs from 'fs';
 
 const scriptsToRun = [
   'test_module_registry.mjs',
-  'test_event_bus.mjs',
-  'test_tenant_domain.mjs',
-  'test_odoo_query.mjs',
   'test_api_client_fallback.mjs',
   'test_analytics_engine.mjs'
 ];
 
 let failed = false;
 
-console.log('=== STARTING ODOO HF REGRESSION SUITE ===');
+console.log('=== ADDIS CROWN REGRESSION SUITE ===');
 
 for (const script of scriptsToRun) {
   const scriptPath = path.resolve(process.cwd(), 'scripts', script);

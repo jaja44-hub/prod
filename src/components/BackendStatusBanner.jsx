@@ -1,7 +1,7 @@
 import React from 'react';
 
 /**
- * BackendStatusBanner — amber dismissible banner for Odoo backend wakeup or API errors.
+ * BackendStatusBanner — amber dismissible banner for backend wakeup or API errors.
  * Used by all list pages and dashboard widgets.
  */
 export default function BackendStatusBanner({ message, onRetry = null, onDismiss = null }) {

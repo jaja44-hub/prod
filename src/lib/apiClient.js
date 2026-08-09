@@ -223,7 +223,7 @@ export class ApiClient {
     try {
       return await breaker.execute(async () => {
         return await retryWithBackoff(
-          () => executeWithTimeout(makeRequest(), timeout),
+          () => executeWithTimeout(() => makeRequest(), timeout),
           retry
         );
       });
@@ -296,8 +296,41 @@ export class ApiClient {
       return this.get('/api/inventory/warehouse', { service: 'warehouse' });
     } else if (action === 'ship') {
       return this.post('/api/inventory/warehouse', payload, { service: 'warehouse' });
+    } else if (action.startsWith('products')) {
+      return this.get(`/api/inventory/products${action === 'products' ? '' : `?${action.slice('products'.length + 1)}`}`, { service: 'inventory' });
     }
     throw new Error(`Unknown warehouse action: ${action}`);
+  }
+
+  async purchase(action, payload = null) {
+    if (action.startsWith('orders')) {
+      return this.get(`/api/purchase/${action}`, { service: 'purchase' });
+    } else if (action.startsWith('suppliers')) {
+      return this.get(`/api/purchase/${action}`, { service: 'purchase' });
+    } else if (action.startsWith('requisitions')) {
+      return this.get(`/api/purchase/${action}`, { service: 'purchase' });
+    } else if (action.startsWith('receipts')) {
+      return this.get(`/api/purchase/${action}`, { service: 'purchase' });
+    }
+    throw new Error(`Unknown purchase action: ${action}`);
+  }
+
+  async hr(action, payload = null) {
+    if (action.startsWith('employees')) {
+      return this.get(`/api/hr/${action}`, { service: 'hr' });
+    } else if (action.startsWith('payroll')) {
+      return this.get(`/api/hr/${action}`, { service: 'hr' });
+    }
+    throw new Error(`Unknown hr action: ${action}`);
+  }
+
+  async dashboard(action = 'metrics', payload = null) {
+    if (action === 'metrics') {
+      return this.get('/api/dashboard/metrics', { service: 'dashboard' });
+    } else if (action === 'dashboard') {
+      return this.get('/api/dashboard', { service: 'dashboard' });
+    }
+    throw new Error(`Unknown dashboard action: ${action}`);
   }
 
   async inventory(action, payload = null) {

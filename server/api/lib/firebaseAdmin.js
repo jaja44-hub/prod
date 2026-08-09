@@ -3,7 +3,6 @@ import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 
 let initialized = false;
-let warningLogged = false;
 
 function loadServiceAccountFromFile() {
   const candidates = [
@@ -108,11 +107,4 @@ export async function verifyBearerToken(authHeaderOrReq) {
   }
   const decoded = await adminSdk.auth().verifyIdToken(token);
   return enrichDecodedToken(decoded);
-}
-
-export function logSkipAuthWarning() {
-  if (!warningLogged) {
-    console.warn('[Odoo Proxy] ODOO_PROXY_SKIP_AUTH=true, skipping Firebase token verification in dev mode. Do not use in production.');
-    warningLogged = true;
-  }
 }

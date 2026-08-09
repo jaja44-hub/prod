@@ -6,44 +6,6 @@ function createId(prefix = 'wf') {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}-${Date.now()}`;
 }
 
-async function fetchOdooWarehouseData(tenantId) {
-  try {
-    const odooProxyUrl = process.env.ODOO_PROXY_URL || '/api/odooProxy';
-    const response = await fetch(odooProxyUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': process.env.ODOO_PROXY_SKIP_AUTH === 'true' ? '' : `Bearer ${process.env.INTERNAL_API_TOKEN || ''}`,
-      },
-      body: JSON.stringify({
-        model: 'stock.picking',
-        method: 'search_read',
-        args: [[['state', 'in', ['assigned', 'done', 'in_transit']]]],
-        kwargs: {
-          fields: ['id', 'name', 'state', 'picking_type_id', 'location_id', 'location_dest_id', 'scheduled_date', 'date_done'],
-          limit: 50,
-        },
-        tenantId,
-      }),
-    });
-    
-    if (!response.ok) {
-      console.warn('[warehouse] Odoo proxy request failed:', response.status);
-      return null;
-    }
-    
-    const result = await response.json();
-    if (result.success && Array.isArray(result.data)) {
-      return transformOdooPickings(result.data);
-    }
-    
-    return null;
-  } catch (err) {
-    console.warn('[warehouse] Failed to fetch from Odoo proxy:', err?.message || err);
-    return null;
-  }
-}
-
 function transformNeonMetricsToWorkflow(neonMetrics) {
   const picks = [];
   const packs = [];
@@ -82,7 +44,7 @@ function transformNeonMetricsToWorkflow(neonMetrics) {
       shipments.push({
         shipmentId: `ship-${pickId}`,
         orderId: pickId,
-        carrier: 'Odoo Logistics',
+        carrier: 'Logistics Carrier',
         trackingNumber: `TRK-${pickId}`,
         status: 'delivered',
         shippedAt: metric.scheduled_date || new Date().toISOString(),
@@ -95,7 +57,7 @@ function transformNeonMetricsToWorkflow(neonMetrics) {
       shipments.push({
         shipmentId: `ship-${pickId}`,
         orderId: pickId,
-        carrier: 'Odoo Logistics',
+        carrier: 'Logistics Carrier',
         trackingNumber: `TRK-${pickId}`,
         status: 'in_transit',
         shippedAt: metric.scheduled_date || new Date().toISOString(),

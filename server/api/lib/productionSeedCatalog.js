@@ -227,14 +227,14 @@ export function buildInventoryMovementsSeed(tenantId = 'production') {
 
 export function buildModuleEventsSeed(tenantId = 'production') {
   const events = [
-    { id: 'evt-wh-001', moduleId: 'warehouse', action: '12 picks queued across WH-A and WH-B', odooModel: 'stock.picking', odooId: 'ship-501', ts: hoursAgo(1) },
-    { id: 'evt-fin-001', moduleId: 'finance', action: 'AR/AP aging refreshed for production tenant', odooModel: 'account.move', odooId: 'ap-001', ts: hoursAgo(3) },
-    { id: 'evt-sales-001', moduleId: 'sales', action: '15 active sales orders contributing to revenue', odooModel: 'sale.order', odooId: 'ord-101', ts: hoursAgo(5) },
-    { id: 'evt-purchase-001', moduleId: 'purchase', action: '12 purchase receipts tracked across 6 vendors', odooModel: 'purchase.order', odooId: 'PO-1001', ts: hoursAgo(7) },
-    { id: 'evt-inv-001', moduleId: 'inventory', action: '8 cycle counts scheduled across warehouse zones', odooModel: 'stock.inventory', odooId: 'cc-batch-01', ts: hoursAgo(9) },
-    { id: 'evt-crm-001', moduleId: 'crm', action: '12 opportunities in active pipeline stages', odooModel: 'crm.lead', odooId: 'opp-101', ts: hoursAgo(11) },
-    { id: 'evt-wh-002', moduleId: 'warehouse', action: '10 shipments in transit with carrier tracking', odooModel: 'stock.picking', odooId: 'ship-510', ts: hoursAgo(13) },
-    { id: 'evt-fin-002', moduleId: 'finance', action: 'Receivables past 30 days flagged for review', odooModel: 'account.move', odooId: 'ar-003', ts: hoursAgo(15) },
+    { id: 'evt-wh-001', moduleId: 'warehouse', action: '12 picks queued across WH-A and WH-B', sourceModel: 'inventory.picking', sourceId: 'ship-501', ts: hoursAgo(1) },
+    { id: 'evt-fin-001', moduleId: 'finance', action: 'AR/AP aging refreshed for production tenant', sourceModel: 'accounting.move', sourceId: 'ap-001', ts: hoursAgo(3) },
+    { id: 'evt-sales-001', moduleId: 'sales', action: '15 active sales orders contributing to revenue', sourceModel: 'sales.order', sourceId: 'ord-101', ts: hoursAgo(5) },
+    { id: 'evt-purchase-001', moduleId: 'purchase', action: '12 purchase receipts tracked across 6 vendors', sourceModel: 'purchase.order', sourceId: 'PO-1001', ts: hoursAgo(7) },
+    { id: 'evt-inv-001', moduleId: 'inventory', action: '8 cycle counts scheduled across warehouse zones', sourceModel: 'inventory.inventory', sourceId: 'cc-batch-01', ts: hoursAgo(9) },
+    { id: 'evt-crm-001', moduleId: 'crm', action: '12 opportunities in active pipeline stages', sourceModel: 'crm.lead', sourceId: 'opp-101', ts: hoursAgo(11) },
+    { id: 'evt-wh-002', moduleId: 'warehouse', action: '10 shipments in transit with carrier tracking', sourceModel: 'inventory.picking', sourceId: 'ship-510', ts: hoursAgo(13) },
+    { id: 'evt-fin-002', moduleId: 'finance', action: 'Receivables past 30 days flagged for review', sourceModel: 'accounting.move', sourceId: 'ar-003', ts: hoursAgo(15) },
   ];
   return { tenantId, datasetKey: 'module_events', schemaVersion: 2, events };
 }

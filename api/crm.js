@@ -55,10 +55,10 @@ async function handleActivity(req, res, tenantId) {
       success: true,
       tenantId,
       moduleEvents: [
-        { id: 'evt-wh-1', moduleId: 'warehouse', action: '12 picks queued across WH-A and WH-B', odooModel: 'stock.picking', odooId: 'ship-501', ts: now },
-        { id: 'evt-fin-1', moduleId: 'finance', action: 'AR/AP aging refreshed for production tenant', odooModel: 'account.move', odooId: 'ap-001', ts: now },
-        { id: 'evt-sales-1', moduleId: 'sales', action: '15 active sales orders contributing to revenue', odooModel: 'sale.order', odooId: 'ord-101', ts: now },
-        { id: 'evt-pur-1', moduleId: 'purchase', action: '12 purchase receipts tracked across 6 vendors', odooModel: 'purchase.order', odooId: 'PO-1001', ts: now },
+        { id: 'evt-wh-1', moduleId: 'warehouse', action: '12 picks queued across WH-A and WH-B', sourceModel: 'inventory.picking', sourceId: 'ship-501', ts: now },
+        { id: 'evt-fin-1', moduleId: 'finance', action: 'AR/AP aging refreshed for production tenant', sourceModel: 'accounting.move', sourceId: 'ap-001', ts: now },
+        { id: 'evt-sales-1', moduleId: 'sales', action: '15 active sales orders contributing to revenue', sourceModel: 'sales.order', sourceId: 'ord-101', ts: now },
+        { id: 'evt-pur-1', moduleId: 'purchase', action: '12 purchase receipts tracked across 6 vendors', sourceModel: 'purchase.order', sourceId: 'PO-1001', ts: now },
       ],
       timeline: [
         { activityId: 'tl-1', type: 'crm.lead', subject: '12 opportunities in active pipeline stages', linkedTo: 'opp-101', contact: 'CRM', occurredAt: now },

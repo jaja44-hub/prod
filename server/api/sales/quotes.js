@@ -1,5 +1,6 @@
 import { verifyBearerToken } from '../lib/firebaseAdmin.js';
 import { enforceModuleAccess } from '../lib/policyOrchestrator.js';
+import { createOrder } from './orders.js';
 
 const quoteStore = new Map();
 
@@ -30,27 +31,16 @@ export async function getQuotes(tenantId = 'production') {
 export async function convertQuoteToOrder(quoteId, tenantId = 'production', actorUid = 'system') {
   const q = quoteStore.get(quoteId);
   if (!q || q.tenantId !== tenantId) throw new Error('Quote not found');
-  // attempt Odoo writeback
-  try {
-    let ServiceGateway = null;
-    try { ServiceGateway = await import('../../../src/services/ServiceGateway.js'); } catch (e) { ServiceGateway = null; }
-    const payload = { partner_id: q.partnerId || null, origin: q.name, lines: q.lines.map((l) => ({ product_id: l.productId, quantity: l.quantity, unitPrice: l.unitPrice })) };
-    const created = ServiceGateway?.createOdooSalesOrder ? await ServiceGateway.createOdooSalesOrder(payload, { actorUid }) : null;
-    if (!created) throw new Error('Odoo create not available');
-    // mark quote converted
-    q.state = 'converted';
-    q.convertedTo = { odooId: created?.id || null, createdAt: new Date().toISOString() };
-    // audit
-    try { if (ServiceGateway?.logAuditEvent) await ServiceGateway.logAuditEvent({ entityType: 'sales', action: 'quote.convert', entityId: q.quoteId, tenantId, success: true, actor: actorUid }); } catch (e) {}
-    return { quote: q, order: created };
-  } catch (err) {
-    // fallback stub order
-    const order = { id: `ord-${Date.now()}`, name: `SO-${Date.now()}`, partnerId: q.partnerId, amount_total: q.lines.reduce((s, l) => s + Number(l.quantity || 0) * Number(l.unitPrice || 0), 0), state: 'draft', order_lines: q.lines };
-    q.state = 'converted';
-    q.convertedTo = { odooId: order.id, createdAt: new Date().toISOString(), stub: true };
-    try { const SG = (await import('../../../src/services/ServiceGateway.js')).default; if (SG?.logAuditEvent) await SG.logAuditEvent({ entityType: 'sales', action: 'quote.convert', entityId: q.quoteId, tenantId, success: true, actor: actorUid, meta: { stub: true } }); } catch (e) {}
-    return { quote: q, order };
-  }
+  // Persist converted quote as a sales order in Neon
+  const result = await createOrder(tenantId, {
+    orderNumber: `SO-${q.name.replace(/\s+/g, '-')}`,
+    customerName: q.partnerName || null,
+    lines: q.lines.map((l) => ({ quantity: l.quantity, unitPrice: l.unitPrice, productId: l.productId })),
+    status: 'draft',
+  });
+  q.state = 'converted';
+  q.convertedTo = { neonId: result.id, createdAt: new Date().toISOString() };
+  return { quote: q, order: result.order };
 }
 
 export default async function handler(req, res) {

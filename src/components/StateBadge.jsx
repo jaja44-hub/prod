@@ -14,13 +14,13 @@ const STATE_MAP = {
   waiting: 'warning',
 };
 
-function mapOdooState(state) {
+function mapModuleState(state) {
   if (!state) return 'neutral';
   return STATE_MAP[state.toLowerCase()] ?? 'neutral';
 }
 
 export function StateBadge({ state, label }) {
-  const variant = mapOdooState(state);
+  const variant = mapModuleState(state);
   return (
     <span className={`erp-state-badge erp-state-${variant}`}>
       {label || state || '—'}

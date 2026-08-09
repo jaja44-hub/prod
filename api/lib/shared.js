@@ -54,21 +54,6 @@ export function isDbUnavailable(error) {
   );
 }
 
-/** Seed-aligned fallback when Neon is sleeping or over quota. */
-export const FALLBACK_DASHBOARD_METRICS = {
-  revenue: 2840000,
-  orders: 15,
-  pipelineValue: 1860000,
-  warehouseReadyToPick: 2,
-  receivables: 145000,
-  payables: 92000,
-  salesScore: 82,
-  crmScore: 78,
-  purchaseScore: 74,
-  warehouseScore: 87,
-  financeScore: 84,
-};
-
 export function applyCors(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');

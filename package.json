@@ -9,17 +9,11 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "node ./scripts/run_regression_suite.mjs",
-    "github-discovery": "node ./scripts/test_github_repo_discovery.mjs",
     "ci-check": "node ./scripts/check-no-engineering.mjs",
     "deploy:rules": "node ./scripts/deploy-firestore-rules.mjs",
     "seed:auth": "node ./scripts/seed_rbac_users.mjs",
-    "seed:odoo": "node ./scripts/seed_odoo_demo_data.mjs",
-    "audit:odoo": "node ./scripts/audit_odoo_schema.mjs",
-    "test:odoo-query": "node ./scripts/test_odoo_query.mjs",
-    "test:tenant-domain": "node ./scripts/test_tenant_domain.mjs",
-    "test:module-registry": "node ./scripts/test_module_registry.mjs",
-    "test:event-bus": "node ./scripts/test_event_bus.mjs",
     "seed:tenants": "node ./scripts/seed_tenant_schema.mjs",
+    "test:module-registry": "node ./scripts/test_module_registry.mjs",
     "add:auth-domain": "node ./scripts/add-authorized-domain.mjs"
   },
   "dependencies": {
@@ -27,8 +21,6 @@
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^6.2.1",
     "@mui/material": "^6.2.1",
-    "@octokit/auth-app": "^7.2.2",
-    "@octokit/core": "^7.0.6",
     "@radix-ui/react-popover": "^1.1.2",
     "@tailwindcss/forms": "^0.5.7",
     "ajv": "^8.20.0",
@@ -49,8 +41,7 @@
     "react-router-dom": "^7.15.1",
     "react-transition-group": "^4.4.5",
     "recharts": "^2.15.3",
-    "tailwind-merge": "^2.5.5",
-    "xmlrpc": "^1.3.2"
+    "tailwind-merge": "^2.5.5"
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.11",

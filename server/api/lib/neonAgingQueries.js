@@ -210,7 +210,7 @@ export async function getFinanceAging(tenantId = 'production') {
   return await computeAgingBuckets(tenantId);
 }
 
-export async function syncOdooToNeon(vendorBills, customerInvoices, tenantId = 'production') {
+export async function syncNeonData(vendorBills, customerInvoices, tenantId = 'production') {
   const insertVendorBills = `
     INSERT INTO vendor_bills (invoice_id, vendor_name, due_date, amount, currency, tenant_id)
     VALUES ($1, $2, $3, $4, $5, $6)
@@ -269,7 +269,7 @@ export async function syncOdooToNeon(vendorBills, customerInvoices, tenantId = '
     console.log(`[neonAging] Synced ${vendorBills.length} vendor bills and ${customerInvoices.length} customer invoices`);
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('[neonAging] Failed to sync Odoo data:', err);
+    console.error('[neonAging] Failed to sync data:', err);
     throw err;
   } finally {
     client.release();
@@ -279,5 +279,5 @@ export async function syncOdooToNeon(vendorBills, customerInvoices, tenantId = '
 export default {
   createAgingTables,
   computeAgingBuckets,
-  syncOdooToNeon,
+  syncNeonData,
 };
