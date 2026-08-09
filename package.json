@@ -18,6 +18,9 @@
     "seed:procurement:local": "node ./scripts/seed-procurement.local.mjs",
     "test:procurement:local": "node ./scripts/test-procurement.local.mjs",
     "test:purchase-flow:local": "node ./scripts/test-purchase-flow.local.mjs",
+    "migrate:accounting:local": "node ./scripts/migrate-accounting.local.mjs",
+    "seed:accounting:local": "node ./scripts/seed-accounting.local.mjs",
+    "test:accounting:local": "node ./scripts/test-accounting.local.mjs",
     "add:auth-domain": "node ./scripts/add-authorized-domain.mjs"
   },
   "dependencies": {

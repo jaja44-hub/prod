@@ -32,6 +32,7 @@ export default async function handler(req, res) {
     if (resource === 'vat-returns') return await handleVATReturns(req, res, tenantId);
     if (resource === 'paye-calculations') return await handlePAYECalculations(req, res, tenantId);
     if (resource === 'tax-liability') return await handleTaxLiability(req, res, tenantId);
+    if (resource === 'forecast') return await handleCashFlowForecast(req, res, tenantId);
     return jsonError(res, 404, `Unknown finance route: ${resource || '(empty)'}`);
   } catch (error) {
     console.error('[api/finance]', error);
@@ -85,7 +86,7 @@ async function handleAging(req, res, tenantId) {
   let vendorLines = [];
   let customerLines = [];
 
-  if (await tableExists('vendor_bills')) {
+  if (await tableExists('vendor_bills', pool)) {
     const vendors = await pool.query(
       `SELECT invoice_id, vendor_name, due_date, amount, currency FROM vendor_bills WHERE tenant_id = $1`,
       [tenantId]
@@ -99,7 +100,7 @@ async function handleAging(req, res, tenantId) {
     }));
   }
 
-  if (await tableExists('customer_invoices')) {
+  if (await tableExists('customer_invoices', pool)) {
     const customers = await pool.query(
       `SELECT invoice_id, customer_name, due_date, amount, currency FROM customer_invoices WHERE tenant_id = $1`,
       [tenantId]
@@ -345,5 +346,94 @@ async function handleTaxLiability(req, res, tenantId) {
         note: 'tax_transactions table not available'
       }
     });
+  }
+}
+
+// S3.5 — Live cash-flow forecast from the accounting ledger.
+// 30-day rolling projection: inflows from AR (customer_invoices), outflows from
+// AP (vendor_bills) + tax liabilities (tax_transactions). No mock, DB-driven.
+async function handleCashFlowForecast(req, res, tenantId) {
+  if (req.method !== 'GET') return jsonError(res, 405, 'Method not allowed');
+  const pool = getPool('accounting');
+
+  const days = 30;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const buckets = Array.from({ length: days }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    return { id: i + 1, date: d.toISOString().slice(0, 10), inflow: 0, outflow: 0, net: 0, balance: 0 };
+  });
+
+  async function readAmounts(table, where, field = 'due_date') {
+    const r = await pool.query(
+      `SELECT amount, ${field} AS due FROM ${table} WHERE tenant_id = $1 AND amount > 0`,
+      [tenantId]
+    );
+    return r.rows;
+  }
+
+  try {
+    const invoices = await readAmounts('customer_invoices', 'tenant_id');
+    for (const inv of invoices) {
+      const dueDays = Math.max(0, Math.ceil((new Date(inv.due) - today) / 86400000));
+      const idx = Math.min(Math.max(Math.floor(dueDays / 2), 0), days - 1);
+      buckets[idx].inflow += Number(inv.amount) || 0;
+    }
+
+    const bills = await readAmounts('vendor_bills', 'tenant_id');
+    for (const bill of bills) {
+      const dueDays = Math.max(0, Math.ceil((new Date(bill.due) - today) / 86400000));
+      const idx = Math.min(Math.max(Math.floor(dueDays / 2), 0), days - 1);
+      buckets[idx].outflow += Number(bill.amount) || 0;
+    }
+
+    const tax = await pool.query(
+      `SELECT SUM(amount) AS amt FROM tax_transactions WHERE tenant_id = $1`,
+      [tenantId]
+    );
+    const taxTotal = Math.abs(Number(tax.rows[0].amt)) || 0;
+    if (taxTotal > 0) {
+      const idx = Math.min(Math.max(Math.floor(days / 3), 0), days - 1);
+      buckets[idx].outflow += taxTotal;
+    }
+
+    let balance = 0;
+    for (const b of buckets) {
+      b.inflow = Math.round(b.inflow * 100) / 100;
+      b.outflow = Math.round(b.outflow * 100) / 100;
+      b.net = Math.round((b.inflow - b.outflow) * 100) / 100;
+      balance += b.net;
+      b.balance = Math.round(balance * 100) / 100;
+    }
+
+    const totals = buckets.reduce(
+      (acc, b) => {
+        acc.inflow += b.inflow;
+        acc.outflow += b.outflow;
+        acc.net += b.net;
+        return acc;
+      },
+      { inflow: 0, outflow: 0, net: 0 }
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        horizonDays: days,
+        startDate: buckets[0].date,
+        endDate: buckets[days - 1].date,
+        forecast: buckets,
+        totals: {
+          inflow: Math.round(totals.inflow * 100) / 100,
+          outflow: Math.round(totals.outflow * 100) / 100,
+          net: Math.round(totals.net * 100) / 100,
+        },
+        generatedAt: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    console.error('[api/finance] forecast', error);
+    return jsonError(res, 500, error.message || 'Forecast failed');
   }
 }
