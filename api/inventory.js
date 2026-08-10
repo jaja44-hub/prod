@@ -230,15 +230,19 @@ async function handleCycleCounts(req, res, tenantId) {
 
 async function handleMovements(req, res, tenantId) {
   if (req.method !== 'GET') return jsonError(res, 405, 'Method not allowed');
-  // Stock ledger lives in the procurement DB (post-purchase-receipt) — read the
-  // single source of truth here (per-DB discipline; S2.3).
-  const pool = getPool('procurement');
+  // Stock ledger lives in the analytics DB (seeded + drives product stock) —
+  // read it from the same source the products stock_quantity is computed from.
+  const pool = getPool('analytics');
   if (!(await tableExists('inventory_transactions', pool))) {
     return res.status(200).json({ success: true, data: [], count: 0, note: 'inventory_transactions not provisioned' });
   }
+  const cols = await productColumns(pool, 'inventory_transactions');
+  const parts = ['id', 'product_id', 'transaction_type', 'quantity', 'location_id', 'transaction_date', 'created_at'];
+  if (cols.has('unit_cost')) parts.push('unit_cost');
+  if (cols.has('reference_type')) parts.push('reference_type');
+  if (cols.has('reference_id')) parts.push('reference_id');
   const result = await pool.query(
-    `SELECT id, product_id, transaction_type, quantity, unit_cost, location_id, reference_type, reference_id, transaction_date, created_at
-     FROM inventory_transactions WHERE tenant_id = $1 ORDER BY transaction_date DESC LIMIT 100`,
+    `SELECT ${parts.join(', ')} FROM inventory_transactions WHERE tenant_id = $1 ORDER BY transaction_date DESC LIMIT 100`,
     [tenantId]
   );
   return res.status(200).json({ success: true, data: result.rows, count: result.rows.length });
