@@ -434,3 +434,45 @@ gcloud firestore import gs://backup-bucket/daily-backup
 - Development: dev-team@addis-crown.internal
 - Operations: ops@addis-crown.internal
 - Security: security@addis-crown.internal
+
+## S7 — Production Release Operations (multi-database Neon + Firebase)
+
+### Roles → Neon targets (canonical, resolved from `scripts/resolve-neon-urls.mjs`)
+| Role | Local DB | Neon host | Env var used by `getPool()` |
+|---|---|---|---|
+| main | addiscrown_local | ep-patient-fog…neon.tech | `DATABASE_URL` / `NEON_DATABASE_URL` |
+| accounting | addiscrown_accounting_local | ep-solitary-dew…neon.tech | `NEON_ACCOUNTING_DB_URL` / `NEONACCOUNTINGDBURL` |
+| procurement | addiscrown_procurement_local | ep-red-dust…neon.tech | `NEON_PROCUREMENT_DB_URL` / `NEONPROCUREMENTDBURL` |
+| analytics | addiscrown_analytics_local | ep-silent-breeze…neon.tech | `NEON_ANALYTICS_DB_URL` / `NEONANALYTICSDBURL` |
+| tenantfinance | addiscrown_tenantfinance_local | ep-sparkling-voice…neon.tech | `NEON_TENANTFINANCE_DB_URL` / `NEONTENANTFINANCEDBURL` |
+
+### Standard operations
+1. **View Neon state / connectivity**
+   `node scripts/resolve-neon-urls.mjs`  — probes all 5 hosts (passwords hidden)
+   `node scripts/neon-state-snapshot.mjs` — table + row counts per Neon DB
+2. **Pre-change backup (PG18-safe pg_dump via `/usr/lib/postgresql/18/bin/pg_dump`)**
+   `node scripts/neon-backup-pre-push.mjs` → `backups/neon-pre-push/` (gitignored)
+3. **Gap-fill push (local → Neon, NON-destructive)**
+   `node scripts/push-local-to-neon.mjs --dry-run`  # preview
+   `node scripts/push-local-to-neon.mjs`            # apply
+   Strategy: Neon schemas are authoritative (richer + Odoo main). Local only fills
+   missing tables/data: sales_orders, crm_opportunities, customers (when empty),
+   vendor_bills, customer_invoices. Idempotent (create-if-absent + seed-if-empty).
+4. **Verify app-query readiness**: confirmed all app `getPool()` queries resolve
+   (tables + columns + row counts) on Neon for main/accounting/procurement/analytics.
+
+### Firebase standardization (service-account.json, repo root)
+`node scripts/audit_firebase.mjs`    # read-only audit vs expected RBAC/tenant model
+`node scripts/audit_firebase.mjs --fix`  # remove orphan demo users, tenant_demo,
+# align tenant_default plan. Expected state: 8 RBAC users (ceo/sales/warehouse/hr @
+# .com/.et, tenant=production), users/users_extended parity, tenants {production,
+# tenant_default}, packages {enterprise,pro,starter}, 5 production tenant_modules.
+
+### Smoke after deploy (needs auth token for writes; GET reads are open)
+Hit the deployed Vercel functions: `/api/dashboard/metrics`, `/api/sales/orders`,
+`/api/crm/pipeline`, `/api/finance/accounts`, `/api/hr/employees`,
+`/api/inventory/products`, `/api/purchase/orders`, `/api/analytics/metrics`.
+
+### Vercel env (must be set — see VERCEL_ENV_SETUP.md)
+All 5 per-DB URLs + `FIREBASE_SERVICE_ACCOUNT` (required for API writes per S6.2).
+Missing any pool → that module returns `degraded`/empty on Vercel.
