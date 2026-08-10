@@ -54,7 +54,7 @@ async function handleProducts(req, res, tenantId) {
         FROM inventory_transactions
         WHERE tenant_id = $1
         GROUP BY product_id
-      ) stock ON stock.product_id = p.id::text
+      ) stock ON stock.product_id::text = p.id::text
       WHERE p.tenant_id = $1`;
   } else {
     query = `
