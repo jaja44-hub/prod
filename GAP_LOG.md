@@ -22,6 +22,7 @@
 | G8 | Inventory movements empty | ✅ | reads analytics, schema-adaptive columns (commit `ab004e42`) |
 | G9 | Duplicate locations (30→6) + cycle counts (12→4) | ✅ | deduped in Neon + UNIQUE constraints added (seeds now idempotent) |
 | G10 | Writes auth-enforced | ✅ | POST w/o/invalid token → HTTP 401 |
+| G11 | HR module visible in production sidebar (hr@ login) | ✅ | Root cause: `production_hr` was MISSING from Firestore `tenant_modules` (only dashboard/finance/inventory/purchase/sales present) → `canViewModule(hr)` returned false → People section filtered out → hr@ saw only dashboard. NOT a stale deploy: deployed commit == latest main (`25a9a7e1`). Fixed via `seed_tenant_schema.mjs` → `production_hr enabled=true` + enterprise package moduleIds now include `hr`. Backend (`/api/hr/employees` live, 10 rows in accounting DB) + role/tier (`hr_head`, tier 2) were already correct. |
 
 ---
 

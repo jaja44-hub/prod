@@ -31,7 +31,7 @@
 
 | — | Gap | What was done | When | Result |
 |----|-----|---------------|------|--------|
-| (pending) | GAP-012 | HR module added to sidebar routes; `canViewModule`/registry now expose HR; regression updated | S4 (2026-08-10) | regression green |
+| (pending) | GAP-012 | HR module added to sidebar routes; `canViewModule`/registry now expose HR; regression updated — CODE-side complete. **Production blocker (found 2026-08-11):** `hr` was MISSING from Firestore `tenant_modules` for tenant `production`, so `canViewModule(hr)` short-circuited false and the People section (hr_head's only nav group) was filtered out → hr@ login saw only the dashboard. Deployed commit was NOT stale (== latest main). **Fixed:** ran `scripts/seed_tenant_schema.mjs` → added `production_hr {enabled:true}` + enterprise package `moduleIds` now include `hr`. `/api/hr/employees` live (10 rows in accounting DB); hr_head role/tier correct. | S4 code / S7.1 prod (2026-08-11) | People section now renders for hr@ |
 | (pending) | — | Accounting `employees` enrichment (019): added `email`/`department`/`position`/`hire_date` + backfill → `/api/hr/employees` live (was querying missing columns → Firestore fallback) | S4 (2026-08-10) | live audit 3 employees |
 | (pending) | — | Sales page KPI cards now derive revenue/orders/avg from live orders list (removed hardcoded snapshot zeros) + Neon-field column mapping | S4 (2026-08-10) | build green |
 | (pending) | — | S5 live KPI engine: `/api/analytics/snapshot` now computes all 6 module KPIs+scores from live pools (was finance-only with hardcoded score 75); removed client-side hardcoded snapshot zeros/scores | S5 (2026-08-10) | live audit + regression |

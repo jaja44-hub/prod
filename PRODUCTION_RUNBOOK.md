@@ -466,7 +466,12 @@ gcloud firestore import gs://backup-bucket/daily-backup
 `node scripts/audit_firebase.mjs --fix`  # remove orphan demo users, tenant_demo,
 # align tenant_default plan. Expected state: 8 RBAC users (ceo/sales/warehouse/hr @
 # .com/.et, tenant=production), users/users_extended parity, tenants {production,
-# tenant_default}, packages {enterprise,pro,starter}, 5 production tenant_modules.
+# tenant_default}, packages {enterprise,pro,starter}, 6 production tenant_modules
+# (dashboard, finance, inventory, purchase, sales, hr).
+# NOTE (2026-08-11): `hr` was missing from tenant_modules → HR sidebar hidden for
+# hr@ login. Fix: `FIREBASE_SERVICE_ACCOUNT="$(cat service-account.json)" node
+# scripts/seed_tenant_schema.mjs` adds `production_hr enabled:true`. Verify:
+# `node scripts/audit_firebase.mjs` (counts only, informational).
 
 ### Smoke after deploy (needs auth token for writes; GET reads are open)
 Hit the deployed Vercel functions: `/api/dashboard/metrics`, `/api/sales/orders`,
