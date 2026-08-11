@@ -476,3 +476,28 @@ Hit the deployed Vercel functions: `/api/dashboard/metrics`, `/api/sales/orders`
 ### Vercel env (must be set — see VERCEL_ENV_SETUP.md)
 All 5 per-DB URLs + `FIREBASE_SERVICE_ACCOUNT` (required for API writes per S6.2).
 Missing any pool → that module returns `degraded`/empty on Vercel.
+
+### S7 live-fix log (2026-07/08) — issues found by live smoke + fixes shipped
+1. **`inventory/products` → `operator does not exist: integer = text`**
+   Cause: Neon analytics `inventory_products.id`/`inventory_transactions.product_id`
+   are INTEGER; the `LEFT JOIN` compared `stock.product_id = p.id::text` (text vs
+   int). Local analytics had varchar ids so it passed there.
+   Fix (commit `6087e3a5`): type-agnostic join `stock.product_id::text = p.id::text`.
+2. **`inventory/locations` duplicates (30 rows = 6 × 5)**
+   Cause: seed used `ON CONFLICT DO NOTHING` but no UNIQUE constraint existed on
+   `inventory_locations`, so re-runs re-inserted. Fixed data (kept min id per
+   `(tenant_id,name)`, deleted 24) + added `UNIQUE (tenant_id, name)`.
+3. **`inventory/cycle-counts` duplicates (12 = 4 × 3)** — same seed pattern.
+   Fixed data (kept 4) + `UNIQUE (tenant_id, location_id, count_date, counted_by)`.
+4. **`inventory/movements` empty** — handler read `getPool('procurement')` but the
+   ledger actually lives in **analytics**. Rewrote `handleMovements` to read
+   analytics with **schema-adaptive** column selection (analytics transactions lack
+   `unit_cost`/`reference_type`) so it works on any schema (commit `ab004e42`).
+
+### Live verification status (prod-puce-three.vercel.app, 2026-07/08)
+- **15/15 GET endpoints PASS** with real seeded data (dashboard, sales, crm,
+  finance/accounts+journal, hr, inventory/products+locations+cycle-counts+movements,
+  purchase/orders+requisitions, analytics/metrics+snapshot).
+- **Writes protected**: POST without/invalid Firebase token → HTTP 401.
+- Deploy flow: `git push origin main` → Vercel auto-deploy → Ready (~2-3 min);
+  project URL `prod-puce-three.vercel.app` tracks latest Ready automatically.
