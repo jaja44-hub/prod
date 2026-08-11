@@ -1,0 +1,12 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^python3 -c \"\nimport json\nwith open\\('/tmp/or_models\\.json'\\) as f: data=json\\.load\\(f\\)\nmodels=data\\.get\\('data',\\[\\]\\)\nfree=\\[m for m in models if m\\.get\\('id',''\\)\\.endswith\\(':free'\\)\\]\nfor m in free:\n    aid=m\\.get\\('id'\\)\n    tools=m\\.get\\('supported_parameters',\\{\\}\\)\\.get\\('tools',False\\)\n    ctx=m\\.get\\('context_length','\\?'\\)\n    print\\(f\\\\\"\\{aid\\} \\| tools=\\{tools\\} \\| ctx=\\{ctx\\}\\\\\"\\)\n\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd /home/ja/Documents/production-submodule && node --input-type=module -e '\nimport admin from \"firebase-admin\";\nimport fs from \"node:fs\";\nconst sa = JSON\\.parse\\(fs\\.readFileSync\\(\"service-account\\.json\",\"utf8\"\\)\\);\nif \\(!admin\\.apps\\.length\\) admin\\.initializeApp\\(\\{ credential: admin\\.credential\\.cert\\(sa\\) \\}\\);\nconst db = admin\\.firestore\\(\\);\n\nasync function dumpCol\\(name\\)\\{\n  const snap = await db\\.collection\\(name\\)\\.get\\(\\);\n  console\\.log\\(`\\\\n===== \\$\\{name\\} \\(\\$\\{snap\\.size\\} docs\\) =====`\\);\n  for \\(const d of snap\\.docs\\)\\{\n    const data = d\\.data\\(\\);\n    const pick = \\{\\};\n    for \\(const k of \\[\"email\",\"role\",\"tier\",\"planTier\",\"tenantId\",\"moduleId\",\"enabled\",\"name\",\"packageId\",\"plan\"\\]\\) \\{\n      if \\(data\\[k\\] !== undefined\\) pick\\[k\\] = data\\[k\\];\n    \\}\n    console\\.log\\(d\\.id, JSON\\.stringify\\(pick\\)\\);\n  \\}\n\\}\nawait dumpCol\\(\"users\"\\);\nawait dumpCol\\(\"users_extended\"\\);\nawait dumpCol\\(\"tenant_modules\"\\);\nawait dumpCol\\(\"tenants\"\\);\nawait dumpCol\\(\"packages\"\\);\n' 2>&1 \\| grep -vE \"API endpoint\\|Maximum call stack\\|@grpc\\|Warning\\|Deprecation\" \\| head -80$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}
