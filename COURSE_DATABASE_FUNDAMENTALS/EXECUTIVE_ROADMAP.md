@@ -131,9 +131,57 @@ metrics come from a real query.
 ---
 
 ## 8. S7 — Expansion (latest advanced version)
-- Deeper MRP/Maintenance, barcode, QC, payroll reports, budget upgrade, multi-entity, forecasting,
-  RLS hardening, mobile/hCM, etc. — all strictly on the per-module DB + Firebase-auth model.
-- No cross-repo endpoints ever; per-DB discipline forever.
+
+**S7 = Production release + the feature backlog plotted against the blueprint.**
+Everything stays on the per-module DB + Firebase-auth model. No cross-repo endpoints ever;
+per-DB discipline forever (equal-momentum rule: every schema/seed/test change ships its matched
+API + UI + titled test in the same wave).
+
+### 8.1 S7 release baseline (DONE — this is the current live state)
+| Item | Status | Evidence |
+|---|---|---|
+| S7.0a | All 5 Neon DBs live + reachable | ✅ `resolve-neon-urls.mjs` 5/5 |
+| S7.0b | Gap-fill push (local→Neon) for main + accounting | ✅ sales_orders/crm_opportunities/customers + vendor_bills/customer_invoices seeded |
+| S7.0c | Firebase standardized (8 RBAC users only; orphan demo users + tenant_demo removed) | ✅ `audit_firebase.mjs --fix` → ERR=0 WARN=0 |
+| S7.0d | Vercel auto-deploy on `git push origin main` | ✅ deploy Ready; prod alias = `prod-puce-three.vercel.app` |
+| S7.0e | Live API smoke | ✅ **15/15 endpoints** return real data (dashboard/sales/crm/finance/hr/inventory/purchase/analytics) |
+| S7.0f | Live bugs fixed + shipped | ✅ inventory `integer=text` JOIN cast; movements→analytics schema-adaptive; locations & cycle-counts deduped + UNIQUE constraints |
+| S7.0g | Writes auth-enforced | ✅ POST w/o/invalid token → HTTP 401 |
+| S7.0h | Manual for web auditor | ✅ `PRODUCTION_TEST_MANUAL.md` (login, nav map, per-page web→API→DB→UI→persistency tests, non-automatable checks) |
+
+### 8.2 S7 scope plot — what each scope should HOLD, prioritized
+
+Priorities: **P0 = unblocks revenue/compliance (do first)** · **P1 = core operational depth** ·
+**P2 = scale/enterprise differentiators** · **P3 = polish/backlog.**
+
+| Priority | Scope | What it should hold (contents) | Home DB(s) | Depends on / notes |
+|---|---|---|---|---|
+| **P0** | Finance tax-compliance completion | VAT 15% engine w/ EVAT + quarterly filings, WHT 2/5/10% + LDG refunds, PAYE brackets + pension 7/11, ERCA/MoR filings, journal auto-post on receipt (Dr Stock / Cr AP), AR/AP aging SQL, margin, cash-flow forecast, Ethiopian COA template | accounting | TICKET-053a/054a; ledger already live; taxes are the revenue-blocker |
+| **P0** | Procurement ↔ budget parity (17-migration ideal) | Requisition→approval (multi-level, ESIC-aware)→budget commitment→quotation→PO→receipt→invoice; budget-vs-actual; supplier multi-factor scoring; normalized line tables (no JSONB) | procurement | live `products`/`warehouse_receipts`; needs `budget_ref`, `purchase_order_items` parity + UI wiring |
+| **P1** | Barcode / QR picking | barcode+QR scan on pick/pack/ship; scan→locate→pick validation; auto-decrement ledger; API `POST` guarded by auth | analytics + procurement | `/barcode` route exists (stub); TICKET-053c; ties to Warehouse ops |
+| **P1** | QC / inspection | incoming-inspection with ~5% rejection rate, non-conformance records, quarantine location, QC pass→release; traceability | procurement/analytics | `/qc` route exists (stub); integrates with warehouse receipt |
+| **P1** | Payroll reports | gross→net (PAYE+pension 7/11), payslip PDF, payroll register, YTD summaries, HR fortress (ET statutory) | main + accounting | `/payroll` route exists; `PayrollService.js` already has ET engine |
+| **P1** | Budget upgrade + forecasting | forecast engine (revenue/cost/CF trend), budget-vs-actual variance, reorder suggestion via predictive logic, decision-support builder | tenantfinance + analytics | TICKET-051b/051c; `analytics/decisions` endpoint scaffolded |
+| **P2** | MRP / Maintenance foundation | BOM → material requirements explosion, work-order scheduling, equipment maintenance schedules, MRO | procurement + main | blueprint lists under Advanced; large; start with read-only MRP dashboard |
+| **P2** | Multi-entity / multi-tenant scale-out | per-entity ledger, consolidated reporting, entity tenant provisioning, package/module purchasable list from Postgres (`tenant_config`+`modules`) not per-page `if(role)` | all (esp. tenantfinance/main) | TICKET-054 platform-admin; requires tenant seed + RLS |
+| **P2** | RLS hardening | Postgres Row-Level Security per tenant on all 5 DBs; service role vs tenant roles; defense-in-depth behind `requireAuth` | all 5 | after multi-tenant; security hardening S6.2 extension |
+| **P2** | Mobile / hCM responsive | PWA/installable, offline-tolerant reads, responsive hCM (attendance, leave, self-service) | main (HR) | `Header.jsx` already mobile-aware; next is hCM deep screens |
+| **P3** | Analytics decision dashboard polish | live command-center w/ module health scores, KPI drill-down, activity feed parity | analytics | TICKET-051a; engine live (S5) — polish layer only |
+| **P3** | E2E workflow tests + monitoring | full journey tests (PO→receive→invoice→reconcile; lead→close; SO→pick→pack→ship→inventory; KPI accuracy), alerting/uptime, per-DB test scripts | cross-DB | TICKET-054a; must be green before each P0/P1 ships |
+
+### 8.3 S7 sequencing (suggested order of attack)
+1. **P0 finance + procurement parity** (TICKET-053a, 054a) — the two backbones; unblocks real money flows.
+2. **P1 warehouse ops** (barcode → QC → ledger) — completes the receive→ship loop users touch daily.
+3. **P1 payroll + budget/forecast** (TICKET-051b/c) — closes People + Planning.
+4. **P2 scale layer** (multi-entity → RLS) — enterprise readiness; RLS only after tenant provisioning is stable.
+5. **P2/P3 horizontal** (MRP read-only, mobile/hCM, analytics polish, E2E suite) — continuous, equal-momentum.
+
+### 8.4 S7 rules (unchanged, non-negotiable)
+- Per-module DB ownership: no cross-DB writes; reads only where the table's home DB says so.
+- Every P0/P1 item ships with: migration (titled per-DB) + seed (titled) + API handler (auth-guarded) +
+  UI route (RoleGuard) + its own titled test script + manual manual entry.
+- Never commit secrets (service-account.json, `.env`, tokens, `npg_*` URLs); keep in env.
+- After each PASS run: refresh `GAP_LOG.md` statuses (create it if absent) and commit to `main`.
 
 ---
 
