@@ -136,18 +136,18 @@ async function main() {
 
   await run('Seed suppliers', `
     INSERT INTO suppliers (id, supplier_code, name, email, phone, city, country, tenant_id) VALUES
-    ('sup-001','SUP-001','Addis Crown Materials Ltd','contact@addiscrown.et','+251-1-234-5678','Addis Ababa','Ethiopia',$1),
-    ('sup-002','SUP-002','Bekele Trading Export','sales@bekeletrading.et','+251-1-555-9876','Addis Ababa','Ethiopia',$1),
-    ('sup-003','SUP-003','East Africa Glass & Frames','proc@eaglass.ke','+254-20-222-3333','Nairobi','Kenya',$1),
-    ('sup-004','SUP-004','Nile Logistics & Supply','orders@nilelogistics.et','+251-9-876-5432','Addis Ababa','Ethiopia',$1),
-    ('sup-005','SUP-005','Red Sea Import Group','supply@redsea.sa','+966-1-411-2233','Riyadh','Saudi Arabia',$1)
+    ('1','SUP-001','Addis Crown Materials Ltd','contact@addiscrown.et','+251-1-234-5678','Addis Ababa','Ethiopia',$1),
+    ('2','SUP-002','Bekele Trading Export','sales@bekeletrading.et','+251-1-555-9876','Addis Ababa','Ethiopia',$1),
+    ('3','SUP-003','East Africa Glass & Frames','proc@eaglass.ke','+254-20-222-3333','Nairobi','Kenya',$1),
+    ('4','SUP-004','Nile Logistics & Supply','orders@nilelogistics.et','+251-9-876-5432','Addis Ababa','Ethiopia',$1),
+    ('5','SUP-005','Red Sea Import Group','supply@redsea.sa','+966-1-411-2233','Riyadh','Saudi Arabia',$1)
     ON CONFLICT (id) DO NOTHING`, [TENANT]);
 
   await run('Seed purchase_orders', `
     INSERT INTO purchase_orders (po_number, supplier_id, supplier_name, po_date, total_amount, status, tenant_id) VALUES
-    ('PO-1001','sup-001','Addis Crown Materials Ltd', CURRENT_DATE-5, 1085000,'draft',$1),
-    ('PO-1002','sup-002','Bekele Trading Export',     CURRENT_DATE-2, 1000000,'confirmed',$1),
-    ('PO-1003','sup-003','East Africa Glass & Frames',CURRENT_DATE-1,  984000,'sent',$1)
+    ('PO-1001','1','Addis Crown Materials Ltd', CURRENT_DATE-5, 1085000,'draft',$1),
+    ('PO-1002','2','Bekele Trading Export',     CURRENT_DATE-2, 1000000,'confirmed',$1),
+    ('PO-1003','3','East Africa Glass & Frames',CURRENT_DATE-1,  984000,'sent',$1)
     ON CONFLICT (po_number) DO NOTHING`, [TENANT]);
 
   await run('Seed sales_orders', `
@@ -198,19 +198,19 @@ async function main() {
 
   await run('Seed products', `
     INSERT INTO products (id, sku, name, cost_price, selling_price, reorder_level, tenant_id) VALUES
-    ('prod-001','SKU-1001','Crown Glass 4mm',  4200, 5200, 20, $1),
-    ('prod-002','SKU-1002','Crown Glass 6mm', 10500,12500, 10, $1),
-    ('prod-003','SKU-1003','Aluminum Frame 1.5m', 800, 1200, 15, $1),
-    ('prod-004','SKU-1004','Steel Bracket Set',  350,  600, 25, $1)
+    ('100','SKU-1001','Crown Glass 4mm',  4200, 5200, 20, $1),
+    ('101','SKU-1002','Crown Glass 6mm', 10500,12500, 10, $1),
+    ('102','SKU-1003','Aluminum Frame 1.5m', 800, 1200, 15, $1),
+    ('103','SKU-1004','Steel Bracket Set',  350,  600, 25, $1)
     ON CONFLICT (sku) DO NOTHING`, [TENANT]);
 
   await run('Seed inventory_transactions', `
     INSERT INTO inventory_transactions (product_id, transaction_type, quantity, unit_cost, transaction_date, tenant_id) VALUES
-    ('prod-001','receipt',  100, 4200, CURRENT_DATE-3, $1),
-    ('prod-002','receipt',   50,10500, CURRENT_DATE-3, $1),
-    ('prod-003','receipt',   30,  800, CURRENT_DATE-2, $1),
-    ('prod-001','issue',    -20, 4200, CURRENT_DATE-1, $1),
-    ('prod-002','issue',    -10,10500, CURRENT_DATE,   $1)`, [TENANT]);
+    ('100','receipt',  100, 4200, CURRENT_DATE-3, $1),
+    ('101','receipt',   50,10500, CURRENT_DATE-3, $1),
+    ('102','receipt',   30,  800, CURRENT_DATE-2, $1),
+    ('100','issue',    -20, 4200, CURRENT_DATE-1, $1),
+    ('101','issue',    -10,10500, CURRENT_DATE,   $1)`, [TENANT]);
 
   await run('Seed crm_opportunities', `
     INSERT INTO crm_opportunities (name, customer_name, expected_value, status, tenant_id) VALUES
