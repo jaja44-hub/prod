@@ -115,3 +115,25 @@ export async function getInventoryLocations(filters = {}) {
   });
   return request(`/inventory/locations?${params}`);
 }
+
+// Inventory Requisitions
+export async function getInventoryRequisitions(filters = {}) {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      params.append(key, value);
+    }
+  });
+  return request(`/inventory/requisitions?${params}`);
+}
+
+export async function getInventoryRequisition(requisitionId) {
+  return request(`/inventory/requisitions/${requisitionId}`);
+}
+
+export async function createInventoryRequisition(requisitionData) {
+  return request('/inventory/requisitions', {
+    method: 'POST',
+    body: JSON.stringify(requisitionData),
+  });
+}

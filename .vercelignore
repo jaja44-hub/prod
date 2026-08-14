@@ -4,21 +4,21 @@
 /resources.md
 
 # Exclude directories from Vercel deployment (local development only)
-/server
+# /server (needed for serverless function imports)
 /odoo-backend
 /node_modules
 /tests
 /collected
 
 # Exclude root-level test and seed files from Vercel deployment
-*.mjs
-seed.js
-test_*.js
-test_*.mjs
-verify-*.mjs
-extract-*.mjs
-comprehensive-*.mjs
-setup-*.mjs
+/*.mjs
+/seed.js
+/test_*.js
+/test_*.mjs
+/verify-*.mjs
+/extract-*.mjs
+/comprehensive-*.mjs
+/setup-*.mjs
 
 # Exclude API utility scripts from Vercel deployment (keep lib for shared dependencies)
 /api/seed_neon.js

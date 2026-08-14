@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import { getApiClient } from '../lib/apiClient.js';
+import { createFinanceRequisition } from '../lib/neonFinanceAPI';
 import PageHeader from '../components/PageHeader';
 import PageCard from '../components/PageCard';
 import useAnalyticsSnapshot from '../hooks/useAnalyticsSnapshot';
@@ -18,6 +19,8 @@ export function FinanceDashboard() {
   const [taxLiabilityData, setTaxLiabilityData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [requestLoading, setRequestLoading] = useState(false);
   const { snapshot } = useAnalyticsSnapshot();
   const financeAnalytics = snapshot?.modules?.finance;
   const financeMetrics = financeAnalytics?.metrics || {};
@@ -58,6 +61,24 @@ export function FinanceDashboard() {
     fetchData();
   }, []);
 
+  const handleCreateRequisition = async (requisitionData) => {
+    setRequestLoading(true);
+    try {
+      await createFinanceRequisition({
+        ...requisitionData,
+        module: 'finance',
+        requested_by: 'user', // Could get from auth context
+        requested_by_name: 'User'
+      });
+      setShowRequestModal(false);
+    } catch (err) {
+      console.error("[Finance] Create requisition failed:", err);
+      setError(err.message || 'Failed to create requisition');
+    } finally {
+      setRequestLoading(false);
+    }
+  };
+
   if (loading) return (
     <section className="space-y-6">
       <PageHeader title="Finance Dashboard" subtitle="Working capital, payables, and receivables measured through the shared analytics engine." />
@@ -85,7 +106,21 @@ export function FinanceDashboard() {
 
   return (
     <section className="space-y-6">
-      <PageHeader title="Finance Dashboard" subtitle="Working capital, payables, and receivables measured through the shared analytics engine." />
+      <PageHeader 
+        title="Finance Dashboard" 
+        subtitle="Working capital, payables, and receivables measured through the shared analytics engine."
+        actions={
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setShowRequestModal(true)} 
+              className="btn-secondary"
+              disabled={requestLoading}
+            >
+              ����� {t('requestBudget') || 'Request Budget'}
+            </button>
+          </div>
+        }
+      />
 
       {financeAnalytics && (
         <PageCard>
@@ -279,6 +314,62 @@ export function FinanceDashboard() {
             <MetricTile label="Total Liability" value={currency(taxLiabilityData.totalLiability || 0)} detail="all taxes" tone="amber" />
           </div>
         </PageCard>
+      )}
+
+      {showRequestModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold">Request Budget/Expense</h2>
+              <button onClick={() => setShowRequestModal(false)} className="text-gray-500 hover:text-gray-700">���</button>
+            </div>
+            <form onSubmit={(e) => { e.preventDefault(); handleCreateRequisition({ items: [{ product_name: e.target.elements.item_name.value, quantity: Number(e.target.elements.quantity.value), unit_of_measure: e.target.elements.unit.value || 'EA', unit_price: Number(e.target.elements.unit_price.value) || 0 }], expected_delivery_date: e.target.elements.expected_date.value || null, priority: e.target.elements.priority.value, notes: e.target.elements.notes.value }); }}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Item/Expense Name</label>
+                  <input name="item_name" type="text" required className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500" placeholder="e.g., Office Supplies, Travel Budget" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantity</label>
+                  <input name="quantity" type="number" required min="1" defaultValue="1" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit</label>
+                  <input name="unit" type="text" defaultValue="EA" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500" placeholder="EA, PCS, MONTH" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit Price (ETB)</label>
+                  <input name="unit_price" type="number" step="0.01" min="0" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500" placeholder="0.00" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Expected Date</label>
+                  <input name="expected_date" type="date" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priority</label>
+                  <select name="priority" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+                    <option value="low">Low</option>
+                    <option value="normal" selected>Normal</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
+                  <textarea name="notes" rows="3" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500" placeholder="Additional details..."></textarea>
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end gap-3">
+                <button type="button" onClick={() => setShowRequestModal(false)} className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600">
+                  Cancel
+                </button>
+                <button type="submit" disabled={requestLoading} className="px-4 py-2 bg-violet-600 text-white rounded-md hover:bg-violet-700 disabled:opacity-50">
+                  {requestLoading ? 'Submitting...' : 'Submit'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </section>
   );

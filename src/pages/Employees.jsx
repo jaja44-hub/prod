@@ -23,7 +23,7 @@ import {
 import { useLang } from "../context/LangContext";
 import { useAuth } from "../context/AuthContext";
 import LockedOverlay from "../components/LockedOverlay";
-import { getEmployees } from "../lib/neonHRAPI";
+import { getEmployees, createHRRequisition } from "../lib/neonHRAPI";
 import * as GW from "../services/ServiceGateway";
 import { PayrollService } from "../services/PayrollService";
 
@@ -47,6 +47,8 @@ export default function HRFortress() {
     salary: "",
   });
   const [hrBusy, setHrBusy] = useState(false);
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [requestLoading, setRequestLoading] = useState(false);
 
   const activeEmployees = employees.filter((e) => e.status !== "terminated");
 
@@ -132,6 +134,23 @@ export default function HRFortress() {
       console.error("[HR] Hire failed:", err);
     } finally {
       setHrBusy(false);
+    }
+  };
+
+  const handleCreateRequisition = async (requisitionData) => {
+    setRequestLoading(true);
+    try {
+      await createHRRequisition({
+        ...requisitionData,
+        module: 'hr',
+        requested_by: user?.id || 'user',
+        requested_by_name: user?.name || 'User'
+      });
+      setShowRequestModal(false);
+    } catch (err) {
+      console.error("[HR] Create requisition failed:", err);
+    } finally {
+      setRequestLoading(false);
     }
   };
 
@@ -747,6 +766,16 @@ export default function HRFortress() {
                   >
                     <UserPlus size={14} />
                     {language === "am" ? "ቅጥር" : "Hire"}
+                  </button>
+                  <button
+                    type="button"
+                    className="hr-run-btn"
+                    style={{ padding: "8px 14px", fontSize: 13, background: "var(--primary)", color: "white" }}
+                    onClick={() => setShowRequestModal(true)}
+                    disabled={requestLoading}
+                  >
+                    <Users size={14} />
+                    {language === "am" ? "���������" : "Request"}
                   </button>
                   <div className="hr-search-wrap">
                     <Search size={14} className="hr-search-icon" />
@@ -1459,6 +1488,57 @@ export default function HRFortress() {
           </div>
         </div>
       )}
+      {showRequestModal && (
+          <div className="modal-overlay">
+            <div className="modal">
+              <h2>{language === "am" ? "������������ �����������" : "Request Supplies/Equipment"}</h2>
+              <button onClick={() => setShowRequestModal(false)} className="modal-close">×</button>
+              <form onSubmit={(e) => { e.preventDefault(); handleCreateRequisition({ items: [{ product_name: e.target.elements.product_name.value, quantity: Number(e.target.elements.quantity.value), unit_of_measure: e.target.elements.unit.value || 'EA', unit_price: Number(e.target.elements.unit_price.value) || 0 }], expected_delivery_date: e.target.elements.expected_date.value || null, priority: e.target.elements.priority.value, notes: e.target.elements.notes.value }); }}>
+                <div className="form-group">
+                  <label>{language === "am" ? "��������������� ��������" : "Item Name"}</label>
+                  <input name="product_name" type="text" required placeholder={language === "am" ? "������������" : "e.g., Laptop, Office Supplies" } />
+                </div>
+                <div className="form-group">
+                  <label>{language === "am" ? "���������" : "Quantity"}</label>
+                  <input name="quantity" type="number" required min="1" defaultValue="1" />
+                </div>
+                <div className="form-group">
+                  <label>{language === "am" ? "������������" : "Unit"}</label>
+                  <input name="unit" type="text" defaultValue="EA" placeholder="EA, PCS, SET" />
+                </div>
+                <div className="form-group">
+                  <label>{language === "am" ? "������������ �������� (ETB)" : "Unit Price (ETB)"}</label>
+                  <input name="unit_price" type="number" step="0.01" min="0" placeholder="0.00" />
+                </div>
+                <div className="form-group">
+                  <label>{language === "am" ? "��������������� �������������� ��������" : "Expected Delivery Date"}</label>
+                  <input name="expected_date" type="date" />
+                </div>
+                <div className="form-group">
+                  <label>{language === "am" ? "������������" : "Priority"}</label>
+                  <select name="priority">
+                    <option value="low">{language === "am" ? "������������" : "Low"}</option>
+                    <option value="normal" selected>{language === "am" ? "���������������" : "Normal"}</option>
+                    <option value="high">{language === "am" ? "������������" : "High"}</option>
+                    <option value="urgent">{language === "am" ? "���������������" : "Urgent"}</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>{language === "am" ? "������ ��������������" : "Notes"}</label>
+                  <textarea name="notes" rows="3" placeholder={language === "am" ? "������������ ��������������..." : "Additional details..." }></textarea>
+                </div>
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '16px' }}>
+                  <button type="button" onClick={() => setShowRequestModal(false)} className="btn-secondary">
+                    {language === "am" ? "���������" : "Cancel"}
+                  </button>
+                  <button type="submit" disabled={requestLoading} className="btn-primary">
+                    {requestLoading ? (language === "am" ? "��������������� ��������..." : "Submitting...") : (language === "am" ? "������" : "Submit")}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </>
     </LockedOverlay>
   );

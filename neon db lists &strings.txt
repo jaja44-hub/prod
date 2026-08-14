@@ -20,3 +20,11 @@ postgresql://neondb_owner:npg_7QnYZpGf6PAo@ep-silent-breeze-auk7is8u.c-10.us-eas
 db name- neon_tenantfinance_db
 
 postgresql://neondb_owner:npg_0bBxKfP6ZVaE@ep-sparkling-voice-au9j0rv1.c-10.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+
+
+
+=== Remote Neon DBs (hosts/names only) ===
+postgresql://neondb_owner:npg_sUbwp0cAWdH3@ep-solitary-dew-auii1z3j.c-10.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+postgresql://neondb_owner:npg_gt5VHKpS8RDk@ep-red-dust-avdqp1ld.c-11.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+postgresql://neondb_owner:npg_7QnYZpGf6PAo@ep-silent-breeze-auk7is8u.c-10.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+postgresql://neondb_owner:npg_0bBxKfP6ZVaE@ep-sparkling-voice-au9j0rv1.c-10.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require

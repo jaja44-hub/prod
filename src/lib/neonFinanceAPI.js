@@ -41,3 +41,25 @@ export async function getBudgetVariance(tenantId, categoryId) {
 export async function getFinanceAging(tenantId) {
   return request(`/finance/aging?tenant_id=${tenantId}`);
 }
+
+// Finance Requisitions (for budget requests, expense requests, etc.)
+export async function getFinanceRequisitions(filters = {}) {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      params.append(key, value);
+    }
+  });
+  return request(`/finance/requisitions?${params}`);
+}
+
+export async function getFinanceRequisition(requisitionId) {
+  return request(`/finance/requisitions/${requisitionId}`);
+}
+
+export async function createFinanceRequisition(requisitionData) {
+  return request('/finance/requisitions', {
+    method: 'POST',
+    body: JSON.stringify(requisitionData),
+  });
+}

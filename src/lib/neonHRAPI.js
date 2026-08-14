@@ -46,3 +46,25 @@ export async function createEmployee(employeeData) {
     body: JSON.stringify(employeeData),
   });
 }
+
+// HR Requisitions (for equipment, supplies, training requests, etc.)
+export async function getHRRequisitions(filters = {}) {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      params.append(key, value);
+    }
+  });
+  return request(`/hr/requisitions?${params}`);
+}
+
+export async function getHRRequisition(requisitionId) {
+  return request(`/hr/requisitions/${requisitionId}`);
+}
+
+export async function createHRRequisition(requisitionData) {
+  return request('/hr/requisitions', {
+    method: 'POST',
+    body: JSON.stringify(requisitionData),
+  });
+}

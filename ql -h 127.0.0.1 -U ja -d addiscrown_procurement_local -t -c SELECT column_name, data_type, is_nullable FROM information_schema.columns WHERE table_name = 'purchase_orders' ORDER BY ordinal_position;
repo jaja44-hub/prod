@@ -1,0 +1,48 @@
+        column_name        |          data_type          | is_nullable 
+---------------------------+-----------------------------+-------------
+ id                        | integer                     | NO
+ order_number              | character varying           | NO
+ supplier_id               | integer                     | YES
+ order_date                | date                        | NO
+ expected_date             | date                        | YES
+ total_amount              | numeric                     | NO
+ status                    | character varying           | YES
+ tenant_id                 | character varying           | YES
+ created_at                | timestamp without time zone | YES
+ po_number                 | character varying           | NO
+ po_date                   | date                        | NO
+ supplier_name             | character varying           | YES
+ supplier_address          | text                        | YES
+ supplier_contact          | character varying           | YES
+ supplier_phone            | character varying           | YES
+ supplier_email            | character varying           | YES
+ category_id               | integer                     | YES
+ delivery_terms            | text                        | YES
+ shipping_method           | character varying           | YES
+ shipping_address          | text                        | YES
+ actual_delivery_date      | date                        | YES
+ subtotal                  | numeric                     | YES
+ vat_amount                | numeric                     | YES
+ vat_rate                  | numeric                     | YES
+ withholding_tax_amount    | numeric                     | YES
+ withholding_tax_rate      | numeric                     | YES
+ currency                  | character varying           | YES
+ workflow_instance_id      | integer                     | YES
+ approved_by               | character varying           | YES
+ approved_by_name          | character varying           | YES
+ approved_at               | timestamp without time zone | YES
+ sent_to_supplier          | boolean                     | YES
+ sent_at                   | timestamp without time zone | YES
+ supplier_acknowledged     | boolean                     | YES
+ supplier_acknowledged_at  | timestamp without time zone | YES
+ notes                     | text                        | YES
+ internal_notes            | text                        | YES
+ updated_at                | timestamp without time zone | YES
+ requisition_id            | integer                     | YES
+ expected_delivery_date    | date                        | YES
+ budget_id                 | integer                     | YES
+ budget_validated          | boolean                     | YES
+ budget_validation_message | text                        | YES
+ budget_commitment_id      | integer                     | YES
+(44 rows)
+

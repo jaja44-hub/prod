@@ -1,6 +1,6 @@
 /**
- * Neon DB Sales API Client
- * Connects frontend to backend sales and customer APIs
+ * Neon DB CRM API Client
+ * Connects frontend to backend CRM APIs
  */
 
 const API_BASE = process.env.REACT_APP_API_BASE || (window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api');
@@ -25,67 +25,63 @@ async function request(endpoint, options = {}) {
   return response.json();
 }
 
-// Sales Orders
-export async function getSalesOrders(filters = {}) {
+// CRM Pipeline
+export async function getCRMPipeline(filters = {}) {
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
       params.append(key, value);
     }
   });
-  return request(`/sales/orders?${params}`);
+  return request(`/crm/pipeline?${params}`);
 }
 
-export async function getSalesOrder(orderId) {
-  return request(`/sales/orders/${orderId}`);
+// CRM Activity
+export async function getCRMActivity(filters = {}) {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      params.append(key, value);
+    }
+  });
+  return request(`/crm/activity?${params}`);
 }
 
-export async function createSalesOrder(orderData) {
-  return request('/sales/orders', {
+export async function createCRMActivity(activityData) {
+  return request('/crm/activity', {
     method: 'POST',
-    body: JSON.stringify(orderData),
+    body: JSON.stringify(activityData),
   });
 }
 
-// Customers
-export async function getCustomers(filters = {}) {
+// CRM Opportunities
+export async function getCRMOpportunities(filters = {}) {
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
       params.append(key, value);
     }
   });
-  return request(`/sales/customers?${params}`);
+  return request(`/crm/opportunities?${params}`);
 }
 
-export async function getCustomer(customerId) {
-  return request(`/sales/customers/${customerId}`);
-}
-
-export async function createCustomer(customerData) {
-  return request('/sales/customers', {
-    method: 'POST',
-    body: JSON.stringify(customerData),
-  });
-}
-
-// Sales Requisitions (for dispatch requests, etc.)
-export async function getSalesRequisitions(filters = {}) {
+// CRM Requisitions
+export async function getCRMRequisitions(filters = {}) {
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
       params.append(key, value);
     }
   });
-  return request(`/sales/requisitions?${params}`);
+  return request(`/crm/requisitions?${params}`);
 }
 
-export async function getSalesRequisition(requisitionId) {
-  return request(`/sales/requisitions/${requisitionId}`);
+export async function getCRMRequisition(requisitionId) {
+  return request(`/crm/requisitions/${requisitionId}`);
 }
 
-export async function createSalesRequisition(requisitionData) {
-  return request('/sales/requisitions', {
+export async function createCRMRequisition(requisitionData) {
+  return request('/crm/requisitions', {
     method: 'POST',
     body: JSON.stringify(requisitionData),
   });

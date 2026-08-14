@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LangContext';
 // Removed ServiceGateway import
+import { createSalesRequisition } from '../lib/neonSalesAPI';
 import ListFilterBar from '../components/ListFilterBar';
 import PageHeader from '../components/PageHeader';
 import PageCard from '../components/PageCard';
@@ -24,10 +25,29 @@ export default function Sales() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [salesLifecycle, setSalesLifecycle] = useState(null);
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [requestLoading, setRequestLoading] = useState(false);
 
   const normalizeErrorMessage = (err) => {
     const raw = err?.error?.message || err?.error || err?.message || err || t('error');
     return typeof raw === 'string' ? raw : JSON.stringify(raw);
+  };
+
+  const handleCreateRequisition = async (requisitionData) => {
+    setRequestLoading(true);
+    try {
+      await createSalesRequisition({
+        ...requisitionData,
+        module: 'sales',
+        requested_by: currentUser?.id || 'user',
+        requested_by_name: currentUser?.name || currentUser?.email || 'User'
+      });
+      setShowRequestModal(false);
+    } catch (err) {
+      setError(normalizeErrorMessage(err));
+    } finally {
+      setRequestLoading(false);
+    }
   };
 
   // ── Live sales KPIs derived from the orders list (no hardcoded fallback) ──
@@ -133,9 +153,18 @@ export default function Sales() {
         title={t('sales')}
         subtitle={t('salesOrdersDescription')}
         actions={
-          <button onClick={() => navigate('/sales/new')} className="btn-primary">
-            + {t('createSalesOrder')}
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setShowRequestModal(true)} 
+              className="btn-secondary"
+              disabled={requestLoading}
+            >
+              ��� {t('requestDispatch') || 'Request Dispatch'}
+            </button>
+            <button onClick={() => navigate('/sales/new')} className="btn-primary">
+              + {t('createSalesOrder')}
+            </button>
+          </div>
         }
       />
 
@@ -343,6 +372,62 @@ export default function Sales() {
                 {t('clear') || 'Close'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showRequestModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold">{t('requestDispatch') || 'Request Dispatch'}</h2>
+              <button onClick={() => setShowRequestModal(false)} className="text-gray-500 hover:text-gray-700">���</button>
+            </div>
+            <form onSubmit={(e) => { e.preventDefault(); handleCreateRequisition({ items: [{ product_name: e.target.elements.product_name.value, quantity: Number(e.target.elements.quantity.value), unit_of_measure: e.target.elements.unit.value || 'EA', unit_price: Number(e.target.elements.unit_price.value) || 0 }], expected_delivery_date: e.target.elements.expected_date.value || null, priority: e.target.elements.priority.value, notes: e.target.elements.notes.value }); }}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('productName') || 'Product Name'}</label>
+                  <input name="product_name" type="text" required className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('quantity') || 'Quantity'}</label>
+                  <input name="quantity" type="number" required min="1" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('unitOfMeasure') || 'Unit of Measure'}</label>
+                  <input name="unit" type="text" defaultValue="EA" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('unitPrice') || 'Unit Price'}</label>
+                  <input name="unit_price" type="number" step="0.01" min="0" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('expectedDeliveryDate') || 'Expected Delivery Date'}</label>
+                  <input name="expected_date" type="date" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('priority') || 'Priority'}</label>
+                  <select name="priority" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+                    <option value="low">{t('low') || 'Low'}</option>
+                    <option value="normal" selected>{t('normal') || 'Normal'}</option>
+                    <option value="high">{t('high') || 'High'}</option>
+                    <option value="urgent">{t('urgent') || 'Urgent'}</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('notes') || 'Notes'}</label>
+                  <textarea name="notes" rows="3" className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"></textarea>
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end gap-3">
+                <button type="button" onClick={() => setShowRequestModal(false)} className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600">
+                  {t('cancel') || 'Cancel'}
+                </button>
+                <button type="submit" disabled={requestLoading} className="px-4 py-2 bg-violet-600 text-white rounded-md hover:bg-violet-700 disabled:opacity-50">
+                  {requestLoading ? (t('submitting') || 'Submitting...') : (t('submit') || 'Submit')}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
